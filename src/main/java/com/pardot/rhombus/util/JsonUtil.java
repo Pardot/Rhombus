@@ -1,8 +1,8 @@
 package com.pardot.rhombus.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.*;
 import com.pardot.rhombus.cobject.CDefinition;
 import com.pardot.rhombus.cobject.CField;
 
@@ -46,108 +46,154 @@ public class JsonUtil {
 		return rhombusMap;
 	}
 
-	private static Object typedObjectFromValueAndField(Object jsonValue, CField field) {
+	protected static Object typedObjectFromValueAndField(Object jsonValue, CField field) throws IllegalArgumentException {
 		if(jsonValue == null) {
 			return null;
 		}
-		switch(field.getType()) {
-			case ASCII:
-			case VARCHAR:
-			case TEXT:
-				if(String.class.isAssignableFrom(jsonValue.getClass())) {
-					return jsonValue;
-				} else {
-					throw new IllegalArgumentException();
-				}
-			case BIGINT:
-			case COUNTER:
-				return longFromNumber(jsonValue);
-			case BLOB:
-				throw new IllegalArgumentException();
-			case BOOLEAN:
-				if(Boolean.class.isAssignableFrom(jsonValue.getClass())){
-					return jsonValue;
-				}else {
-					throw new IllegalArgumentException();
-				}
-			case DECIMAL:
-				if(Float.class.isAssignableFrom(jsonValue.getClass())){
-					return BigDecimal.valueOf((Float)jsonValue);
-				} else if(Double.class.isAssignableFrom(jsonValue.getClass())) {
-					return BigDecimal.valueOf((Double)jsonValue);
-				}else {
-					throw new IllegalArgumentException();
-				}
-			case DOUBLE:
-				if(Double.class.isAssignableFrom(jsonValue.getClass())){
-					return jsonValue;
-				}
-				else if(Float.class.isAssignableFrom(jsonValue.getClass())){
-					return Double.valueOf((Float)jsonValue);
-				}
-				else {
-					throw new IllegalArgumentException();
-				}
-			case FLOAT:
-				if(Double.class.isAssignableFrom(jsonValue.getClass())){
-					return Double.valueOf((Double)jsonValue).floatValue();
-				}
-				else if(Float.class.isAssignableFrom(jsonValue.getClass())){
-					return jsonValue;
-				} else {
-					throw new IllegalArgumentException();
-				}
-			case INT:
-				return intFromNumber(jsonValue);
-			case TIMESTAMP:
-				if(Date.class.isAssignableFrom(jsonValue.getClass())) {
-					return jsonValue;
-				} else if(Integer.class.isAssignableFrom(jsonValue.getClass())){
-					return new Date(((Integer)jsonValue).longValue());
-				} else if(Long.class.isAssignableFrom(jsonValue.getClass())) {
-					return new Date((Long)jsonValue);
-				} else {
-					throw new IllegalArgumentException("Wrong type for "+ jsonValue + " ("+jsonValue.getClass()+")");
-				}
-			case UUID:
-			case TIMEUUID:
-				if(UUID.class.isAssignableFrom(jsonValue.getClass())) {
-					return jsonValue;
-				} else if(String.class.isAssignableFrom(jsonValue.getClass())){
-					return UUID.fromString((String)jsonValue);
-				} else {
-					throw new IllegalArgumentException();
-				}
-			case VARINT:
-				if(String.class.isAssignableFrom(jsonValue.getClass())) {
-					return new BigInteger((String)jsonValue);
-				}
-				return BigInteger.valueOf(longFromNumber(jsonValue));
-			default:
-				return null;
-		}
+        try {
+            switch(field.getType()) {
+                case ASCII:
+                case VARCHAR:
+                case TEXT:
+                    String parsedString = String.valueOf(jsonValue);
+                    if (parsedString == null) {
+                        throw new IllegalArgumentException();
+                    } else {
+                        return parsedString;
+                    }
+                case BIGINT:
+                case COUNTER:
+                    return longFromNumber(jsonValue);
+                case BLOB:
+                    throw new IllegalArgumentException();
+                case BOOLEAN:
+                    if (String.class.isAssignableFrom(jsonValue.getClass())) {
+                        return Boolean.valueOf((String)jsonValue);
+                    } else if(Boolean.class.isAssignableFrom(jsonValue.getClass())){
+                        return jsonValue;
+                    }else {
+                        throw new IllegalArgumentException();
+                    }
+                case DECIMAL:
+                    if (String.class.isAssignableFrom(jsonValue.getClass())) {
+                        return new BigDecimal((String)jsonValue);
+                    } else if(Integer.class.isAssignableFrom(jsonValue.getClass())){
+                        return BigDecimal.valueOf((Integer)jsonValue);
+                    } else if(Long.class.isAssignableFrom(jsonValue.getClass())){
+                        return BigDecimal.valueOf((Long)jsonValue);
+                    } else if(Float.class.isAssignableFrom(jsonValue.getClass())){
+                        return BigDecimal.valueOf((Float)jsonValue);
+                    } else if(Double.class.isAssignableFrom(jsonValue.getClass())) {
+                        return BigDecimal.valueOf((Double)jsonValue);
+                    }else {
+                        throw new IllegalArgumentException();
+                    }
+                case DOUBLE:
+                    if (String.class.isAssignableFrom(jsonValue.getClass())) {
+                        Double parsedNumber = Doubles.tryParse((String) jsonValue);
+                        if (parsedNumber != null) {
+                            return parsedNumber;
+                        }
+                    } else if(Integer.class.isAssignableFrom(jsonValue.getClass())){
+                        return Double.valueOf((Integer)jsonValue);
+                    } else if(Long.class.isAssignableFrom(jsonValue.getClass())){
+                        return Double.valueOf((Long)jsonValue);
+                    } else if(Double.class.isAssignableFrom(jsonValue.getClass())){
+                        return jsonValue;
+                    }
+                    else if(Float.class.isAssignableFrom(jsonValue.getClass())){
+                        return Double.valueOf((Float)jsonValue);
+                    }
+                    throw new IllegalArgumentException();
+                case FLOAT:
+                    if (String.class.isAssignableFrom(jsonValue.getClass())) {
+                        Float parsedNumber = Floats.tryParse((String) jsonValue);
+                        if (parsedNumber != null) {
+                            return parsedNumber;
+                        }
+                    } else if(Integer.class.isAssignableFrom(jsonValue.getClass())){
+                        return Float.valueOf((Integer)jsonValue);
+                    } else if(Long.class.isAssignableFrom(jsonValue.getClass())){
+                        return Float.valueOf((Long)jsonValue);
+                    } else if(Double.class.isAssignableFrom(jsonValue.getClass())){
+                        return ((Double)jsonValue).floatValue();
+                    }
+                    else if(Float.class.isAssignableFrom(jsonValue.getClass())){
+                        return jsonValue;
+                    }
+                    throw new IllegalArgumentException();
+                case INT:
+                    return intFromNumber(jsonValue);
+                case TIMESTAMP:
+                    if(Date.class.isAssignableFrom(jsonValue.getClass())) {
+                        return jsonValue;
+                    } else if(Integer.class.isAssignableFrom(jsonValue.getClass())){
+                        return new Date((Integer)jsonValue);
+                    } else if(Long.class.isAssignableFrom(jsonValue.getClass())) {
+                        return new Date((Long)jsonValue);
+                    } else {
+                        throw new IllegalArgumentException();
+                    }
+                case UUID:
+                case TIMEUUID:
+                    if(UUID.class.isAssignableFrom(jsonValue.getClass())) {
+                        return jsonValue;
+                    } else if(String.class.isAssignableFrom(jsonValue.getClass())){
+                        return UUID.fromString((String)jsonValue);
+                    } else {
+                        throw new IllegalArgumentException();
+                    }
+                case VARINT:
+                    if(String.class.isAssignableFrom(jsonValue.getClass())) {
+                        return new BigInteger((String)jsonValue);
+                    }
+                    return BigInteger.valueOf(longFromNumber(jsonValue));
+                default:
+                    return null;
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unable to convert "+ jsonValue + " of type "+jsonValue.getClass()+" to C* type " + field.getType().toString());
+        }
 	}
 
 	private static Long longFromNumber(Object number) {
 		if(Boolean.class.isAssignableFrom(number.getClass())) {
 			return ((Boolean)number ? 1L : 0L);
+        } else if(String.class.isAssignableFrom(number.getClass())) {
+            Long parsedNumber = Longs.tryParse((String) number);
+            if (parsedNumber != null) {
+                return parsedNumber;
+            }
+        } else if(Double.class.isAssignableFrom(number.getClass())) {
+            return ((Double)number).longValue();
+        } else if(Float.class.isAssignableFrom(number.getClass())) {
+            return ((Float)number).longValue();
 		} else if(Integer.class.isAssignableFrom(number.getClass())) {
 			return ((Integer)number).longValue();
 		} else if(Long.class.isAssignableFrom(number.getClass())) {
 			return (Long)number;
-		} else {
-			throw new IllegalArgumentException();
-		}
+        }
+        throw new IllegalArgumentException();
 	}
 
 	private static Integer intFromNumber(Object number) {
 		if(Boolean.class.isAssignableFrom(number.getClass())) {
 			return ((Boolean)number ? 1 : 0);
+        } else if(String.class.isAssignableFrom(number.getClass())) {
+            Integer parsedNumber = Ints.tryParse((String) number);
+            if (parsedNumber != null) {
+                return parsedNumber;
+            }
+        } else if(Double.class.isAssignableFrom(number.getClass())) {
+            return ((Double)number).intValue();
+        } else if(Float.class.isAssignableFrom(number.getClass())) {
+            return ((Float)number).intValue();
+        } else if(Long.class.isAssignableFrom(number.getClass())) {
+            return ((Long)number).intValue();
 		} else if(Integer.class.isAssignableFrom(number.getClass())) {
 			return (Integer)number;
-		} else {
-			throw new IllegalArgumentException();
-		}
+        }
+        throw new IllegalArgumentException();
 	}
 
 }
