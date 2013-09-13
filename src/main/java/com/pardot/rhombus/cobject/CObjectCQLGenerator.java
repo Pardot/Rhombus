@@ -382,7 +382,15 @@ public class CObjectCQLGenerator {
 
 		//(2) Delete from any indexes that are no longer applicable
 		for(CIndex i : effectedIndexes){
-			ret.add(makeCQLforDeleteUUIDFromIndex(keyspace, def, i, key, i.getIndexKeyAndValues(oldValues), null));
+			Map<String,Object> compositeKeyToDelete = i.getIndexKeyAndValues(oldValues);
+			if(def.isAllowNullPrimaryKeyInserts()){
+				//check if we have the necessary primary fields to delete on this index. If not just continue
+				// because it would be ignored on insert
+				if(!i.validateIndexKeys(compositeKeyToDelete)){
+					continue;
+				}
+			}
+			ret.add(makeCQLforDeleteUUIDFromIndex(keyspace, def, i, key, compositeKeyToDelete, null));
 		}
 
 		//(3) Construct a complete copy of the object

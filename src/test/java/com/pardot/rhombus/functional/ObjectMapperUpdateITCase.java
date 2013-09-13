@@ -100,8 +100,8 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		UUID id = om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
 
 		//Update the object
-		object.put("object_id", UUID.fromString("00000003-0000-0030-0040-000000040000"));
-		om.update("object_audit", id, object);
+		object.put("object_id", "00000003-0000-0030-0040-000000040000");
+		om.update("object_audit", id, JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")));
 
 		//Get back the data and make sure things match
 		Map<String, Object> result = om.getByKey("object_audit", id);
