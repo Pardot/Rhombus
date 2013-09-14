@@ -108,4 +108,39 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		assertNotNull(result);
 		assertEquals(null, result.get("user_id"));
 	}
+
+	@Test
+	public void testUpdatingNullNonIndexValue() throws Exception {
+		logger.debug("Starting testSendingNullIndexValues");
+
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "AuditKeyspace.js");
+		assertNotNull(definition);
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, true);
+		logger.debug("Built keyspace: {}", definition.getName());
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper();
+		om.setLogCql(true);
+
+		//Insert our test data
+		List<Map<String, Object>> values = JsonUtil.rhombusMapFromResource(this.getClass().getClassLoader(), "NullIndexValuesTestData.js");
+		Map<String, Object> object = values.get(0);
+		Long createdAt = (Long)(object.get("created_at"));
+		logger.debug("Inserting audit with created_at: {}", createdAt);
+		UUID id = om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
+
+		//Update the object
+		object.put("changes", null);
+		om.update("object_audit", id, JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")));
+
+		//Get back the data and make sure things match
+		Map<String, Object> result = om.getByKey("object_audit", id);
+		assertNotNull(result);
+		assertEquals(null, result.get("changes"));
+	}
 }

@@ -403,7 +403,7 @@ public class CObjectCQLGenerator {
 		//(4) Add index values to the new values list
 		Map<String,Object> newValuesAndIndexValues = Maps.newHashMap(newValues);
 		for(String s: def.getRequiredFields()){
-			if(newValuesAndIndexValues.get(s) == null){
+			if(!newValuesAndIndexValues.containsKey(s)){
 				newValuesAndIndexValues.put(s, completeValues.get(s));
 			}
 		}
@@ -809,7 +809,7 @@ public class CObjectCQLGenerator {
 		ArrayList fieldList = new ArrayList<String>(def.getFields().size());
 		ArrayList valueList = new ArrayList<Object>(def.getFields().size());
 		for(CField f : def.getFields().values()){
-			if(data.get(f.getName()) != null){
+			if(data.containsKey(f.getName())){
 				fieldList.add(f.getName());
 				valueList.add(data.get(f.getName()));
 			}
@@ -852,8 +852,9 @@ public class CObjectCQLGenerator {
 		Iterator<Object> it = strings.iterator();
 		String ret = "";
 		while(it.hasNext()){
-			String thenext = it.next().toString();
-			String s = onlyQuestionMarks ? "?" : thenext;
+			Object thenext = it.next();
+			String thenextstring = thenext == null ? "null" : thenext.toString();
+			String s = onlyQuestionMarks ? "?" : thenextstring;
 			ret = ret + s +(it.hasNext() ? ", " : "");
 		}
 		return ret;

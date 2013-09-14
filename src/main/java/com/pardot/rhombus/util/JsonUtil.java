@@ -46,9 +46,8 @@ public class JsonUtil {
 	public static SortedMap<String, Object> rhombusMapFromJsonMap(Map<String, Object> jsonMap, CDefinition definition) {
 		SortedMap<String, Object> rhombusMap = Maps.newTreeMap();
 		for(CField field : definition.getFields().values()) {
-			Object jsonValue = jsonMap.get(field.getName());
-			if(jsonValue != null) {
-				rhombusMap.put(field.getName(), typedObjectFromValueAndField(jsonValue, field));
+			if(jsonMap.containsKey(field.getName())) {
+				rhombusMap.put(field.getName(), typedObjectFromValueAndField(jsonMap.get(field.getName()), field));
 			}
 		}
 		return rhombusMap;
