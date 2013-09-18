@@ -1,6 +1,6 @@
 package com.pardot.rhombus.cobject;
 
-import com.datastax.driver.core.Query;
+import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Using;
@@ -749,8 +749,8 @@ public class CObjectCQLGenerator {
 		return CQLStatement.make(query,values.toArray());
 	}
 
-	public static Query makeCQLforDeleteUUIDFromIndex_WorkaroundForUnpreparableTimestamp(String keyspace, CDefinition def, CIndex index, UUID uuid, Map<String,Object> indexValues, Long timestamp){
-		Query ret = QueryBuilder.delete()
+	public static Statement makeCQLforDeleteUUIDFromIndex_WorkaroundForUnpreparableTimestamp(String keyspace, CDefinition def, CIndex index, UUID uuid, Map<String,Object> indexValues, Long timestamp){
+		Statement ret = QueryBuilder.delete()
 						.from(keyspace,makeIndexTableName(def,index))
 						.using(QueryBuilder.timestamp(timestamp))
 						.where(QueryBuilder.eq("id",uuid))
