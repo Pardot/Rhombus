@@ -1,6 +1,7 @@
 package com.pardot.rhombus.functional;
 
 
+import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.utils.UUIDs;
@@ -100,5 +101,18 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		//Make sure that the additional index table no longer exists
 		om = cm.getObjectMapper(definition.getName());
 		om.getCqlExecutor().executeSync(CQLStatement.make("SELECT * FROM testtype__filtered"));
+	}
+
+	@Test
+	public void testBuildCluster() throws Exception {
+		logger.debug("testBuildCluster");
+		//Get a connection manager based on the test properties
+		ConnectionManager connectionManager = TestHelpers.getTestConnectionManager();
+		connectionManager.setLogCql(true);
+		Cluster cassCluster = connectionManager.buildCluster(true);
+		assertNotNull(connectionManager);
+
+		assertEquals(1,cassCluster.getMetadata().getAllHosts().size());
+		assertEquals(cassCluster.getMetadata().getClusterName(), "Test Cluster");
 	}
 }
