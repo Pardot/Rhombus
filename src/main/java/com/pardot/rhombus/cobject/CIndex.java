@@ -50,7 +50,7 @@ public class CIndex {
 
 	public boolean areValuesAssociatedWithIndex(Map<String,Object> values){
 		for(String key: compositeKeyList){
-			if(values.get(key) != null){
+			if(values.containsKey(key)){
 				return true;
 			}
 		}
