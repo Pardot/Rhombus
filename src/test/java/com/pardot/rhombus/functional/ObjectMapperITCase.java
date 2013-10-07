@@ -33,8 +33,9 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		ConnectionManager cm = getConnectionManager();
 
 		//Build our keyspace definition object
-		String json = TestHelpers.readFileToString(this.getClass(), "CKeyspaceTestData.js");
-		CKeyspaceDefinition definition = CKeyspaceDefinition.fromJsonString(json);
+		//String json = TestHelpers.readFileToString(this.getClass(), "CKeyspaceTestData.js");
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
+		//CKeyspaceDefinition definition = CKeyspaceDefinition.fromJsonString(json);
 		assertNotNull(definition);
 
 		//Rebuild the keyspace and get the object mapper

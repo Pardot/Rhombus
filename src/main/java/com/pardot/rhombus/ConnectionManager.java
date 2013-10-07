@@ -7,7 +7,7 @@ import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.google.common.collect.Maps;
 
-import com.pardot.rhombus.cobject.CKeyspaceDefinition;
+import com.pardot.rhombus.cobject.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,14 +101,31 @@ public class ConnectionManager {
 	public ObjectMapper getObjectMapper(String keyspace) {
 		ObjectMapper objectMapper = objectMappers.get(keyspace);
 		if(objectMapper == null) {
+			Session session = cluster.connect(keyspace);
+			defaultKeyspace = hydrateLatestKeyspaceDefinitionFromCassandra(keyspace, session);
 			logger.debug("Connecting to keyspace {}", defaultKeyspace.getName());
-			Session session = cluster.connect(defaultKeyspace.getName());
 			objectMapper = new ObjectMapper(session, defaultKeyspace, consistencyHorizon, batchTimeout);
 			objectMapper.setLogCql(logCql);
 			objectMappers.put(keyspace, objectMapper);
 		}
 		return objectMapper;
 
+	}
+
+	public CKeyspaceDefinition hydrateLatestKeyspaceDefinitionFromCassandra(String keyspaceName, Session session){
+		try{
+			CQLStatementIterator cql = CObjectCQLGenerator.makeCQLforGetKeyspaceDefinitions(keyspaceName);
+			CQLExecutor executor = new CQLExecutor(session, false, null);
+			while(cql.hasNext()){
+				CQLStatement statement = cql.next();
+				com.datastax.driver.core.ResultSet r = executor.executeSync(statement);
+				return CKeyspaceDefinition.fromJsonString(r.one().getString("def"));
+			}
+		}
+		catch(Exception e){
+			logger.error("Unable to hydrate keyspace definition from cassandra");
+		}
+		return null;
 	}
 
 	/**

@@ -1,8 +1,12 @@
 package com.pardot.rhombus.cobject;
 
 import com.datastax.driver.core.ConsistencyLevel;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.google.common.collect.Maps;
+import com.pardot.rhombus.util.MapToListSerializer;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +18,9 @@ public class CKeyspaceDefinition {
 	private String replicationClass;
 	private ConsistencyLevel consistencyLevel = ConsistencyLevel.ONE;
 	private Map<String, Integer> replicationFactors;
+
+	@JsonSerialize(using = MapToListSerializer.class)
+	@JsonProperty
 	private Map<String, CDefinition> definitions;
 
 	public CKeyspaceDefinition() {
@@ -21,7 +28,7 @@ public class CKeyspaceDefinition {
 	}
 
 	public static CKeyspaceDefinition fromJsonString(String json) throws IOException {
-		ObjectMapper mapper = new ObjectMapper();
+		com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
 		return mapper.readValue(json, CKeyspaceDefinition.class);
 	}
 

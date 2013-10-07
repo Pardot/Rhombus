@@ -1,6 +1,11 @@
 package com.pardot.rhombus.cobject;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.pardot.rhombus.util.CDataTypeSerializer;
+import com.pardot.rhombus.util.CDefinitionListSerializer;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import java.math.BigInteger;
 import java.util.Date;
@@ -109,6 +114,9 @@ public class CField {
 	}
 
 	private String name;
+
+	@JsonSerialize(using = CDataTypeSerializer.class)
+	@JsonProperty
 	private CDataType type;
 
 	public CField() {
@@ -147,6 +155,7 @@ public class CField {
 		this.name = name;
 	}
 
+    @JsonIgnore
     public Object getEmptyJavaObjectOfThisType(){
         CDataType type = this.getType();
         switch (type) {

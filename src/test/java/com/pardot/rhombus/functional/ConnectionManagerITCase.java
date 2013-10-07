@@ -2,10 +2,12 @@ package com.pardot.rhombus.functional;
 
 
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.utils.UUIDs;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.ObjectMapper;
+import com.pardot.rhombus.cobject.CField;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
 import com.pardot.rhombus.cobject.CQLStatement;
 import com.pardot.rhombus.helpers.TestHelpers;
@@ -33,7 +35,7 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 
 		//Build our keyspace definition object
 		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class
-				, this.getClass().getClassLoader(), "ConnectionManagerITCaseData.js");
+				, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
 		assertNotNull(definition);
 
 		//Build the keyspace forcing a rebuild in case anything has been left behind
@@ -53,6 +55,12 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		//Make sure that we can get back the value we inserted
 		ResultSet rs = om.getCqlExecutor().executeSync(CQLStatement.make("SELECT * FROM cmit WHERE id=?;",Arrays.asList(uuid).toArray()));
 		assertEquals(1, rs.all().size());
+
+		//verify that we saved the keyspace definition in cassandra correctly
+		cm = getConnectionManager();
+		CKeyspaceDefinition queriedDef = cm.getObjectMapper(definition.getName()).getKeyspaceDefinition_ONLY_FOR_TESTING();
+		assertEquals(definition.getDefinitions().size(), queriedDef.getDefinitions().size());
+		assertEquals(queriedDef.getDefinitions().get("testtype").getField("foreignid").getType(), CField.CDataType.BIGINT);
 	}
 
 	@Test
@@ -91,7 +99,7 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 
 		//Select from the newly created table
 		ObjectMapper om = cm.getObjectMapper(definition2.getName());
-		ResultSet rs = om.getCqlExecutor().executeSync(CQLStatement.make("SELECT * FROM testtype__filtered"));
+		ResultSet rs = om.getCqlExecutor().executeSync(CQLStatement.make("SELECT * FROM testtype3cb23c7ffc4256283064bd5eae1886b4"));
 		assertEquals(0, rs.all().size());
 
 		//Build the keyspace again, but force a rebuild
@@ -99,6 +107,9 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 
 		//Make sure that the additional index table no longer exists
 		om = cm.getObjectMapper(definition.getName());
-		om.getCqlExecutor().executeSync(CQLStatement.make("SELECT * FROM testtype__filtered"));
+		om.getCqlExecutor().executeSync(CQLStatement.make("SELECT * FROM testtype3cb23c7ffc4256283064bd5eae1886b4"));
+
+		//Make sure that we saved the keyspace definition
+		om = cm.getObjectMapper(definition.getName());
 	}
 }

@@ -1,9 +1,13 @@
 package com.pardot.rhombus.cobject;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pardot.rhombus.util.MapToListSerializer;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import java.io.IOException;
 import java.util.*;
@@ -16,9 +20,19 @@ import java.util.*;
 public class CDefinition {
 
 	private String name;
+
+	@JsonSerialize(using = MapToListSerializer.class)
+	@JsonProperty
 	private Map<String, CField> fields;
+
+	@JsonSerialize(using = MapToListSerializer.class)
+	@JsonProperty
 	private Map<String, CIndex> indexes;
+
+	@JsonIgnore
 	private SortedMap<String, CIndex> indexesIndexedByFields;
+
+	@JsonIgnore
 	private boolean allowNullPrimaryKeyInserts = false;
 
 	public CDefinition(){
@@ -65,6 +79,7 @@ public class CDefinition {
 		this.allowNullPrimaryKeyInserts = allowNullPrimaryKeyInserts;
 	}
 
+	@JsonIgnore
 	public Collection<String> getRequiredFields(){
 		Map<String,String> ret = Maps.newHashMap();
 		if(indexes != null) {
@@ -91,6 +106,7 @@ public class CDefinition {
 		return indexesIndexedByFields.get(key);
 	}
 
+	@JsonIgnore
 	public List<CIndex> getIndexesAsList(){
 		List<CIndex> ret = Lists.newArrayList();
 		for(String key: this.indexes.keySet()){

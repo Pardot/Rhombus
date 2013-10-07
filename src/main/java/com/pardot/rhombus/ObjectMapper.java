@@ -99,6 +99,20 @@ public class ObjectMapper implements CObjectShardList {
 				}
 			}
 		}
+
+		//Now make the keyspace definitions table and insert this initial keyspace definition into cassandra
+		try{
+			CQLStatementIterator it = cqlGenerator.makeCQLforCreateKeyspaceDefinitionsTable();
+			executeStatements(it);
+			org.codehaus.jackson.map.ObjectMapper om = new org.codehaus.jackson.map.ObjectMapper();
+			String keyspaceDefinitionAsJson = om.writeValueAsString(keyspaceDefinition);
+			it = cqlGenerator.makeCQLforInsertKeyspaceDefinition(keyspaceDefinitionAsJson);
+			executeStatements(it);
+		}
+		catch(Exception e) {
+			logger.debug("upload new keyspace definition");
+		}
+
 	}
 
 	public UUID getTimeUUIDAtEndOfConsistencyHorizion(){

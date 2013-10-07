@@ -4,6 +4,13 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.shardingstrategy.TimebasedShardingStrategy;
+import com.pardot.rhombus.util.MapToListSerializer;
+import com.pardot.rhombus.util.ShardStrategyDeserializer;
+import com.pardot.rhombus.util.ShardStrategySerializer;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.annotate.JsonDeserialize;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import java.util.*;
 
@@ -16,6 +23,9 @@ public class CIndex {
 
 	private String key;
 	private List<String> compositeKeyList;
+
+	@JsonSerialize(using = ShardStrategySerializer.class)
+	@JsonProperty
 	private TimebasedShardingStrategy shardingStrategy;
 
 	public CIndex() {
@@ -65,6 +75,7 @@ public class CIndex {
 		this.shardingStrategy = shardingStrategy;
 	}
 
+	@JsonIgnore
 	public String getName() {
 		return getKey();
 	}
@@ -80,10 +91,12 @@ public class CIndex {
 		this.key = Joiner.on(":").join(listtoset);
 	}
 
+	@JsonIgnore
 	public List<String> getCompositeKeyList() {
 		return compositeKeyList;
 	}
 
+	@JsonIgnore
 	public List<Object> getIndexValues(Map<String,Object> allValues){
 		List<Object> ret = Lists.newArrayList();
 		for(String key : compositeKeyList){
@@ -92,6 +105,7 @@ public class CIndex {
 		return ret;
 	}
 
+	@JsonIgnore
 	public SortedMap<String,Object> getIndexKeyAndValues(Map<String,Object> allValues){
 		SortedMap<String,Object> ret = Maps.newTreeMap();
 		for(String key : compositeKeyList){
