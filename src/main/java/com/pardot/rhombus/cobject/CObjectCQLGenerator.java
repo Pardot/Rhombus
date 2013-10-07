@@ -5,6 +5,7 @@ import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Using;
 import com.datastax.driver.core.utils.UUIDs;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -104,10 +105,8 @@ public class CObjectCQLGenerator {
 	 *
 	 * @return Iterator of CQL statements that need to be executed for this task.
 	 */
-	public CQLStatementIterator makeCQLforCreateKeyspaceDefinitionsTable(){
-		ArrayList<CQLStatement> ret = Lists.newArrayList();
-		ret.add(CQLStatement.make(TEMPLATE_CREATE_KEYSPACE_LIST));
-		return new BoundedCQLStatementIterator(ret);
+	public CQLStatement makeCQLforCreateKeyspaceDefinitionsTable(){
+		return CQLStatement.make(TEMPLATE_CREATE_KEYSPACE_LIST);
 	}
 
 	/**
@@ -558,7 +557,7 @@ public class CObjectCQLGenerator {
 		String tableName = makeTableName(def,null);
 		String indexValuesAsJson;
 		try{
-			org.codehaus.jackson.map.ObjectMapper om = new org.codehaus.jackson.map.ObjectMapper();
+			ObjectMapper om = new ObjectMapper();
 			indexValuesAsJson = om.writeValueAsString(indexvalues);
 		}
 		catch (Exception e){

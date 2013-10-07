@@ -1,5 +1,6 @@
 package com.pardot.rhombus.cobject.shardingstrategy;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 

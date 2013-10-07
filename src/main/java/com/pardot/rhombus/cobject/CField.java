@@ -2,10 +2,9 @@ package com.pardot.rhombus.cobject;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.pardot.rhombus.util.CDataTypeSerializer;
-import com.pardot.rhombus.util.CDefinitionListSerializer;
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.math.BigInteger;
 import java.util.Date;
