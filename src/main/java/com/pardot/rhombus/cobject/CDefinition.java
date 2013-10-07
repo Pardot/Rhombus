@@ -34,7 +34,6 @@ public class CDefinition {
 	@JsonIgnore
 	private SortedMap<String, CIndex> indexesIndexedByFields;
 
-	@JsonIgnore
 	private boolean allowNullPrimaryKeyInserts = false;
 
 	public CDefinition(){
