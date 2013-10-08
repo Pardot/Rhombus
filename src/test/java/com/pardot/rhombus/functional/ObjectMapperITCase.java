@@ -33,14 +33,13 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		ConnectionManager cm = getConnectionManager();
 
 		//Build our keyspace definition object
-		String json = TestHelpers.readFileToString(this.getClass(), "CKeyspaceTestData.js");
-		CKeyspaceDefinition definition = CKeyspaceDefinition.fromJsonString(json);
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
 		assertNotNull(definition);
 
 		//Rebuild the keyspace and get the object mapper
 		cm.buildKeyspace(definition, true);
 		cm.setDefaultKeyspace(definition);
-		ObjectMapper om = cm.getObjectMapper();
+		ObjectMapper om = cm.getObjectMapper(definition.getName());
 
 		//Get a test object to insert
 		Map<String, Object> testObject = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), definition.getDefinitions().get("testtype"));
@@ -239,8 +238,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//Rebuild the keyspace and get the object mapper
 		cm.buildKeyspace(definition, true);
 		logger.debug("Built keyspace: {}", definition.getName());
-		cm.setDefaultKeyspace(definition);
-		ObjectMapper om = cm.getObjectMapper();
+		ObjectMapper om = cm.getObjectMapper(definition.getName());
 		om.setLogCql(true);
 
 		//Insert our test data

@@ -35,28 +35,31 @@ public class CObjectCQLGenerator {
 
 	protected static final String TEMPLATE_CREATE_STATIC = "CREATE TABLE \"%s\" (id timeuuid PRIMARY KEY, %s);";
 	protected static final String TEMPLATE_CREATE_WIDE = "CREATE TABLE \"%s\" (id timeuuid, shardid bigint, %s, PRIMARY KEY ((shardid, %s),id) );";
+	protected static final String TEMPLATE_CREATE_KEYSPACE_LIST = "CREATE TABLE \"__keyspace_definitions\" (id timeuuid, shardid bigint, def varchar, PRIMARY KEY ((shardid),id) );";
 	protected static final String TEMPLATE_CREATE_WIDE_INDEX = "CREATE TABLE \"%s\" (shardid bigint, tablename varchar, indexvalues varchar, targetrowkey varchar, PRIMARY KEY ((tablename, indexvalues),shardid) );";
 	protected static final String TEMPLATE_CREATE_INDEX_UPDATES = "CREATE TABLE \"__index_updates\" (id timeuuid, statictablename varchar, instanceid timeuuid, indexvalues varchar, PRIMARY KEY ((statictablename,instanceid),id))";
 	protected static final String TEMPLATE_DROP = "DROP TABLE %s.\"%s\";";
 	protected static final String TEMPLATE_INSERT_STATIC = "INSERT INTO %s.\"%s\" (%s) VALUES (%s)%s;";//"USING TIMESTAMP %s%s;";//Add back when timestamps become preparable
 	protected static final String TEMPLATE_INSERT_WIDE = "INSERT INTO %s.\"%s\" (%s) VALUES (%s)%s;";//"USING TIMESTAMP %s%s;";//Add back when timestamps become preparable
+	protected static final String TEMPLATE_INSERT_KEYSPACE = "INSERT INTO %s.\"__keyspace_definitions\" (id, shardid, def) values (?, ?, ?);";
 	protected static final String TEMPLATE_INSERT_WIDE_INDEX = "INSERT INTO %s.\"%s\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);";//"USING TIMESTAMP %s;";//Add back when timestamps become preparable
 	protected static final String TEMPLATE_INSERT_INDEX_UPDATES = "INSERT INTO %s.\"__index_updates\" (id, statictablename, instanceid, indexvalues) values (?, ?, ?, ?);";
 	protected static final String TEMPLATE_SELECT_STATIC = "SELECT * FROM %s.\"%s\" WHERE %s;";
 	protected static final String TEMPLATE_SELECT_WIDE = "SELECT * FROM %s.\"%s\" WHERE shardid = %s AND %s ORDER BY id %s %s ALLOW FILTERING;";
+	protected static final String TEMPLATE_SELECT_KEYSPACES = "SELECT * FROM %s.\"__keyspace_definitions\" WHERE shardid = 1 ORDER BY id;";
 	protected static final String TEMPLATE_SELECT_WIDE_INDEX = "SELECT shardid FROM %s.\"%s\" WHERE tablename = ? AND indexvalues = ?%s ORDER BY shardid %s ALLOW FILTERING;";
 	protected static final String TEMPLATE_DELETE = "DELETE FROM %s.%s WHERE %s;";//"DELETE FROM %s USING TIMESTAMP %s WHERE %s;"; //Add back when timestamps become preparable
 	protected static final String TEMPLATE_DELETE_OBSOLETE_UPDATE_INDEX_COLUMN = "DELETE FROM %s.\"__index_updates\" WHERE  statictablename = ? and instanceid = ? and id = ?";
 	protected static final String TEMPLATE_SELECT_FIRST_ELIGIBLE_INDEX_UPDATE = "SELECT statictablename,instanceid FROM %s.\"__index_updates\" WHERE id < ? limit 1 allow filtering;";
 	protected static final String TEMPLATE_SELECT_NEXT_ELIGIBLE_INDEX_UPDATE = "SELECT statictablename,instanceid FROM %s.\"__index_updates\" where token(statictablename,instanceid) > token(?,?) and id < ? limit 1 allow filtering;";
 	protected static final String TEMPLATE_SELECT_ROW_INDEX_UPDATE = "SELECT * FROM %s.\"__index_updates\" where statictablename = ? and instanceid = ? order by id DESC;";
-    protected static final String TEMPLATE_SET_COMPACTION_LEVELED = "ALTER TABLE %s.\"%s\" WITH compaction = { 'class' :  'LeveledCompactionStrategy',  'sstable_size_in_mb' : %d }";
-    protected static final String TEMPLATE_SET_COMPACTION_TIERED = "ALTER TABLE %s.\"%s\" WITH compaction = { 'class' :  'SizeTieredCompactionStrategy',  'min_threshold' : %d }";
+	protected static final String TEMPLATE_SET_COMPACTION_LEVELED = "ALTER TABLE %s.\"%s\" WITH compaction = { 'class' :  'LeveledCompactionStrategy',  'sstable_size_in_mb' : %d }";
+	protected static final String TEMPLATE_SET_COMPACTION_TIERED = "ALTER TABLE %s.\"%s\" WITH compaction = { 'class' :  'SizeTieredCompactionStrategy',  'min_threshold' : %d }";
 
 	protected Map<String, CDefinition> definitions;
 	protected CObjectShardList shardList;
 	private Integer consistencyHorizon;
-    private String keyspace;
+	private String keyspace;
 
 	/**
 	 * Single Param constructor, mostly for testing convenience. Use the other constructor.
@@ -64,8 +67,8 @@ public class CObjectCQLGenerator {
 	public CObjectCQLGenerator(String keyspace, Integer consistencyHorizon){
 		this.definitions = Maps.newHashMap();
 		this.consistencyHorizon = consistencyHorizon;
-	    this.keyspace = keyspace;
-    }
+		this.keyspace = keyspace;
+	}
 
 
 	/**
@@ -100,6 +103,14 @@ public class CObjectCQLGenerator {
 
 	/**
 	 *
+	 * @return Iterator of CQL statements that need to be executed for this task.
+	 */
+	public CQLStatement makeCQLforCreateKeyspaceDefinitionsTable(){
+		return CQLStatement.make(TEMPLATE_CREATE_KEYSPACE_LIST);
+	}
+
+	/**
+	 *
 	 * @param objType - The name of the Object type aka CDefinition.name
 	 * @return Iterator of CQL statements that need to be executed for this task.
 	 */
@@ -117,6 +128,17 @@ public class CObjectCQLGenerator {
 	@NotNull
 	public CQLStatementIterator makeCQLforInsert(String objType, Map<String,Object> data) throws CQLGenerationException {
 		return makeCQLforInsert(this.keyspace, this.definitions.get(objType), data);
+	}
+
+	/**
+	 *
+	 * @param keyspaceDefinition - The JSON keyspace definition
+	 * @return Iterator of CQL statements that need to be executed for this task.
+	 * @throws CQLGenerationException
+	 */
+	@NotNull
+	public CQLStatementIterator makeCQLforInsertKeyspaceDefinition(String keyspaceDefinition) throws CQLGenerationException {
+		return makeCQLforInsertKeyspaceDefinition(this.keyspace,keyspaceDefinition,UUIDs.timeBased());
 	}
 
 	/**
@@ -198,6 +220,14 @@ public class CObjectCQLGenerator {
 	 */
 	public CQLStatementIterator makeCQLforGet(String objType, SortedMap<String,Object> indexkeys, CObjectOrdering ordering, Long starttimestamp, Long endtimestamp, Long limit) throws CQLGenerationException {
 		return makeCQLforGet(this.keyspace, this.shardList, this.definitions.get(objType), indexkeys,ordering, starttimestamp, endtimestamp, limit);
+	}
+
+	/**
+	 *
+	 * @return an iterator for getting all the keyspace definitions
+	 */
+	public CQLStatementIterator makeCQLforGetKeyspaceDefinitions(){
+		return makeCQLforGetKeyspaceDefinitions(this.keyspace);
 	}
 
 	/**
@@ -527,7 +557,7 @@ public class CObjectCQLGenerator {
 		String tableName = makeTableName(def,null);
 		String indexValuesAsJson;
 		try{
-			org.codehaus.jackson.map.ObjectMapper om = new org.codehaus.jackson.map.ObjectMapper();
+			ObjectMapper om = new ObjectMapper();
 			indexValuesAsJson = om.writeValueAsString(indexvalues);
 		}
 		catch (Exception e){
@@ -564,6 +594,12 @@ public class CObjectCQLGenerator {
 				tableName
 				//timestamp.toString() //Add back timestamp when timestamps become preparable
 			),values);
+	}
+
+	protected static CQLStatementIterator makeCQLforInsertKeyspaceDefinition(@NotNull String keyspace, @NotNull String keyspaceDefinition, @NotNull UUID id) throws CQLGenerationException{
+		ArrayList<CQLStatement> ret = Lists.newArrayList();
+		ret.add(CQLStatement.make(String.format(TEMPLATE_INSERT_KEYSPACE, keyspace), Arrays.asList(id, Long.valueOf(1), keyspaceDefinition).toArray()));
+		return new BoundedCQLStatementIterator(ret);
 	}
 
 	protected static CQLStatementIterator makeCQLforInsert(@NotNull String keyspace, @NotNull CDefinition def, @NotNull Map<String,Object> data) throws CQLGenerationException{
@@ -638,6 +674,12 @@ public class CObjectCQLGenerator {
 		Object[] values = {key};
 		CQLStatement statement = CQLStatement.make(String.format(TEMPLATE_SELECT_STATIC, keyspace, def.getName(),"id = ?"), values);
 		return new BoundedCQLStatementIterator(Lists.newArrayList(statement));
+	}
+
+	public static CQLStatementIterator makeCQLforGetKeyspaceDefinitions(String keyspace){
+		ArrayList<CQLStatement> ret = Lists.newArrayList();
+		ret.add(CQLStatement.make(String.format(TEMPLATE_SELECT_KEYSPACES, keyspace)));
+		return new BoundedCQLStatementIterator(ret);
 	}
 
 	@NotNull

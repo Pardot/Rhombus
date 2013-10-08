@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.shardingstrategy.TimebasedShardingStrategy;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.*;
 
@@ -16,6 +17,7 @@ public class CIndex {
 
 	private String key;
 	private List<String> compositeKeyList;
+
 	private TimebasedShardingStrategy shardingStrategy;
 
 	public CIndex() {
@@ -50,7 +52,7 @@ public class CIndex {
 
 	public boolean areValuesAssociatedWithIndex(Map<String,Object> values){
 		for(String key: compositeKeyList){
-			if(values.get(key) != null){
+			if(values.containsKey(key)){
 				return true;
 			}
 		}
@@ -65,6 +67,7 @@ public class CIndex {
 		this.shardingStrategy = shardingStrategy;
 	}
 
+	@JsonIgnore
 	public String getName() {
 		return getKey();
 	}
@@ -80,10 +83,12 @@ public class CIndex {
 		this.key = Joiner.on(":").join(listtoset);
 	}
 
+	@JsonIgnore
 	public List<String> getCompositeKeyList() {
 		return compositeKeyList;
 	}
 
+	@JsonIgnore
 	public List<Object> getIndexValues(Map<String,Object> allValues){
 		List<Object> ret = Lists.newArrayList();
 		for(String key : compositeKeyList){
@@ -92,6 +97,7 @@ public class CIndex {
 		return ret;
 	}
 
+	@JsonIgnore
 	public SortedMap<String,Object> getIndexKeyAndValues(Map<String,Object> allValues){
 		SortedMap<String,Object> ret = Maps.newTreeMap();
 		for(String key : compositeKeyList){

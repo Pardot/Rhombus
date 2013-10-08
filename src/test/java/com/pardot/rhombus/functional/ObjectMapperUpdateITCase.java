@@ -1,15 +1,11 @@
 package com.pardot.rhombus.functional;
 
 
-import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.Criteria;
 import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
-import com.pardot.rhombus.cobject.IndexUpdateRow;
-import com.pardot.rhombus.helpers.TestHelpers;
 import com.pardot.rhombus.util.JsonUtil;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -17,13 +13,88 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 
 	private static Logger logger = LoggerFactory.getLogger(ObjectMapperUpdateITCase.class);
 
+
+	@Test
+	public void simpleTestNullIndexValues() throws Exception {
+		String objectType = "simple";
+		String index1Value = "value1";
+		String index2Value = "value2";
+
+		logger.debug("Starting testNullIndexValues");
+
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+		cm.setLogCql(true);
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "SimpleKeyspace.js");
+		assertNotNull(definition);
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, true);
+		logger.debug("Built keyspace: {}", definition.getName());
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper();
+		om.setLogCql(true);
+
+		List<Map<String, Object>> values = this.getNValues(1, index1Value, index2Value);
+		UUID id = om.insert(objectType, values.get(0));
+
+		//Get back the data and make sure things match
+		Map<String, Object> result = om.getByKey(objectType, id);
+		assertEquals(index1Value, result.get("index_1"));
+		assertEquals(index2Value, result.get("index_2"));
+		assertEquals("0", result.get("value"));
+
+		//Update the object
+		Map<String, Object> updates = Maps.newHashMap();
+		updates.put("index_2", null);
+		om.update(objectType, id, updates);
+
+		//Get it back by id
+		result = om.getByKey(objectType, id);
+		assertEquals("0", result.get("value"));
+		assertNull(result.get("index_2"));
+
+		//Query back the data by first index
+		Criteria criteria = new Criteria();
+		SortedMap<String, Object> indexKeys = new TreeMap<String, Object>();
+		indexKeys.put("index_1", "value1");
+		criteria.setIndexKeys(indexKeys);
+		criteria.setOrdering("DESC");
+		criteria.setLimit(50l);
+		List<Map<String, Object>> dbObjects = om.list(objectType, criteria);
+		assertEquals(1, dbObjects.size());
+		assertEquals(null, dbObjects.get(0).get("index_2"));
+
+		//Query back the data by second index
+		criteria = new Criteria();
+		indexKeys = new TreeMap<String, Object>();
+		indexKeys.put("index_2", "value2");
+		criteria.setIndexKeys(indexKeys);
+		criteria.setOrdering("DESC");
+		criteria.setLimit(50l);
+		dbObjects = om.list(objectType, criteria);
+		assertEquals(0, dbObjects.size());
+	}
+
+	private List<Map<String, Object>> getNValues(int number, String index1Value, String index2Value) {
+		List<Map<String, Object>> values = new ArrayList<Map<String, Object>>();
+		for(int i = 0 ; i < number ; i++) {
+			Map<String, Object> value = Maps.newHashMap();
+			value.put("index_1", index1Value);
+			value.put("index_2", index2Value);
+			value.put("value", String.valueOf(i));
+			values.add(value);
+		}
+		return values;
+	}
 
 	@Test
 	public void testNullIndexValues() throws Exception {

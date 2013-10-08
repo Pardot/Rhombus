@@ -77,6 +77,14 @@ public class ObjectMapper implements CObjectShardList {
 		catch(Exception e) {
 			logger.debug("Unable to create update index table. It may already exist");
 		}
+		//Next build the Keyspace Definition storage table index
+		cql = cqlGenerator.makeCQLforCreateKeyspaceDefinitionsTable();
+		try{
+			cqlExecutor.executeSync(cql);
+		}
+		catch(Exception e) {
+			logger.debug("Unable to create keyspace definitions table. It may already exist");
+		}
 		//Now build the tables for each object if the definition contains tables
 		if(keyspaceDefinition.getDefinitions() != null) {
 			for(CDefinition definition : keyspaceDefinition.getDefinitions().values()) {
@@ -99,6 +107,18 @@ public class ObjectMapper implements CObjectShardList {
 				}
 			}
 		}
+
+		//Now insert this initial keyspace definition into cassandra
+		try{
+			com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+			String keyspaceDefinitionAsJson = om.writeValueAsString(keyspaceDefinition);
+			CQLStatementIterator it = cqlGenerator.makeCQLforInsertKeyspaceDefinition(keyspaceDefinitionAsJson);
+			executeStatements(it);
+		}
+		catch(Exception e) {
+			logger.debug("Could not upload new keyspace definition");
+		}
+
 	}
 
 	public UUID getTimeUUIDAtEndOfConsistencyHorizion(){
@@ -317,7 +337,7 @@ public class ObjectMapper implements CObjectShardList {
 	}
 
 	protected SortedMap<String,Object> unpackIndexValuesFromJson(CDefinition def, String json) throws IOException, JsonMappingException {
-		org.codehaus.jackson.map.ObjectMapper om = new org.codehaus.jackson.map.ObjectMapper();
+		com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
 		TreeMap<String,Object> jsonMap = om.readValue(json, TreeMap.class);
 		return JsonUtil.rhombusMapFromJsonMap(jsonMap,def);
 	}

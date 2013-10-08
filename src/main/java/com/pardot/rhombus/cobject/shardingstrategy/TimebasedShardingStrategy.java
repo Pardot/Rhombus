@@ -1,6 +1,7 @@
 package com.pardot.rhombus.cobject.shardingstrategy;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.Range;
@@ -19,8 +20,8 @@ import java.util.UUID;
 		include = JsonTypeInfo.As.PROPERTY,
 		property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = ShardingStrategyDaily.class, name = "ShardingStrategyDaily"),
-        @JsonSubTypes.Type(value = ShardingStrategyWeekly.class, name = "ShardingStrategyWeekly"),
+		@JsonSubTypes.Type(value = ShardingStrategyDaily.class, name = "ShardingStrategyDaily"),
+		@JsonSubTypes.Type(value = ShardingStrategyWeekly.class, name = "ShardingStrategyWeekly"),
 		@JsonSubTypes.Type(value = ShardingStrategyMonthly.class, name = "ShardingStrategyMonthly"),
 		@JsonSubTypes.Type(value = ShardingStrategyNone.class, name = "ShardingStrategyNone")
 })
@@ -29,6 +30,7 @@ public abstract class TimebasedShardingStrategy {
 
 	public static long START_YEAR = 2000;
 
+	@JsonIgnore
 	protected long offset = 0;
 
 	public TimebasedShardingStrategy(){
@@ -38,10 +40,12 @@ public abstract class TimebasedShardingStrategy {
 		this.offset = offset;
 	}
 
+	@JsonIgnore
 	public long getShardKey(UUID uuid){
 		return getShardKey(UUIDs.unixTimestamp(uuid));
 	}
 
+	@JsonIgnore
 	public abstract long getShardKey(long timestamp);
 
 	public long getOffset() {
@@ -52,6 +56,7 @@ public abstract class TimebasedShardingStrategy {
 		this.offset = offset;
 	}
 
+	@JsonIgnore
 	public Range<Long> getShardKeyRange(Long timestampStart, Long timestampEnd) throws ShardStrategyException {
 
 		if(timestampStart == null){
