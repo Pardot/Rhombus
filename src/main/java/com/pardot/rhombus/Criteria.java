@@ -39,9 +39,13 @@ public class Criteria {
 	}
 
 	private String uuidToDateString(UUID uuid) {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd:HH:mm:ss.sss");
-		Date date = new Date(UUIDs.unixTimestamp(uuid));
-		return sdf.format(date);
+		if(uuid == null) {
+			return null;
+		} else {
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd:HH:mm:ss.sss");
+			Date date = new Date(UUIDs.unixTimestamp(uuid));
+			return sdf.format(date);
+		}
 	}
 	public SortedMap<String, Object> getIndexKeys() {
 		return indexKeys;
