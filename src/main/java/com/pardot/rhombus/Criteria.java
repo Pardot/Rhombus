@@ -42,7 +42,7 @@ public class Criteria {
 		if(uuid == null) {
 			return null;
 		} else {
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd:HH:mm:ss.sss");
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd:HH:mm:ssZ");
 			Date date = new Date(UUIDs.unixTimestamp(uuid));
 			return sdf.format(date);
 		}
