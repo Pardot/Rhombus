@@ -6,6 +6,8 @@ import com.pardot.rhombus.cobject.CObjectOrdering;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.SortedMap;
 import java.util.UUID;
 
@@ -29,13 +31,18 @@ public class Criteria {
 		return Objects.toStringHelper(this.getClass())
 				.add("indexKeys", indexKeys)
 				.add("ordering", ordering)
-				.add("startTimestamp", startUuid)
-				.add("endTimestamp", endUuid)
+				.add("startTimestamp", uuidToDateString(startUuid))
+				.add("endTimestamp", uuidToDateString(endUuid))
 				.add("limit", limit)
 				.add("inclusive", inclusive)
 				.toString();
 	}
 
+	private String uuidToDateString(UUID uuid) {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd:HH:mm:ss.sss");
+		Date date = new Date(UUIDs.unixTimestamp(uuid));
+		return sdf.format(date);
+	}
 	public SortedMap<String, Object> getIndexKeys() {
 		return indexKeys;
 	}
