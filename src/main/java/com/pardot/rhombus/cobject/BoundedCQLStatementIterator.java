@@ -1,5 +1,7 @@
 package com.pardot.rhombus.cobject;
 
+import com.google.common.collect.Lists;
+
 import java.util.List;
 import java.util.Iterator;
 
@@ -16,6 +18,21 @@ public class BoundedCQLStatementIterator implements CQLStatementIterator {
 	public BoundedCQLStatementIterator(List<CQLStatement> CQLStatements){
 		this.size = (long)CQLStatements.size();
 		this.statementIterator = CQLStatements.iterator();
+	}
+
+	public static BoundedCQLStatementIterator condenseIterators(List<CQLStatementIterator> statementIterators) throws CQLGenerationException {
+		List<CQLStatement> ret = Lists.newArrayList();
+		for(CQLStatementIterator it: statementIterators){
+			if(it.isBounded()){
+				while(it.hasNext()){
+					ret.add(it.next());
+				}
+			}
+			else{
+				throw new CQLGenerationException("Cannot Condense Unbounded Statement Iterators");
+			}
+		}
+		return new BoundedCQLStatementIterator(ret);
 	}
 
 	@Override

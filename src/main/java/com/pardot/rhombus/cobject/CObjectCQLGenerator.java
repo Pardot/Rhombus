@@ -507,7 +507,7 @@ public class CObjectCQLGenerator {
 		return ret;
 	}
 
-	protected static CQLStatementIterator makeCQLforCreate(CDefinition def){
+	public static CQLStatementIterator makeCQLforCreate(CDefinition def){
 		List<CQLStatement> ret = Lists.newArrayList();
 		ret.add(makeStaticTableCreate(def));
 		if(def.getIndexes() != null) {
@@ -596,7 +596,7 @@ public class CObjectCQLGenerator {
 			),values);
 	}
 
-	protected static CQLStatementIterator makeCQLforInsertKeyspaceDefinition(@NotNull String keyspace, @NotNull String keyspaceDefinition, @NotNull UUID id) throws CQLGenerationException{
+	public static CQLStatementIterator makeCQLforInsertKeyspaceDefinition(@NotNull String keyspace, @NotNull String keyspaceDefinition, @NotNull UUID id) throws CQLGenerationException{
 		ArrayList<CQLStatement> ret = Lists.newArrayList();
 		ret.add(CQLStatement.make(String.format(TEMPLATE_INSERT_KEYSPACE, keyspace), Arrays.asList(id, Long.valueOf(1), keyspaceDefinition).toArray()));
 		return new BoundedCQLStatementIterator(ret);
