@@ -46,7 +46,7 @@ public class CObjectCQLGenerator {
 	protected static final String TEMPLATE_INSERT_INDEX_UPDATES = "INSERT INTO %s.\"__index_updates\" (id, statictablename, instanceid, indexvalues) values (?, ?, ?, ?);";
 	protected static final String TEMPLATE_SELECT_STATIC = "SELECT * FROM %s.\"%s\" WHERE %s;";
 	protected static final String TEMPLATE_SELECT_WIDE = "SELECT * FROM %s.\"%s\" WHERE shardid = %s AND %s ORDER BY id %s %s ALLOW FILTERING;";
-	protected static final String TEMPLATE_SELECT_KEYSPACES = "SELECT * FROM %s.\"__keyspace_definitions\" WHERE shardid = 1 ORDER BY id;";
+	protected static final String TEMPLATE_SELECT_KEYSPACES = "SELECT * FROM %s.\"__keyspace_definitions\" WHERE shardid = 1 ORDER BY id DESC;";
 	protected static final String TEMPLATE_SELECT_WIDE_INDEX = "SELECT shardid FROM %s.\"%s\" WHERE tablename = ? AND indexvalues = ?%s ORDER BY shardid %s ALLOW FILTERING;";
 	protected static final String TEMPLATE_DELETE = "DELETE FROM %s.%s WHERE %s;";//"DELETE FROM %s USING TIMESTAMP %s WHERE %s;"; //Add back when timestamps become preparable
 	protected static final String TEMPLATE_DELETE_OBSOLETE_UPDATE_INDEX_COLUMN = "DELETE FROM %s.\"__index_updates\" WHERE  statictablename = ? and instanceid = ? and id = ?";
@@ -226,7 +226,7 @@ public class CObjectCQLGenerator {
 	 *
 	 * @return an iterator for getting all the keyspace definitions
 	 */
-	public CQLStatementIterator makeCQLforGetKeyspaceDefinitions(){
+	public CQLStatement makeCQLforGetKeyspaceDefinitions(){
 		return makeCQLforGetKeyspaceDefinitions(this.keyspace);
 	}
 
@@ -676,10 +676,8 @@ public class CObjectCQLGenerator {
 		return new BoundedCQLStatementIterator(Lists.newArrayList(statement));
 	}
 
-	public static CQLStatementIterator makeCQLforGetKeyspaceDefinitions(String keyspace){
-		ArrayList<CQLStatement> ret = Lists.newArrayList();
-		ret.add(CQLStatement.make(String.format(TEMPLATE_SELECT_KEYSPACES, keyspace)));
-		return new BoundedCQLStatementIterator(ret);
+	public static CQLStatement makeCQLforGetKeyspaceDefinitions(String keyspace){
+		return CQLStatement.make(String.format(TEMPLATE_SELECT_KEYSPACES, keyspace));
 	}
 
 	@NotNull

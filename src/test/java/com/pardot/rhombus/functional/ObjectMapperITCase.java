@@ -7,7 +7,10 @@ import com.google.common.collect.Maps;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.Criteria;
 import com.pardot.rhombus.ObjectMapper;
+import com.pardot.rhombus.cobject.CDefinition;
+import com.pardot.rhombus.cobject.CIndex;
 import com.pardot.rhombus.cobject.IndexUpdateRow;
+import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
 import com.pardot.rhombus.helpers.TestHelpers;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
 import com.pardot.rhombus.util.JsonUtil;
@@ -345,6 +348,80 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		criteria.setLimit(50L);
 		List<Map<String, Object>> results = om.list("object1", criteria);
 		assertEquals(3, results.size());
+	}
+
+
+	@Test
+	public void testKeyspaceDefinitionMigration() throws Exception {
+		CKeyspaceDefinition OldKeyspaceDefinition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
+		CKeyspaceDefinition NewKeyspaceDefinition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
+		//add a new index to existing object
+		CIndex newIndex1 = new CIndex();
+		newIndex1.setKey("data1:data2");
+		newIndex1.setShardingStrategy(new ShardingStrategyNone());
+		NewKeyspaceDefinition.getDefinitions().get("testtype").getIndexes().put(newIndex1.getName(), newIndex1);
+		//add new object
+		CDefinition NewObjectDefinition = JsonUtil.objectFromJsonResource(CDefinition.class, this.getClass().getClassLoader(), "MigrationTestCDefinition.js");
+		NewKeyspaceDefinition.getDefinitions().put(NewObjectDefinition.getName(),NewObjectDefinition);
+
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(OldKeyspaceDefinition, true);
+		ObjectMapper om = cm.getObjectMapper(OldKeyspaceDefinition.getName());
+
+		//insert some data
+		//Get a test object to insert
+		Map<String, Object> testObject = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), OldKeyspaceDefinition.getDefinitions().get("testtype"));
+		UUID key = om.insert("testtype", testObject);
+
+		//Query to get back the object from the database
+		Map<String, Object> dbObject = om.getByKey("testtype", key);
+		for(String dbKey : dbObject.keySet()) {
+			//Verify that everything but the key is the same
+			if(!dbKey.equals("id")) {
+				assertEquals(testObject.get(dbKey), dbObject.get(dbKey));
+			}
+		}
+
+		//run the migration grabbing a brand new object mapper
+		cm = getConnectionManager();
+		om = cm.getObjectMapper(OldKeyspaceDefinition.getName());
+		om.runMigration(NewKeyspaceDefinition);
+
+		//now query out some data grabbing a brand new object mapper
+		cm = getConnectionManager();
+		om = cm.getObjectMapper(NewKeyspaceDefinition.getName());
+
+		//now insert some stuff into the newly added object and indexes
+		testObject = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), OldKeyspaceDefinition.getDefinitions().get("testtype"));
+		om.insert("testtype", testObject);
+
+
+		testObject = Maps.newHashMap();
+		testObject.put("index_1", "one");
+		testObject.put("index_2", "two");
+		testObject.put("value", "three");
+		key = om.insert("simple", testObject);
+
+		//Query to get back the object from the database
+		//Query by foreign key
+		Criteria criteria = new Criteria();
+		SortedMap<String, Object> indexValues = Maps.newTreeMap();
+		indexValues.put("data1", "This is data one");
+		indexValues.put("data2", "This is data two");
+		criteria.setIndexKeys(indexValues);
+		List<Map<String, Object>> results = om.list("testtype", criteria);
+		assertEquals(777L,results.get(0).get("foreignid"));
+		assertEquals("This is data one",results.get(0).get("data1"));
+
+		Map<String,Object> result = om.getByKey("simple", key);
+		assertEquals("one",result.get("index_1"));
+		assertEquals("two",result.get("index_2"));
+		assertEquals("three",result.get("value"));
+
+
 	}
 
 }

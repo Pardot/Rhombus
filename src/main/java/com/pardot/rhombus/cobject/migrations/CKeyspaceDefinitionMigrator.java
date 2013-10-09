@@ -21,6 +21,10 @@ public class CKeyspaceDefinitionMigrator {
 	}
 
 	public boolean isMigratable(){
+		//make sure we keep the same name
+		if(!OldKeyspace.getName().equals(NewKeyspace.getName())){
+			return false;
+		}
 		//currently we support adding new objects and migrating old objects
 		for(CDefinition def : NewKeyspace.getDefinitions().values()){
 			if(OldKeyspace.getDefinitions().containsKey(def.getName())){

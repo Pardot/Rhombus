@@ -114,13 +114,10 @@ public class ConnectionManager {
 
 	public CKeyspaceDefinition hydrateLatestKeyspaceDefinitionFromCassandra(String keyspaceName, Session session){
 		try{
-			CQLStatementIterator cql = CObjectCQLGenerator.makeCQLforGetKeyspaceDefinitions(keyspaceName);
+			CQLStatement cql = CObjectCQLGenerator.makeCQLforGetKeyspaceDefinitions(keyspaceName);
 			CQLExecutor executor = new CQLExecutor(session, false, null);
-			while(cql.hasNext()){
-				CQLStatement statement = cql.next();
-				com.datastax.driver.core.ResultSet r = executor.executeSync(statement);
-				return CKeyspaceDefinition.fromJsonString(r.one().getString("def"));
-			}
+			com.datastax.driver.core.ResultSet r = executor.executeSync(cql);
+			return CKeyspaceDefinition.fromJsonString(r.one().getString("def"));
 		}
 		catch(Exception e){
 			logger.error("Unable to hydrate keyspace definition from cassandra");

@@ -10,6 +10,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.*;
 import com.pardot.rhombus.cobject.async.StatementIteratorConsumer;
+import com.pardot.rhombus.cobject.migrations.CKeyspaceDefinitionMigrator;
+import com.pardot.rhombus.cobject.migrations.CObjectMigrationException;
 import com.pardot.rhombus.util.JsonUtil;
 import com.yammer.metrics.*;
 import com.yammer.metrics.core.*;
@@ -402,6 +404,27 @@ public class ObjectMapper implements CObjectShardList {
 			}
 		}
 		return results;
+	}
+
+
+	public void runMigration(CKeyspaceDefinition NewKeyspaceDefinition) throws CObjectMigrationException {
+		try{
+			//grab the current keyspace definition
+			CKeyspaceDefinition OldKeyspaceDefinition = null;
+			CQLStatement cql = CObjectCQLGenerator.makeCQLforGetKeyspaceDefinitions(NewKeyspaceDefinition.getName());
+			com.datastax.driver.core.ResultSet r = cqlExecutor.executeSync(cql);
+			OldKeyspaceDefinition = CKeyspaceDefinition.fromJsonString(r.one().getString("def"));
+			if(OldKeyspaceDefinition == null){
+				throw new CObjectMigrationException("Error: Could not hydrate old keypsace definition.");
+			}
+			//we have the keyspace definitions, now run the migration
+			CKeyspaceDefinitionMigrator migrator = new CKeyspaceDefinitionMigrator(OldKeyspaceDefinition, NewKeyspaceDefinition);
+			CQLStatementIterator cqlit = migrator.getMigrationCQL();
+			executeStatements(cqlit);
+		}
+		catch(Exception e){
+			throw new CObjectMigrationException(e.getMessage());
+		}
 	}
 
 	/**
