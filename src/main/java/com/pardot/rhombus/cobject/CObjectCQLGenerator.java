@@ -815,7 +815,7 @@ public class CObjectCQLGenerator {
 		return CQLStatement.make(query);
 	}
 
-	protected static CQLStatement makeWideTableCreate(CDefinition def, CIndex index){
+	public static CQLStatement makeWideTableCreate(CDefinition def, CIndex index){
 		String query = String.format(
 			TEMPLATE_CREATE_WIDE,
 			makeTableName(def,index),

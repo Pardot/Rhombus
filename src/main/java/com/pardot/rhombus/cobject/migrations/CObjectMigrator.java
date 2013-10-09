@@ -1,6 +1,7 @@
-package com.pardot.rhombus.cobject;
+package com.pardot.rhombus.cobject.migrations;
 
 import com.google.common.collect.Lists;
+import com.pardot.rhombus.cobject.*;
 
 import java.util.List;
 

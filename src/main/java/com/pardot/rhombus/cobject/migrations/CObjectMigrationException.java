@@ -1,4 +1,4 @@
-package com.pardot.rhombus.cobject;
+package com.pardot.rhombus.cobject.migrations;
 
 /**
  * User: Rob Righter

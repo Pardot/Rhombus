@@ -1,6 +1,8 @@
 package com.pardot.rhombus;
 
 import com.pardot.rhombus.cobject.*;
+import com.pardot.rhombus.cobject.migrations.CObjectMigrationException;
+import com.pardot.rhombus.cobject.migrations.CObjectMigrator;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
 import com.pardot.rhombus.util.JsonUtil;
 import org.junit.Test;
@@ -84,6 +86,6 @@ public class CObjectMigratorTest {
 		CQLStatementIterator result = subject.getMigrationCQL();
 		assertEquals("CREATE TABLE \"simplef27e6d073810cfb7826cf964c67b383e\" (id timeuuid, shardid bigint, value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, value),id) );", result.next().getQuery());
 		assertEquals("CREATE TABLE \"simple02a6bb2fc3293d91f31c3f6ce892fedc\" (id timeuuid, shardid bigint, value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, index_1, index_2),id) );", result.next().getQuery());
-		assertEquals(false,result.hasNext());
+		assertEquals(false, result.hasNext());
 	}
 }
