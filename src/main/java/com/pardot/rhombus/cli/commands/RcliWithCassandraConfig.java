@@ -34,11 +34,15 @@ public class RcliWithCassandraConfig extends RhombusCli {
         return connectionManager;
     }
 
-    public void executeCommand(CommandLine cl){
-        super.executeCommand(cl);
+    public boolean executeCommand(CommandLine cl){
+        boolean ret = super.executeCommand(cl);
+	    if(!ret){
+		    return false;
+	    }
 
         if(!cl.hasOption("cassconfig")){
-            displayHelpMessageAndExit();
+            displayHelpMessage();
+	        return false;
         }
 
         String cassConfigFileName = cl.getOptionValue("cassconfig");
@@ -49,12 +53,12 @@ public class RcliWithCassandraConfig extends RhombusCli {
         }
         catch (Exception e){
             System.out.println("Could not parse cassandra configuration file "+cassConfigFileName);
-            System.exit(1);
+            return false;
         }
 
         if(cassConfig == null){
             System.out.println("Could not parse cassandra configuration file "+cassConfigFileName);
-            System.exit(1);
+            return false;
         }
 
         connectionManager = new ConnectionManager(cassConfig);
@@ -63,8 +67,9 @@ public class RcliWithCassandraConfig extends RhombusCli {
 
         if(connectionManager == null){
             System.out.println("Could create cassandra connection manager from file "+cassConfigFileName);
-            System.exit(1);
+            return false;
         }
+	    return true;
 
     }
 }

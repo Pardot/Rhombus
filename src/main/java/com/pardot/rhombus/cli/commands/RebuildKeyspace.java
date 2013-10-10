@@ -32,12 +32,12 @@ public class RebuildKeyspace  extends RcliWithCassandraConfig {
         return ret;
     }
 
-    public void executeCommand(CommandLine cl){
-        super.executeCommand(cl);
+    public boolean executeCommand(CommandLine cl){
+        boolean ret = super.executeCommand(cl);
 
 	    if(!(cl.hasOption("keyspacefile") || cl.hasOption("keyspaceresource"))){
-		    displayHelpMessageAndExit();
-		    return;
+		    displayHelpMessage();
+		    return false;
 	    }
 
 	    String keyspaceFileName = cl.hasOption("keyspacefile") ? cl.getOptionValue("keyspacefile") : cl.getOptionValue("keyspaceresource");
@@ -50,12 +50,12 @@ public class RebuildKeyspace  extends RcliWithCassandraConfig {
 	    }
 	    catch (IOException e){
 		    System.out.println("Could not parse keyspace file "+keyspaceFileName);
-		    System.exit(1);
+		    return false;
 	    }
 
 	    if(keyDef == null){
 		    System.out.println("Could not parse keyspace file "+keyspaceFileName);
-		    System.exit(1);
+		   return false;
 	    }
 
 	    this.keyspaceDefinition = keyDef;
@@ -64,11 +64,11 @@ public class RebuildKeyspace  extends RcliWithCassandraConfig {
 
             getConnectionManager().buildKeyspace(keyspaceDefinition,cl.hasOption("f"));
             //looks like a success. Lets go ahead and return as such
-            System.exit(0);
+            return true;
         }
         catch (Exception e){
             System.out.println("Error encountered while attempting to rebuild the keyspace");
+	        return false;
         }
-
     }
 }

@@ -51,8 +51,11 @@ public class UpdateCleaner extends RcliWithExistingKeyspace {
 		}
 	}
 
-	public void executeCommand(CommandLine cl){
-		super.executeCommand(cl);
+	public boolean executeCommand(CommandLine cl){
+		boolean ret = super.executeCommand(cl);
+		if(!ret){
+			return false;
+		}
 
 		try{
 			getConnectionManager().setDefaultKeyspace(keyspaceDefinition);
@@ -72,13 +75,19 @@ public class UpdateCleaner extends RcliWithExistingKeyspace {
 				didwork = true;
 			}
 
-			if(!didwork){
-				displayHelpMessageAndExit();
+			if(didwork){
+				return true;
 			}
+			else{
+				displayHelpMessage();
+				return false;
+			}
+
 
 		}
 		catch (IOException e){
 			System.out.println("Error encountered processing updates: " + e.getMessage());
+			return false;
 		}
 
 	}

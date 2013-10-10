@@ -36,8 +36,11 @@ public class SetCompaction extends RcliWithExistingKeyspace {
         return ret;
     }
 
-    public void executeCommand(CommandLine cl){
-        super.executeCommand(cl);
+    public boolean executeCommand(CommandLine cl){
+        boolean ret = super.executeCommand(cl);
+	    if(!ret){
+		    return false;
+	    }
 
         try{
             getConnectionManager().setDefaultKeyspace(keyspaceDefinition);
@@ -51,12 +54,14 @@ public class SetCompaction extends RcliWithExistingKeyspace {
             }
             this.objectMapper.setCompaction(strategy,options);
             //looks like a success. Lets go ahead and return as such
-            System.exit(0);
+            return true;
         }
         catch (CQLGenerationException e){
             System.out.println("Error encountered setting compaction: " + e.getMessage());
+	        return false;
         } catch (RhombusException e) {
 			System.out.println("Error encountered setting compaction: " + e.getMessage());
+	        return false;
 		}
 
 	}

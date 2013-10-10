@@ -10,19 +10,23 @@ import org.apache.commons.cli.CommandLine;
 public class PrepareInserts extends RcliWithCassandraConfig {
 
 
-    public void executeCommand(CommandLine cl){
-        super.executeCommand(cl);
+    public boolean executeCommand(CommandLine cl){
 
+	    boolean ret = super.executeCommand(cl);
+	    if(!ret){
+		    return false;
+	    }
         //now rebuild the keyspace
         try{
             getConnectionManager().setDefaultKeyspace(keyspaceDefinition);
             getConnectionManager().getObjectMapper().prePrepareInsertStatements();
             //looks like a success. Lets go ahead and return as such
-            System.exit(0);
+            return true;
         }
         catch (CQLGenerationException e){
             System.out.println(e);
             System.out.println("Error encountered while attempting to prepare the Insert Statements for the keyspace");
+	        return false;
         }
 
     }

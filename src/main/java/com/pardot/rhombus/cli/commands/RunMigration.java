@@ -33,30 +33,33 @@ public class RunMigration extends RcliWithExistingKeyspace {
 		return ret;
 	}
 
-	public void executeCommand(CommandLine cl){
-		super.executeCommand(cl);
+	public boolean executeCommand(CommandLine cl){
+		boolean ret = super.executeCommand(cl);
+		if(!ret){
+			return false;
+		}
 
 		if(!(cl.hasOption("newkeyspacefile") || cl.hasOption("newkeyspaceresource"))){
-			displayHelpMessageAndExit();
-			return;
+			displayHelpMessage();
+			return false;
 		}
 
 		String NewKeyspaceFileName = cl.hasOption("newkeyspacefile") ? cl.getOptionValue("newkeyspacefile") : cl.getOptionValue("newkeyspaceresource");
 		//make the keyspace definition
 		CKeyspaceDefinition NewkeyDef = null;
 		try{
-			NewkeyDef = cl.hasOption("keyspacefile") ?
+			NewkeyDef = cl.hasOption("newkeyspacefile") ?
 					JsonUtil.objectFromJsonFile(CKeyspaceDefinition.class, CKeyspaceDefinition.class.getClassLoader(), NewKeyspaceFileName) :
 					JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class,CKeyspaceDefinition.class.getClassLoader(), NewKeyspaceFileName);
 		}
 		catch (IOException e){
 			System.out.println("Could not parse keyspace file "+NewKeyspaceFileName);
-			System.exit(1);
+			return false;
 		}
 
 		if(NewkeyDef == null){
 			System.out.println("Could not parse keyspace file "+NewKeyspaceFileName);
-			System.exit(1);
+			return false;
 		}
 
 		//now run the migration
@@ -72,9 +75,11 @@ public class RunMigration extends RcliWithExistingKeyspace {
 				//actually run the migration
 				this.objectMapper.runMigration(NewkeyDef, true);
 			}
+			return true;
 		}
 		catch (Exception e){
 			System.out.println("Error encountered while attempting to rebuild the keyspace");
+			return false;
 		}
 
 	}

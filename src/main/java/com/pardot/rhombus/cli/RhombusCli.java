@@ -29,19 +29,29 @@ public class RhombusCli implements  RhombusCommand {
         return ret;
     }
 
-    public void executeCommand(CommandLine cl){
-
-
+    public boolean executeCommand(CommandLine cl){
+	    return true;
     }
 
-    public void displayHelpMessageAndExit(){
+    public void displayHelpMessage(){
         HelpFormatter formatter = new HelpFormatter();
         String cmdName = this.getClass().getName().replaceAll("com.pardot.rhombus.cli.commands.","");
         formatter.printHelp( "RhombusCli "+cmdName, getCommandOptions());
-        System.exit(1);
     }
 
-    public static void main( String[] args ) {
+	public static void main( String[] args ) {
+		boolean result = runit(args);
+		if(result){
+			System.out.println("Action completed Succesfully");
+			System.exit(0);
+		}
+		else{
+			System.out.println("Action was not successful");
+			System.exit(1);
+		}
+	}
+
+    public static boolean runit( String[] args ) {
         // create the parser
         CommandLineParser parser = new BasicParser();
         try {
@@ -49,7 +59,7 @@ public class RhombusCli implements  RhombusCommand {
             if( args.length == 0) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp( "RhombusCli", makeBootstrapOptions() );
-                System.exit(1);
+                return false;
             }
             //Load up the class
             //if the class name is not fully qualified we assume its in com.pardot.rhombus.cli.commands
@@ -61,7 +71,7 @@ public class RhombusCli implements  RhombusCommand {
             try{
                 RhombusCommand cmd = (RhombusCommand)(Class.forName(className)).newInstance();
                 Options commandOptions = cmd.getCommandOptions();
-                cmd.executeCommand(parser.parse( commandOptions, args ));
+                return cmd.executeCommand(parser.parse( commandOptions, args ));
             }
             catch (ClassNotFoundException e){
                 System.out.println("Could not find Command Class "+className);
@@ -77,6 +87,7 @@ public class RhombusCli implements  RhombusCommand {
             // oops, something went wrong
             System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
         }
+	    return false;
     }
 
 

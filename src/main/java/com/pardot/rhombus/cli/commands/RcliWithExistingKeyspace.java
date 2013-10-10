@@ -28,15 +28,20 @@ public class RcliWithExistingKeyspace extends RcliWithCassandraConfig {
 		return ret;
 	}
 
-	public void executeCommand(CommandLine cl){
-		super.executeCommand(cl);
+	public boolean executeCommand(CommandLine cl){
+		boolean ret = super.executeCommand(cl);
+		if(!ret){
+			return false;
+		}
 
 		if(!cl.hasOption("keyspace")){
-			displayHelpMessageAndExit();
+			displayHelpMessage();
+			return false;
 		}
 		this.keyspaceName = cl.getOptionValue("keyspace");
 		ConnectionManager cm = getConnectionManager();
 		this.objectMapper = cm.getObjectMapper(this.keyspaceName);
+		return true;
 	}
 
 }
