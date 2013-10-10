@@ -1,5 +1,6 @@
 package com.pardot.rhombus.functional;
 
+import com.datastax.driver.core.ResultSet;
 import com.google.common.collect.Lists;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.ObjectMapper;
@@ -48,6 +49,45 @@ public class RhombusCliITCase extends RhombusFunctionalTest {
 
 		String workingpath = getWorkingPath();
 
+		assertTrue(RhombusCli.runit((String[]) Arrays.asList(
+				"RebuildKeyspace",
+				"-cassconfig", workingpath + "cassandra-functional.js",
+				"-keyspacefile", workingpath + "cli-functional-keyspacedef.js",
+				"-f"
+		).toArray()));
+
+		//now verify that the keyspace was created and is working
+		ConnectionManager cm = getConnectionManager();
+		ObjectMapper om = cm.getObjectMapper("clifunctional");
+		CKeyspaceDefinition keyspace = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
+		assertEquals("clifunctional", keyspace.getName());
+		assertEquals(3, keyspace.getDefinitions().get("clitest").getFields().size());
+		assertEquals(2, keyspace.getDefinitions().get("clitest").getIndexes().size());
+
+
+		//now migrate the keyspace
+		assertTrue(RhombusCli.runit((String[]) Arrays.asList(
+				"RunMigration",
+				"-cassconfig", workingpath + "cassandra-functional.js",
+				"-newkeyspacefile", workingpath + "cli-functional-keyspacedef-migration.js",
+				"-keyspace", "clifunctional"
+		).toArray()));
+
+		//now verify that the keyspace was migrated and is working
+		cm = getConnectionManager();
+		om = cm.getObjectMapper("clifunctional");
+		keyspace = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
+		assertEquals("clifunctional", keyspace.getName());
+		assertEquals(3, keyspace.getDefinitions().get("clitest").getFields().size());
+		assertEquals(3, keyspace.getDefinitions().get("clitest").getIndexes().size());
+		assertEquals(2, keyspace.getDefinitions().get("clitest2").getIndexes().size());
+	}
+
+	@Test
+	public void testSetCompactionCLI() throws Exception {
+
+		String workingpath = getWorkingPath();
+
 		assertTrue(RhombusCli.runit((String[])Arrays.asList(
 				"RebuildKeyspace",
 				"-cassconfig", workingpath+"cassandra-functional.js",
@@ -66,20 +106,18 @@ public class RhombusCliITCase extends RhombusFunctionalTest {
 
 		//now migrate the keyspace
 		assertTrue(RhombusCli.runit((String[])Arrays.asList(
-				"RunMigration",
+				"SetCompaction",
 				"-cassconfig", workingpath+"cassandra-functional.js",
-				"-newkeyspacefile", workingpath+"cli-functional-keyspacedef-migration.js",
-				"-keyspace", "clifunctional"
+				"-keyspace", "clifunctional",
+				"-strategy", "LeveledCompactionStrategy",
+				"-sstableSize", "5",
+				"-c"
 		).toArray()));
 
 		//now verify that the keyspace was migrated and is working
-		cm = getConnectionManager();
-		om = cm.getObjectMapper("clifunctional");
-		keyspace = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
-		assertEquals("clifunctional", keyspace.getName());
-		assertEquals(3, keyspace.getDefinitions().get("clitest").getFields().size());
-		assertEquals(3, keyspace.getDefinitions().get("clitest").getIndexes().size());
-		assertEquals(2, keyspace.getDefinitions().get("clitest2").getIndexes().size());
+		//cm = getConnectionManager();
+		//ResultSet result = cm.getEmptySession().execute("describe keyspace clifunctional;");
+		//result.one();
 	}
 
 
