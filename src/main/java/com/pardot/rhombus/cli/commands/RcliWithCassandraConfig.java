@@ -42,8 +42,8 @@ public class RcliWithCassandraConfig extends RhombusCli {
         }
 
         String cassConfigFileName = cl.getOptionValue("cassconfig");
-        //make the keyspace definition
-        CassandraConfiguration cassConfig = null;
+
+	    CassandraConfiguration cassConfig = null;
         try{
             cassConfig = JsonUtil.objectFromJsonFile(CassandraConfiguration.class, CassandraConfiguration.class.getClassLoader(), cassConfigFileName);
         }

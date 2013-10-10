@@ -18,7 +18,7 @@ import java.util.Map;
  * User: Rob Righter
  * Date: 9/5/13
  */
-public class UpdateCleaner extends RcliWithCassandraConfig{
+public class UpdateCleaner extends RcliWithExistingKeyspace {
 
 	public Options getCommandOptions(){
 		Options ret = super.getCommandOptions();
@@ -57,7 +57,7 @@ public class UpdateCleaner extends RcliWithCassandraConfig{
 		try{
 			getConnectionManager().setDefaultKeyspace(keyspaceDefinition);
 			String strategy = cl.getOptionValue("strategy");
-			UpdateProcessor up = new UpdateProcessor(getConnectionManager().getObjectMapper());
+			UpdateProcessor up = new UpdateProcessor(this.objectMapper);
 
 			boolean didwork = false;
 			if(cl.hasOption("listUpdates")){

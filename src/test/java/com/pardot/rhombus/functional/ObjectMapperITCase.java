@@ -388,7 +388,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//run the migration grabbing a brand new object mapper
 		cm = getConnectionManager();
 		om = cm.getObjectMapper(OldKeyspaceDefinition.getName());
-		om.runMigration(NewKeyspaceDefinition);
+		om.runMigration(NewKeyspaceDefinition, true);
 
 		//now query out some data grabbing a brand new object mapper
 		cm = getConnectionManager();

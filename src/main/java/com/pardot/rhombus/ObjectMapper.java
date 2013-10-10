@@ -407,7 +407,8 @@ public class ObjectMapper implements CObjectShardList {
 	}
 
 
-	public void runMigration(CKeyspaceDefinition NewKeyspaceDefinition) throws CObjectMigrationException {
+	public List<CQLStatement> runMigration(CKeyspaceDefinition NewKeyspaceDefinition, boolean executeCql) throws CObjectMigrationException {
+		List<CQLStatement> ret = Lists.newArrayList();
 		try{
 			//grab the current keyspace definition
 			CKeyspaceDefinition OldKeyspaceDefinition = null;
@@ -420,11 +421,18 @@ public class ObjectMapper implements CObjectShardList {
 			//we have the keyspace definitions, now run the migration
 			CKeyspaceDefinitionMigrator migrator = new CKeyspaceDefinitionMigrator(OldKeyspaceDefinition, NewKeyspaceDefinition);
 			CQLStatementIterator cqlit = migrator.getMigrationCQL();
-			executeStatements(cqlit);
+			while(cqlit.hasNext()){
+				CQLStatement statement = cqlit.next();
+				ret.add(statement);
+				if(executeCql){
+					cqlExecutor.executeSync(statement);
+				}
+			}
 		}
 		catch(Exception e){
 			throw new CObjectMigrationException(e.getMessage());
 		}
+		return ret;
 	}
 
 	/**

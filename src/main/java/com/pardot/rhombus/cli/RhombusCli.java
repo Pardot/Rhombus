@@ -26,44 +26,11 @@ public class RhombusCli implements  RhombusCommand {
 
     public Options getCommandOptions(){
         Options ret = makeBootstrapOptions();
-        Option keyspaceFile = OptionBuilder.withArgName( "filename" )
-                .hasArg()
-                .withDescription("Filename of json keyspace definition")
-                .create( "keyspacefile" );
-        Option keyspaceResource = OptionBuilder.withArgName( "filename" )
-                .hasArg()
-                .withDescription("Filename of json keyspace definition")
-                .create( "keyspaceresource" );
-        ret.addOption(keyspaceFile);
-        ret.addOption(keyspaceResource);
         return ret;
     }
 
     public void executeCommand(CommandLine cl){
-        if(!(cl.hasOption("keyspacefile") || cl.hasOption("keyspaceresource"))){
-            displayHelpMessageAndExit();
-            return;
-        }
 
-        String keyspaceFileName = cl.hasOption("keyspacefile") ? cl.getOptionValue("keyspacefile") : cl.getOptionValue("keyspaceresource");
-        //make the keyspace definition
-        CKeyspaceDefinition keyDef = null;
-        try{
-            keyDef = cl.hasOption("keyspacefile") ?
-                    JsonUtil.objectFromJsonFile(CKeyspaceDefinition.class,CKeyspaceDefinition.class.getClassLoader(), keyspaceFileName) :
-                    JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class,CKeyspaceDefinition.class.getClassLoader(), keyspaceFileName);
-        }
-        catch (IOException e){
-            System.out.println("Could not parse keyspace file "+keyspaceFileName);
-            System.exit(1);
-        }
-
-        if(keyDef == null){
-            System.out.println("Could not parse keyspace file "+keyspaceFileName);
-            System.exit(1);
-        }
-
-        this.keyspaceDefinition = keyDef;
 
     }
 

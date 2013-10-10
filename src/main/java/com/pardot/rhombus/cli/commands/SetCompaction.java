@@ -14,7 +14,7 @@ import java.util.Map;
  * User: Rob Righter
  * Date: 8/19/13
  */
-public class SetCompaction extends RcliWithCassandraConfig{
+public class SetCompaction extends RcliWithExistingKeyspace {
 
     public Options getCommandOptions(){
         Options ret = super.getCommandOptions();
@@ -49,7 +49,7 @@ public class SetCompaction extends RcliWithCassandraConfig{
             if(cl.hasOption("minThreshold")){
                 options.put("min_threshold", Integer.parseInt(cl.getOptionValue("minThreshold")));
             }
-            getConnectionManager().getObjectMapper().setCompaction(strategy,options);
+            this.objectMapper.setCompaction(strategy,options);
             //looks like a success. Lets go ahead and return as such
             System.exit(0);
         }
