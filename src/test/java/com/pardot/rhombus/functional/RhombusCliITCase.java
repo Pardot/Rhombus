@@ -6,6 +6,7 @@ import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cli.RhombusCli;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import static org.junit.Assert.assertTrue;
  * User: Rob Righter
  * Date: 10/10/13
  */
+@Ignore
 public class RhombusCliITCase extends RhombusFunctionalTest {
 
 	public String getWorkingPath(){
