@@ -423,7 +423,9 @@ public class ObjectMapper implements CObjectShardList {
 		while (statementIterator.hasNext()){
 			CQLStatement cql = statementIterator.next();
 			ResultSet resultSet = cqlExecutor.executeSync(cql);
-			result += resultSet.one().getLong("count");
+			if(!resultSet.isExhausted()){
+				result += resultSet.one().getLong(0);
+			}
 		}
 		return result;
 	}
