@@ -74,7 +74,7 @@ public class ConnectionManager {
         else{
             cluster = builder.build();
         }
-
+		cluster.init();
 		return cluster;
 	}
 

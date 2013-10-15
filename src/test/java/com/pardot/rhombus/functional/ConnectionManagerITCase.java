@@ -1,6 +1,7 @@
 package com.pardot.rhombus.functional;
 
 
+import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
@@ -111,5 +112,18 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 
 		//Make sure that we saved the keyspace definition
 		om = cm.getObjectMapper(definition.getName());
+	}
+
+	@Test
+	public void testBuildCluster() throws Exception {
+		logger.debug("testBuildCluster");
+		//Get a connection manager based on the test properties
+		ConnectionManager connectionManager = TestHelpers.getTestConnectionManager();
+		connectionManager.setLogCql(true);
+		Cluster cassCluster = connectionManager.buildCluster(true);
+		assertNotNull(connectionManager);
+
+		assertEquals(1,cassCluster.getMetadata().getAllHosts().size());
+		assertEquals(cassCluster.getMetadata().getClusterName(), "Test Cluster");
 	}
 }

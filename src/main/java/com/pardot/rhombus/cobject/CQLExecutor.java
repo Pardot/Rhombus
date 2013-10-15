@@ -74,7 +74,7 @@ public class CQLExecutor {
 		}
 	}
 
-	public ResultSet executeSync(Query cql){
+	public ResultSet executeSync(Statement cql){
 		if(logCql) {
 			logger.debug("Executing QueryBuilder Query: {}", cql.toString());
 		}

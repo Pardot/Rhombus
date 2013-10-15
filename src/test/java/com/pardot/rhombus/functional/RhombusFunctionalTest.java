@@ -1,5 +1,6 @@
 package com.pardot.rhombus.functional;
 
+import com.datastax.driver.core.Cluster;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.helpers.TestHelpers;
 

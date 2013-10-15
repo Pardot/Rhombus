@@ -260,7 +260,7 @@ public class ObjectMapper implements CObjectShardList {
 	}
 
 	public void deleteObsoleteIndex(IndexUpdateRow row, CIndex index, Map<String,Object> indexValues){
-		Query cql = cqlGenerator.makeCQLforDeleteUUIDFromIndex_WorkaroundForUnpreparableTimestamp(
+		Statement cql = cqlGenerator.makeCQLforDeleteUUIDFromIndex_WorkaroundForUnpreparableTimestamp(
 			this.keyspaceDefinition.getName(),
 			keyspaceDefinition.getDefinitions().get(row.getObjectName()),
 			index,
