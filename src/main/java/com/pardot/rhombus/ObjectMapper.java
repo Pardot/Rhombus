@@ -338,6 +338,18 @@ public class ObjectMapper implements CObjectShardList {
 		return mapResults(statementIterator, def, criteria.getLimit());
 	}
 
+	/**
+	 * @param objectType Type of object to count
+	 * @param criteria Criteria to count by
+	 * @return number of items matching the criteria
+	 * @throws CQLGenerationException
+	 */
+	public long count(String objectType, Criteria criteria) throws CQLGenerationException {
+		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
+		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforCount(objectType, criteria);
+		return mapCount(statementIterator);
+	}
+
 	protected SortedMap<String,Object> unpackIndexValuesFromJson(CDefinition def, String json) throws IOException, JsonMappingException {
 		com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
 		TreeMap<String,Object> jsonMap = om.readValue(json, TreeMap.class);
@@ -404,6 +416,16 @@ public class ObjectMapper implements CObjectShardList {
 			}
 		}
 		return results;
+	}
+
+	private Long mapCount(CQLStatementIterator statementIterator){
+		Long result = 0L;
+		while (statementIterator.hasNext()){
+			CQLStatement cql = statementIterator.next();
+			ResultSet resultSet = cqlExecutor.executeSync(cql);
+			result += resultSet.one().getLong("count");
+		}
+		return result;
 	}
 
 

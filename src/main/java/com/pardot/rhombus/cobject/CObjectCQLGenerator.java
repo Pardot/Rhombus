@@ -45,7 +45,7 @@ public class CObjectCQLGenerator {
 	protected static final String TEMPLATE_INSERT_WIDE_INDEX = "INSERT INTO %s.\"%s\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);";//"USING TIMESTAMP %s;";//Add back when timestamps become preparable
 	protected static final String TEMPLATE_INSERT_INDEX_UPDATES = "INSERT INTO %s.\"__index_updates\" (id, statictablename, instanceid, indexvalues) values (?, ?, ?, ?);";
 	protected static final String TEMPLATE_SELECT_STATIC = "SELECT * FROM %s.\"%s\" WHERE %s;";
-	protected static final String TEMPLATE_SELECT_WIDE = "SELECT * FROM %s.\"%s\" WHERE shardid = %s AND %s ORDER BY id %s %s ALLOW FILTERING;";
+	protected static final String TEMPLATE_SELECT_WIDE = "SELECT %s FROM %s.\"%s\" WHERE shardid = %s AND %s ORDER BY id %s %s ALLOW FILTERING;";
 	protected static final String TEMPLATE_SELECT_KEYSPACES = "SELECT * FROM %s.\"__keyspace_definitions\" WHERE shardid = 1 ORDER BY id DESC;";
 	protected static final String TEMPLATE_SELECT_WIDE_INDEX = "SELECT shardid FROM %s.\"%s\" WHERE tablename = ? AND indexvalues = ?%s ORDER BY shardid %s ALLOW FILTERING;";
 	protected static final String TEMPLATE_DELETE = "DELETE FROM %s.%s WHERE %s;";//"DELETE FROM %s USING TIMESTAMP %s WHERE %s;"; //Add back when timestamps become preparable
@@ -168,15 +168,38 @@ public class CObjectCQLGenerator {
 	 *
 	 * @param objType - The name of the Object type aka CDefinition.name
 	 * @param criteria - The criteria object describing which rows to retrieve
+	 * @param countOnly - true means you want a count of rows, false means you want the rows themselves
 	 * @return Iterator of CQL statements that need to be executed for this task.
 	 */
 	@NotNull
-	public CQLStatementIterator makeCQLforGet(String objType, Criteria criteria) throws CQLGenerationException {
+	public CQLStatementIterator makeCQLforGet(String objType, Criteria criteria, boolean countOnly) throws CQLGenerationException {
 		CDefinition definition = this.definitions.get(objType);
 		CObjectOrdering ordering = (criteria.getOrdering() != null ? criteria.getOrdering(): CObjectOrdering.DESCENDING);
 		UUID endUuid = (criteria.getEndUuid() == null ? UUIDs.startOf(DateTime.now().getMillis()) : criteria.getEndUuid());
 		return makeCQLforGet(this.keyspace, shardList, definition, criteria.getIndexKeys(), ordering,  criteria.getStartUuid(),
-				 endUuid, criteria.getLimit(), criteria.getInclusive());
+				 endUuid, criteria.getLimit(), criteria.getInclusive(), countOnly);
+	}
+
+	/**
+	 *
+	 * @param objType - The name of the Object type aka CDefinition.name
+	 * @param criteria - The criteria object describing which rows to retrieve
+	 * @return Iterator of CQL statements that need to be executed for this task.
+	 */
+	@NotNull
+	public CQLStatementIterator makeCQLforGet(String objType, Criteria criteria) throws CQLGenerationException {
+		return makeCQLforGet( objType, criteria, false);
+	}
+
+	/**
+	 *
+	 * @param objType - The name of the Object type aka CDefinition.name
+	 * @param criteria - The criteria object describing which rows to count
+	 * @return Iterator of CQL statements that need to be executed for this task.
+	 */
+	@NotNull
+	public CQLStatementIterator makeCQLforCount(String objType, Criteria criteria) throws CQLGenerationException {
+		return makeCQLforGet( objType, criteria, true);
 	}
 
 	/**
@@ -682,6 +705,11 @@ public class CObjectCQLGenerator {
 
 	@NotNull
 	protected static CQLStatementIterator makeCQLforGet(String keyspace, CObjectShardList shardList, CDefinition def, SortedMap<String,Object> indexValues, CObjectOrdering ordering,@Nullable UUID start, @Nullable UUID end, Long limit, boolean inclusive) throws CQLGenerationException {
+		return makeCQLforGet(keyspace, shardList, def, indexValues, ordering, start, end, limit, inclusive, false);
+	}
+
+		@NotNull
+	protected static CQLStatementIterator makeCQLforGet(String keyspace, CObjectShardList shardList, CDefinition def, SortedMap<String,Object> indexValues, CObjectOrdering ordering,@Nullable UUID start, @Nullable UUID end, Long limit, boolean inclusive, boolean countOnly) throws CQLGenerationException {
 
 		CIndex i = def.getIndex(indexValues);
 		if(i == null){
@@ -707,7 +735,8 @@ public class CObjectCQLGenerator {
 		}
 		String CQLTemplate = String.format(
 			TEMPLATE_SELECT_WIDE,
-            keyspace,
+			countOnly ? "count(*)":"*",
+			keyspace,
 			makeTableName(def,i),
 			"?",
 			whereQuery,

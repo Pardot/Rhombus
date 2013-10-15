@@ -308,6 +308,9 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		assertEquals(3, results.size());
 		results = om.list("object2", criteria);
 		assertEquals(4, results.size());
+		//now test the count function too
+		long count = om.count("object2", criteria);
+		assertEquals(4, count);
 	}
 
 	@Test

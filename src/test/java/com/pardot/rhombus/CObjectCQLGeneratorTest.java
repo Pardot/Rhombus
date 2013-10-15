@@ -246,7 +246,6 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			indexkeys.put("type", "5");
 			indexkeys.put("instance", "222222");
 			actual = Subject.makeCQLforGet(KEYSPACE_NAME, shardIdLists, def, indexkeys, Long.valueOf(10));
-			//TODO:Add these back once you get this all working
 			expected = CQLStatement.make(
 					"SELECT * FROM testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
 					Arrays.asList(Long.valueOf(1),"777","222222","5", stop).toArray()
