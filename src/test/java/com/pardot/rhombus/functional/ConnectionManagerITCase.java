@@ -64,22 +64,6 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		assertEquals(queriedDef.getDefinitions().get("testtype").getField("foreignid").getType(), CField.CDataType.BIGINT);
 	}
 
-	@Test
-	public void testBuildPiKeyspace() throws Exception {
-		logger.debug("testBuildKeyspace");
-		// Set up a connection manager and build the cluster
-		ConnectionManager cm = getConnectionManager();
-
-		//Build our keyspace definition object
-		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class
-				, this.getClass().getClassLoader(), "pikeyspace-functional.js");
-		assertNotNull(definition);
-
-		//Build the keyspace forcing a rebuild in case anything has been left behind
-		cm.buildKeyspace(definition, true);
-
-	}
-
 	@Test(expected=InvalidQueryException.class)
 	public void testForceRebuild() throws Exception {
 		logger.debug("testForceRebuild");
