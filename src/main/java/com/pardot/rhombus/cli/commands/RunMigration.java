@@ -2,6 +2,7 @@ package com.pardot.rhombus.cli.commands;
 
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
 import com.pardot.rhombus.cobject.CQLStatement;
+import com.pardot.rhombus.cobject.migrations.CObjectMigrationException;
 import com.pardot.rhombus.util.JsonUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -64,24 +65,28 @@ public class RunMigration extends RcliWithExistingKeyspace {
 
 		//now run the migration
 		try{
-			if(cl.hasOption("l")){
-				//just print out a list of CQL statements for the migration
-				List<CQLStatement> torun = this.objectMapper.runMigration(NewkeyDef, true);
-				for(CQLStatement c:torun){
-					System.out.println(c.getQuery());
-				}
-			}
-			else{
-				//actually run the migration
-				this.objectMapper.runMigration(NewkeyDef, true);
-			}
-			return true;
+			boolean printOnly = cl.hasOption("l");
+			return runMigration(NewkeyDef, printOnly);
 		}
 		catch (Exception e){
 			System.out.println("Error encountered while attempting to rebuild the keyspace");
 			return false;
 		}
+	}
 
+	public boolean runMigration(CKeyspaceDefinition newKeyspaceDefinition, boolean printOnly) throws CObjectMigrationException {
+		if(printOnly){
+			//just print out a list of CQL statements for the migration
+			List<CQLStatement> torun = this.objectMapper.runMigration(newKeyspaceDefinition, true);
+			for(CQLStatement c:torun){
+				System.out.println(c.getQuery());
+			}
+		}
+		else{
+			//actually run the migration
+			this.objectMapper.runMigration(newKeyspaceDefinition, true);
+		}
+		return true;
 	}
 
 }
