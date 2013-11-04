@@ -85,7 +85,7 @@ public class RunMigration extends RcliWithExistingKeyspace {
 		}
 		else{
 			//actually run the migration
-			this.objectMapper.runMigration(newKeyspaceDefinition, true);
+			om.runMigration(newKeyspaceDefinition, true);
 		}
 		return true;
 	}

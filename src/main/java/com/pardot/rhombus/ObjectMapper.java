@@ -454,7 +454,7 @@ public class ObjectMapper implements CObjectShardList {
 			}
 		}
 		catch(Exception e){
-			throw new CObjectMigrationException(e.getMessage());
+			throw new CObjectMigrationException(e);
 		}
 		return ret;
 	}

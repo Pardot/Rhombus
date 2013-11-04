@@ -10,4 +10,8 @@ public class CObjectMigrationException extends Exception {
 		super(message);
 	}
 
+	public CObjectMigrationException(Exception cause) {
+		super(cause);
+	}
+
 }
