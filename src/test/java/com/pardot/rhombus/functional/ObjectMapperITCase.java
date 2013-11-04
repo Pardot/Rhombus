@@ -7,12 +7,9 @@ import com.google.common.collect.Maps;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.Criteria;
 import com.pardot.rhombus.ObjectMapper;
-import com.pardot.rhombus.cobject.CDefinition;
-import com.pardot.rhombus.cobject.CIndex;
-import com.pardot.rhombus.cobject.IndexUpdateRow;
+import com.pardot.rhombus.cobject.*;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
 import com.pardot.rhombus.helpers.TestHelpers;
-import com.pardot.rhombus.cobject.CKeyspaceDefinition;
 import com.pardot.rhombus.util.JsonUtil;
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -425,6 +422,79 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		assertEquals("three",result.get("value"));
 
 
+	}
+
+
+	@Test
+	public void testVisitAllEntries() throws Exception {
+		logger.debug("Starting testVisitAllEntries");
+
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "MultiInsertKeyspace.js");
+		assertNotNull(definition);
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, true);
+		logger.debug("Built keyspace: {}", definition.getName());
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper();
+		om.setLogCql(true);
+
+		//Set up test data
+		//insert a bunch in batches of 50
+		int totalCount = 0;
+		for(int batch = 0; batch < 400; batch++){
+			//do another 50
+			List<Map<String,Object>> toinsert = Lists.newArrayList();
+			for(int i = 0; i<50; i++){
+				Map<String,Object> item = Maps.newHashMap();
+				item.put("account_id",UUID.fromString("00000003-0000-0030-0040-000000030000"));
+				item.put("user_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+				item.put("field1","value"+(totalCount++));
+				toinsert.add(item);
+			}
+			Map<String, List<Map<String, Object>>> insertMap = Maps.newHashMap();
+			insertMap.put("object1", toinsert);
+
+			//Insert data
+			om.insertBatchMixed(insertMap);
+		}
+
+
+		//No visit all of the objects we just inserted
+		class MyVisitor implements CObjectVisitor {
+			int counter = 0;
+			public int getCount(){
+				return counter;
+			}
+
+			@Override
+			public void visit(Map<String, Object> object) {
+				//To change body of implemented methods use File | Settings | File Templates.
+				//System.out.println("Counter is "+counter+" value is "+object.get("field1"));
+				counter++;
+			}
+
+			@Override
+			public boolean shouldInclude(Map<String, Object> object) {
+				return true;
+			}
+		};
+
+		MyVisitor visitor = new MyVisitor();
+
+		long start = System.currentTimeMillis();
+		om.visitObjects("object1", visitor);
+		long end = System.currentTimeMillis();
+		long syncTime = end - start;
+
+		System.out.println("Visiting all objects took " + syncTime+"ms");
+
+
+		assertEquals(20000,visitor.getCount());
 	}
 
 }

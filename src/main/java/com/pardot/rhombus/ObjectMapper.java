@@ -350,6 +350,23 @@ public class ObjectMapper implements CObjectShardList {
 		return mapCount(statementIterator);
 	}
 
+	public void visitObjects(String objectType, CObjectVisitor visitor){
+		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
+		CQLStatement statement = this.cqlGenerator.makeCQLforTableScan(objectType);
+		Statement s = new SimpleStatement(statement.getQuery());
+		s.setFetchSize(200);
+		ResultSet resultSet = session.execute(s);
+
+		Iterator<Row> it = resultSet.iterator();
+		while(it.hasNext()){
+			Map<String,Object> obj = this.mapResult(it.next(),def);
+			if(visitor.shouldInclude(obj)){
+				visitor.visit(obj);
+			}
+		}
+	}
+
+
 	protected SortedMap<String,Object> unpackIndexValuesFromJson(CDefinition def, String json) throws IOException, JsonMappingException {
 		com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
 		TreeMap<String,Object> jsonMap = om.readValue(json, TreeMap.class);

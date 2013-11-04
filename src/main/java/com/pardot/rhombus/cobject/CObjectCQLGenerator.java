@@ -55,6 +55,7 @@ public class CObjectCQLGenerator {
 	protected static final String TEMPLATE_SELECT_ROW_INDEX_UPDATE = "SELECT * FROM %s.\"__index_updates\" where statictablename = ? and instanceid = ? order by id DESC;";
 	protected static final String TEMPLATE_SET_COMPACTION_LEVELED = "ALTER TABLE %s.\"%s\" WITH compaction = { 'class' :  'LeveledCompactionStrategy',  'sstable_size_in_mb' : %d }";
 	protected static final String TEMPLATE_SET_COMPACTION_TIERED = "ALTER TABLE %s.\"%s\" WITH compaction = { 'class' :  'SizeTieredCompactionStrategy',  'min_threshold' : %d }";
+	protected static final String TEMPLATE_TABLE_SCAN = "SELECT * FROM %s.\"%s\";";
 
 	protected Map<String, CDefinition> definitions;
 	protected CObjectShardList shardList;
@@ -162,6 +163,16 @@ public class CObjectCQLGenerator {
 	@NotNull
 	public CQLStatementIterator makeCQLforGet(String objType, UUID key){
 		return makeCQLforGet(this.keyspace, this.definitions.get(objType), key);
+	}
+
+	/**
+	 *
+	 * @param objType - The name of the Object type aka CDefinition.name
+	 * @return Iterator of CQL statements that need to be executed for this task. (Should have a length of 1 for this particular method)
+	 */
+	@NotNull
+	public CQLStatement makeCQLforTableScan(String objType){
+		return makeCQLforTableScan(this.keyspace, this.definitions.get(objType));
 	}
 
 	/**
@@ -697,6 +708,10 @@ public class CObjectCQLGenerator {
 		Object[] values = {key};
 		CQLStatement statement = CQLStatement.make(String.format(TEMPLATE_SELECT_STATIC, keyspace, def.getName(),"id = ?"), values);
 		return new BoundedCQLStatementIterator(Lists.newArrayList(statement));
+	}
+
+	protected static CQLStatement makeCQLforTableScan(String keyspace, CDefinition def){
+		return CQLStatement.make(String.format(TEMPLATE_TABLE_SCAN, keyspace, def.getName()));
 	}
 
 	public static CQLStatement makeCQLforGetKeyspaceDefinitions(String keyspace){
