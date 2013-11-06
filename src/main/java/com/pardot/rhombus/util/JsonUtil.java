@@ -76,7 +76,10 @@ public class JsonUtil {
                 case BOOLEAN:
                     if (String.class.isAssignableFrom(jsonValue.getClass())) {
                         return Boolean.valueOf((String)jsonValue);
-                    } else if(Boolean.class.isAssignableFrom(jsonValue.getClass())){
+                    } else if(Integer.class.isAssignableFrom(jsonValue.getClass())){
+						Integer intValue = (Integer)jsonValue;
+						return (intValue > 0);
+					} else if(Boolean.class.isAssignableFrom(jsonValue.getClass())){
                         return jsonValue;
                     }else {
                         throw new IllegalArgumentException();

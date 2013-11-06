@@ -99,12 +99,11 @@ public class JsonUtilTest extends JsonUtil{
         JsonUtil.typedObjectFromValueAndField(jsonValue, field);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test
     public void typedObjectFromIntegerAndBoolean() throws CObjectParseException {
         CField field = new CField("test", "boolean");
         Integer jsonValue = 1234;
-
-        JsonUtil.typedObjectFromValueAndField(jsonValue, field);
+        assertEquals(true, JsonUtil.typedObjectFromValueAndField(jsonValue, field));
     }
 
     @Test
