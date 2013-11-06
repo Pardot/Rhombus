@@ -159,7 +159,7 @@ public class JsonUtil {
                     return null;
             }
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Field" + field.getName() + ": Unable to convert "+ jsonValue + " of type "+jsonValue.getClass()+" to C* type " + field.getType().toString());
+            throw new IllegalArgumentException("Field " + field.getName() + ": Unable to convert "+ jsonValue + " of type "+jsonValue.getClass()+" to C* type " + field.getType().toString());
         }
 	}
 
