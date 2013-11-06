@@ -171,7 +171,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 			assertEquals(foreignKey, result.get("foreignid"));
 		}
 
-		//Remove one of the objects we added
+		//Remove the object we added
 		om.delete("testtype", key);
 
 		//Query to get back the object from the database
@@ -190,6 +190,10 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 				assertEquals(testObject.get(dbKey), dbObject.get(dbKey));
 			}
 		}
+		//Remove the object we added
+		om.delete("testtype", key3);
+		//Query to get back the object from the database
+		assertEquals(null, om.getByKey("testtype", key3));
 	}
 
 	//This does not test blob or counter types

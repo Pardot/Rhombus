@@ -803,6 +803,12 @@ public class CObjectCQLGenerator {
 		List<CQLStatement> ret = Lists.newArrayList();
 		ret.add(makeCQLforDeleteUUIDFromStaticTable(keyspace, def, key, timestamp));
 		for(CIndex i : def.getIndexes().values()){
+			if(def.isAllowNullPrimaryKeyInserts()){
+				//check if we have the necessary primary fields to insert on this index. If not just continue;
+				if(!i.validateIndexKeys(i.getIndexKeyAndValues(data))){
+					continue;
+				}
+			}
 			ret.add(makeCQLforDeleteUUIDFromIndex(keyspace, def, i, key, i.getIndexKeyAndValues(data), timestamp));
 		}
 		return new BoundedCQLStatementIterator(ret);
