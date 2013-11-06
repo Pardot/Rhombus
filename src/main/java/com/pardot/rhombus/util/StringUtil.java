@@ -19,9 +19,9 @@ public class StringUtil {
 			sb.append(String.valueOf(key));
 			sb.append(": (");
 			Object value = map.get(key);
-			sb.append(value.getClass().getName());
+			sb.append((value==null)? "NULL":value.getClass().getName());
 			sb.append(") ");
-			sb.append(String.valueOf(value));
+			sb.append((value==null)? "NULL":String.valueOf(value));
 			sb.append("\n");
 		}
 		sb.append("}");
@@ -34,9 +34,9 @@ public class StringUtil {
 		for(Object value : list) {
 			sb.append("\t");
 			sb.append("(");
-			sb.append(value.getClass().getName());
+			sb.append((value==null)? "NULL":value.getClass().getName());
 			sb.append(") ");
-			sb.append(String.valueOf(value));
+			sb.append((value==null)? "NULL":String.valueOf(value));
 			sb.append("\n");
 		}
 		sb.append("}");
