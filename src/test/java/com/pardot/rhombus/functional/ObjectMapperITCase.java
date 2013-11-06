@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class ObjectMapperITCase extends RhombusFunctionalTest {
 
@@ -131,6 +132,64 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 
 		//Teardown connections
 		cm.teardown();
+	}
+
+	@Test
+	public void testDelete() throws Exception {
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
+		assertNotNull(definition);
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, true);
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper(definition.getName());
+
+		//Get a test object to insert
+		Map<String, Object> testObject = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), definition.getDefinitions().get("testtype"));
+		UUID key = om.insert("testtype", testObject);
+
+		//Query to get back the object from the database
+		Map<String, Object> dbObject = om.getByKey("testtype", key);
+		for(String dbKey : dbObject.keySet()) {
+			//Verify that everything but the key is the same
+			if(!dbKey.equals("id")) {
+				assertEquals(testObject.get(dbKey), dbObject.get(dbKey));
+			}
+		}
+
+		//Query by foreign key
+		Criteria criteria = TestHelpers.getTestCriteria(0);
+		long foreignKey = ((Long)criteria.getIndexKeys().get("foreignid")).longValue();
+		criteria.getIndexKeys().put("foreignid", foreignKey);
+		List<Map<String, Object>> dbObjects = om.list("testtype", criteria);
+		assertEquals(1, dbObjects.size());
+		for(Map<String, Object> result : dbObjects) {
+			assertEquals(foreignKey, result.get("foreignid"));
+		}
+
+		//Remove one of the objects we added
+		om.delete("testtype", key);
+
+		//Query to get back the object from the database
+		assertEquals(null, om.getByKey("testtype", key));
+		assertEquals(0,om.list("testtype", criteria).size());
+
+
+		//now try inserting an object that has a null for one of the index values
+		testObject.put("foreignid",null);
+		UUID key3 = om.insert("testtype", testObject);
+		//Query to get back the object from the database
+		dbObject = om.getByKey("testtype", key3);
+		for(String dbKey : dbObject.keySet()) {
+			//Verify that everything but the key is the same
+			if(!dbKey.equals("id")) {
+				assertEquals(testObject.get(dbKey), dbObject.get(dbKey));
+			}
+		}
 	}
 
 	//This does not test blob or counter types
@@ -253,6 +312,17 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		assertEquals(object.get("user_id"), result.get("user_id"));
 		assertEquals(object.get("changes"), result.get("changes"));
 		for(String key : result.keySet()) {
+			if(!key.equals("id")) {
+				if(key.equals("account_id") || key.equals("object_id")){
+					assertEquals(object.get(key).toString(), result.get(key).toString());
+				}
+				else if(key.equals("created_at")){
+					assertEquals(object.get(key), ((Date)result.get(key)).getTime());
+				}
+				else{
+					assertEquals(object.get(key), result.get(key));
+				}
+			}
 			logger.debug("{} Result: {}, Input: {}", key, result.get(key), object.get(key));
 		}
 	}
@@ -464,7 +534,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		}
 
 
-		//No visit all of the objects we just inserted
+		//Now visit all of the objects we just inserted
 		class MyVisitor implements CObjectVisitor {
 			int counter = 0;
 			public int getCount(){
@@ -494,7 +564,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		System.out.println("Visiting all objects took " + syncTime+"ms");
 
 
-		assertEquals(20000,visitor.getCount());
+		assertEquals(20000, visitor.getCount());
 	}
 
 }

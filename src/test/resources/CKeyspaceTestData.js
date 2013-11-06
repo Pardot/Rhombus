@@ -7,6 +7,7 @@
     "definitions" : [
         {
             "name": "testtype",
+            "allowNullPrimaryKeyInserts": true,
             "fields": [
                 {"name": "foreignid", "type": "bigint"},
                 {"name": "type", "type": "int"},

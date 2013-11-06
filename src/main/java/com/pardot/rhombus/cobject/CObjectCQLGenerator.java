@@ -11,6 +11,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import com.pardot.rhombus.Criteria;
+import com.pardot.rhombus.RhombusException;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardStrategyException;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -889,11 +890,11 @@ public class CObjectCQLGenerator {
 		throw new CQLGenerationException("Rhombus does not support indexes on fields of type " + value.getClass().toString());
 	}
 
-	public static Map<String,ArrayList> makeFieldAndValueList(CDefinition def, Map<String,Object> data){
-		ArrayList fieldList = new ArrayList<String>(def.getFields().size());
-		ArrayList valueList = new ArrayList<Object>(def.getFields().size());
+	public static Map<String,ArrayList> makeFieldAndValueList(CDefinition def, Map<String,Object> data) throws CQLGenerationException{
+		ArrayList fieldList = Lists.newArrayList();
+		ArrayList valueList = Lists.newArrayList();
 		for(CField f : def.getFields().values()){
-			if(data.containsKey(f.getName())){
+			if( data.containsKey(f.getName()) ){
 				fieldList.add(f.getName());
 				valueList.add(data.get(f.getName()));
 			}

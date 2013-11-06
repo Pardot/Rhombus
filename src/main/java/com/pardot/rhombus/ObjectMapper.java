@@ -512,6 +512,9 @@ public class ObjectMapper implements CObjectShardList {
     }
 
 	private Object getFieldValue(Row row, CField field) {
+		if(row.isNull(field.getName())){
+			return null;
+		}
 		Object fieldValue;
 		switch(field.getType()) {
 			case ASCII:
