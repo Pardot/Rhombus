@@ -14,10 +14,21 @@ public class BoundedCQLStatementIterator implements CQLStatementIterator {
 
 	private long size = 0;
 	private Iterator<CQLStatement> statementIterator;
+	private List<CQLStatement> cqlStatements;
 
 	public BoundedCQLStatementIterator(List<CQLStatement> CQLStatements){
 		this.size = (long)CQLStatements.size();
+		this.cqlStatements = CQLStatements;
 		this.statementIterator = CQLStatements.iterator();
+	}
+
+	public boolean allStatementsPreparable() {
+		for(CQLStatement cqlStatement : cqlStatements) {
+			if(!cqlStatement.isPreparable()) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public static BoundedCQLStatementIterator condenseIterators(List<CQLStatementIterator> statementIterators) throws CQLGenerationException {
@@ -48,6 +59,9 @@ public class BoundedCQLStatementIterator implements CQLStatementIterator {
 	public CQLStatement next() {
 		return statementIterator.next();
 	}
+
+
+
 
 	public boolean isBounded(){
 		return true;

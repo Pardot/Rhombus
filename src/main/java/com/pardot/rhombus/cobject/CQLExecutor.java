@@ -1,12 +1,15 @@
 package com.pardot.rhombus.cobject;
 
 import com.datastax.driver.core.*;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.pardot.rhombus.util.StringUtil;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -97,6 +100,23 @@ public class CQLExecutor {
 			//just run a normal execute without a prepared statement
 			return session.executeAsync(cql.getQuery());
 		}
+	}
+
+	public void executeBatch(List<CQLStatementIterator> statementIterators) {
+		BatchStatement batchStatement = new BatchStatement(BatchStatement.Type.UNLOGGED);
+		for(CQLStatementIterator statementIterator : statementIterators) {
+			while(statementIterator.hasNext()) {
+				CQLStatement statement = statementIterator.next();
+				batchStatement.add(getBoundStatement(session, statement));
+			}
+		}
+		session.execute(batchStatement);
+	}
+
+	public void executeBatch(CQLStatementIterator statementIterator) {
+		List<CQLStatementIterator> statementIterators = Lists.newArrayList();
+		statementIterators.add(statementIterator);
+		executeBatch(statementIterators);
 	}
 
 	public boolean isLogCql() {

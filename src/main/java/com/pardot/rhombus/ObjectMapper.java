@@ -33,6 +33,7 @@ public class ObjectMapper implements CObjectShardList {
 	private static Logger logger = LoggerFactory.getLogger(ObjectMapper.class);
 	private static final int reasonableStatementLimit = 20;
 	private boolean executeAsync = true;
+	private boolean useCqlBatching = false;
 	private boolean logCql = false;
 	private boolean cacheBoundedQueries = true;
 	private CQLExecutor cqlExecutor;
@@ -135,24 +136,31 @@ public class ObjectMapper implements CObjectShardList {
 
 	public void executeStatements(List<CQLStatementIterator> statementIterators) throws RhombusException {
 		boolean canExecuteAsync = true;
+		boolean allPreparable = true;
 		for(CQLStatementIterator statementIterator : statementIterators) {
 			if(!statementIterator.isBounded()) {
 				canExecuteAsync = false;
-				break;
+			}
+			if(!(statementIterator instanceof BoundedCQLStatementIterator) || !((BoundedCQLStatementIterator) statementIterator).allStatementsPreparable()) {
+				allPreparable = false;
 			}
 		}
 		if(canExecuteAsync &&  this.executeAsync) {
-			logger.debug("Executing statements async");
 			//If this is a bounded statement iterator, send it through the async path
 			long start = System.nanoTime();
-			List<StatementIteratorConsumer> consumers = Lists.newArrayList();
-			for(CQLStatementIterator statementIterator : statementIterators) {
-				StatementIteratorConsumer consumer = new StatementIteratorConsumer((BoundedCQLStatementIterator) statementIterator, cqlExecutor, batchTimeout);
-				consumer.start();
-				consumers.add(consumer);
-			}
-			for(StatementIteratorConsumer consumer : consumers) {
-				consumer.join();
+			logger.debug("Executing statements async");
+			if(this.useCqlBatching && allPreparable) {
+				cqlExecutor.executeBatch(statementIterators);
+			} else {
+				List<StatementIteratorConsumer> consumers = Lists.newArrayList();
+				for(CQLStatementIterator statementIterator : statementIterators) {
+					StatementIteratorConsumer consumer = new StatementIteratorConsumer((BoundedCQLStatementIterator) statementIterator, cqlExecutor, batchTimeout);
+					consumer.start();
+					consumers.add(consumer);
+				}
+				for(StatementIteratorConsumer consumer : consumers) {
+					consumer.join();
+				}
 			}
 			logger.debug("Async execution took {}us", (System.nanoTime() - start) / 1000);
 		} else {
@@ -202,6 +210,25 @@ public class ObjectMapper implements CObjectShardList {
 		}
 		executeStatements(statementIterators);
 		return key;
+	}
+
+	/**
+	 * Insert a batch of objects with specified ids
+	 * @param objectType Object type to insert
+	 * @param objects Map of id to object for inserts
+	 * @throws CQLGenerationException
+	 * @throws RhombusException
+	 */
+	public void insertBatchWithIds(String objectType, Map<UUID, Map<String, Object>> objects) throws CQLGenerationException, RhombusException {
+		logger.debug("Insert batch with ids");
+		List<CQLStatementIterator> statementIterators = Lists.newArrayList();
+		for(UUID id : objects.keySet()) {
+			Map<String, Object> values = objects.get(id);
+			long timestamp = System.currentTimeMillis();
+			CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, id, timestamp);
+			statementIterators.add(statementIterator);
+		}
+		executeStatements(statementIterators);
 	}
 
 	/**
