@@ -64,7 +64,7 @@ public class ObjectMapper implements CObjectShardList {
 			cqlExecutor.executeSync(cql);
 		} catch(Exception e) {
 			if(forceRebuild) {
-				CQLStatement dropCql = CObjectCQLGenerator.makeCQLforShardIndexTableDrop();
+				CQLStatement dropCql = cqlGenerator.makeCQLforShardIndexTableDrop();
 				logger.debug("Attempting to drop table with cql {}", dropCql);
 				cqlExecutor.executeSync(dropCql);
 				cqlExecutor.executeSync(cql);

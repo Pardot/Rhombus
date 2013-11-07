@@ -78,7 +78,7 @@ public class RunMigration extends RcliWithExistingKeyspace {
 	public boolean runMigration(ObjectMapper om, CKeyspaceDefinition newKeyspaceDefinition, boolean printOnly) throws CObjectMigrationException {
 		if(printOnly){
 			//just print out a list of CQL statements for the migration
-			List<CQLStatement> torun = om.runMigration(newKeyspaceDefinition, true);
+			List<CQLStatement> torun = om.runMigration(newKeyspaceDefinition, false);
 			for(CQLStatement c:torun){
 				System.out.println(c.getQuery());
 			}

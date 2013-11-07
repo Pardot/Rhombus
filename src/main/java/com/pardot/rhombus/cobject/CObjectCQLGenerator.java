@@ -303,8 +303,8 @@ public class CObjectCQLGenerator {
 	 *
 	 * @return String of single CQL statement required to create the Shard Index Table
 	 */
-	public static CQLStatement makeCQLforShardIndexTableDrop(){
-		return CQLStatement.make(String.format(TEMPLATE_DROP, CObjectShardList.SHARD_INDEX_TABLE_NAME));
+	public CQLStatement makeCQLforShardIndexTableDrop(){
+		return CQLStatement.make(String.format(TEMPLATE_DROP, this.keyspace, CObjectShardList.SHARD_INDEX_TABLE_NAME));
 	}
 
 	/**
