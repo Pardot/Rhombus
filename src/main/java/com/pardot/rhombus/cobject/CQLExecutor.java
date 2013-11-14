@@ -63,7 +63,6 @@ public class CQLExecutor {
 		if(logCql) {
 			logger.debug("Executing CQL: {}", cql.getQuery());
 			if(cql.getValues() != null) {
-
 				logger.debug("With values: {}", StringUtil.detailedListToString(Arrays.asList(cql.getValues())));
 			}
 		}

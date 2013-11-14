@@ -162,9 +162,13 @@ public class ConnectionManager {
 		if(forceRebuild) {
 			try {
 				//Drop the keyspace if it already exists
-				session.execute("DROP KEYSPACE " + keyspace.getName() + ";");
+				String cql = "DROP KEYSPACE " + keyspace.getName() + ";";
+				if(this.isLogCql()) {
+					logger.debug("Executing CQL: {}", cql);
+				}
+				session.execute(cql);
 			} catch(Exception e) {
-				//Ignore
+				logger.debug("Exception executing drop keyspace cql", e);
 			}
 		}
 
