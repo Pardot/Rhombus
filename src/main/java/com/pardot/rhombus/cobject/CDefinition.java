@@ -119,4 +119,14 @@ public class CDefinition {
 	public CField getField(String fieldName) {
 		return fields.get(fieldName);
 	}
+
+	@JsonIgnore
+	public String getPrimaryKeyType(){
+		if(fields.containsKey("id")){
+			return fields.get("id").getType().toString();
+		}
+		else{
+			return CField.CDataType.TIMEUUID.toString();
+		}
+	}
 }

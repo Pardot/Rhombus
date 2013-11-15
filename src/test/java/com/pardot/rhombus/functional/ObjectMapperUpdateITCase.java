@@ -44,7 +44,7 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		om.setLogCql(true);
 
 		List<Map<String, Object>> values = this.getNValues(1, index1Value, index2Value);
-		UUID id = om.insert(objectType, values.get(0));
+		UUID id = (UUID)om.insert(objectType, values.get(0));
 
 		//Get back the data and make sure things match
 		Map<String, Object> result = om.getByKey(objectType, id);
@@ -119,7 +119,7 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		Map<String, Object> object = values.get(0);
 		Long createdAt = (Long)(object.get("created_at"));
 		logger.debug("Inserting audit with created_at: {}", createdAt);
-		UUID id = om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
+		UUID id = (UUID)om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
 
 		//Get back the data and make sure things match
 		Map<String, Object> result = om.getByKey("object_audit", id);
@@ -168,7 +168,7 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		Map<String, Object> object = values.get(0);
 		Long createdAt = (Long)(object.get("created_at"));
 		logger.debug("Inserting audit with created_at: {}", createdAt);
-		UUID id = om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
+		UUID id = (UUID)om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
 
 		//Update the object
 		object.put("object_id", "00000003-0000-0030-0040-000000040000");
@@ -203,7 +203,7 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		Map<String, Object> object = values.get(0);
 		Long createdAt = (Long)(object.get("created_at"));
 		logger.debug("Inserting audit with created_at: {}", createdAt);
-		UUID id = om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
+		UUID id = (UUID)om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
 
 		//Update the object
 		object.put("changes", null);

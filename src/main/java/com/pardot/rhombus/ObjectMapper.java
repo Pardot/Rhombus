@@ -239,7 +239,7 @@ public class ObjectMapper implements CObjectShardList {
 	 * @return ID if newly inserted object
 	 * @throws CQLGenerationException
 	 */
-	public UUID insert(String objectType, Map<String, Object> values, UUID key) throws CQLGenerationException, RhombusException {
+	public Object insert(String objectType, Map<String, Object> values, Object key) throws CQLGenerationException, RhombusException {
 		logger.debug("Insert {}", objectType);
 		if(key == null) {
 			key = UUIDs.timeBased();
@@ -257,8 +257,8 @@ public class ObjectMapper implements CObjectShardList {
 	 * @return UUID of inserted object
 	 * @throws CQLGenerationException
 	 */
-	public UUID insert(String objectType, Map<String, Object> values) throws CQLGenerationException, RhombusException {
-		return insert(objectType, values, (UUID)null);
+	public Object insert(String objectType, Map<String, Object> values) throws CQLGenerationException, RhombusException {
+		return insert(objectType, values, System.currentTimeMillis());
 	}
 
 	/**
@@ -269,7 +269,7 @@ public class ObjectMapper implements CObjectShardList {
 	 * @param timestamp Timestamp to use to create the object UUID
 	 * @return the UUID of the newly inserted object
 	 */
-	public UUID insert(String objectType, Map<String, Object> values, Long timestamp) throws CQLGenerationException, RhombusException {
+	public Object insert(String objectType, Map<String, Object> values, Long timestamp) throws CQLGenerationException, RhombusException {
 		UUID uuid = UUIDs.startOf(timestamp);
 		return insert(objectType, values, uuid);
 	}
@@ -342,7 +342,7 @@ public class ObjectMapper implements CObjectShardList {
 	 * @param key Key of object to get
 	 * @return Object of type with key or null if it does not exist
 	 */
-	public Map<String, Object> getByKey(String objectType, UUID key) {
+	public Map<String, Object> getByKey(String objectType, Object key) {
 		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
 		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforGet(objectType, key);
 		List<Map<String, Object>> results = mapResults(statementIterator, def, 1L);
@@ -510,7 +510,12 @@ public class ObjectMapper implements CObjectShardList {
 	 */
 	private Map<String, Object> mapResult(Row row, CDefinition definition) {
 		Map<String, Object> result = Maps.newHashMap();
-		result.put("id", row.getUUID("id"));
+		if(definition.getFields().containsKey("id")){
+			result.put("id",getFieldValue(row,definition.getField("id")));
+		}
+		else {
+			result.put("id", row.getUUID("id"));
+		}
 		for(CField field : definition.getFields().values()) {
 			result.put(field.getName(), getFieldValue(row, field));
 		}

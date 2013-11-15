@@ -44,7 +44,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 
 		//Get a test object to insert
 		Map<String, Object> testObject = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), definition.getDefinitions().get("testtype"));
-		UUID key = om.insert("testtype", testObject);
+		UUID key = (UUID)om.insert("testtype", testObject);
 
 		//Query to get back the object from the database
 		Map<String, Object> dbObject = om.getByKey("testtype", key);
@@ -56,7 +56,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		}
 
 		//Add another object with the same foreign key
-		UUID key2 = om.insert("testtype", JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(1), definition.getDefinitions().get("testtype")));
+		UUID key2 = (UUID)om.insert("testtype", JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(1), definition.getDefinitions().get("testtype")));
 
 		//Query by foreign key
 		Criteria criteria = TestHelpers.getTestCriteria(0);
@@ -135,6 +135,40 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 	}
 
 	@Test
+	public void testObjectWithCustomKey() throws Exception {
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
+		assertNotNull(definition);
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, true);
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper(definition.getName());
+
+		//Get a test object to insert
+		Map<String, Object> testObject = Maps.newHashMap();
+		testObject.put("data1","A-data1");
+		String key1 = (String)om.insert("customkey", testObject,"A");
+
+		Map<String, Object> testObject2 = Maps.newHashMap();
+		testObject2.put("data1","B-data1");
+		String key2 = (String)om.insert("customkey", testObject2, "B");
+
+		assertEquals("A", key1);
+		assertEquals("B", key2);
+
+		Map<String,Object> result = om.getByKey("customkey", "A");
+		assertEquals("A-data1",result.get("data1"));
+
+		result = om.getByKey("customkey", "B");
+		assertEquals("B-data1",result.get("data1"));
+
+	}
+
+	@Test
 	public void testDelete() throws Exception {
 		//Build the connection manager
 		ConnectionManager cm = getConnectionManager();
@@ -150,7 +184,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 
 		//Get a test object to insert
 		Map<String, Object> testObject = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), definition.getDefinitions().get("testtype"));
-		UUID key = om.insert("testtype", testObject);
+		UUID key = (UUID)om.insert("testtype", testObject);
 
 		//Query to get back the object from the database
 		Map<String, Object> dbObject = om.getByKey("testtype", key);
@@ -181,7 +215,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 
 		//now try inserting an object that has a null for one of the index values
 		testObject.put("foreignid",null);
-		UUID key3 = om.insert("testtype", testObject);
+		UUID key3 = (UUID)om.insert("testtype", testObject);
 		//Query to get back the object from the database
 		dbObject = om.getByKey("testtype", key3);
 		for(String dbKey : dbObject.keySet()) {
@@ -216,7 +250,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//Insert in some values of each type
 		List<Map<String, Object>> values = JsonUtil.rhombusMapFromResource(this.getClass().getClassLoader(), "ObjectMapperTypeTestData.js");
 		Map<String, Object> data = JsonUtil.rhombusMapFromJsonMap(values.get(0), definition.getDefinitions().get("testobjecttype"));
-		UUID uuid = om.insert("testobjecttype", data);
+		UUID uuid = (UUID)om.insert("testobjecttype", data);
 		assertNotNull(uuid);
 
 		//Get back the values
@@ -309,7 +343,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		Map<String, Object> object = values.get(0);
 		Long createdAt = (Long)(object.get("created_at"));
 		logger.debug("Inserting audit with created_at: {}", createdAt);
-		UUID id = om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
+		UUID id = (UUID)om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
 
 		//Get back the data and make sure things match
 		Map<String, Object> result = om.getByKey("object_audit", id);
@@ -408,7 +442,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 			Map<String, Object> updatedObject = JsonUtil.rhombusMapFromJsonMap(object, definition.getDefinitions().get("object1"));
 			Long createdAt = ((Date)(updatedObject.get("created_at"))).getTime();
 			logger.debug("Inserting object with created_at: {}", createdAt);
-			UUID id = om.insert("object1", updatedObject, createdAt);
+			UUID id = (UUID)om.insert("object1", updatedObject, createdAt);
 			logger.debug("Inserted object with uuid unix time: {}", UUIDs.unixTimestamp(id));
 		}
 
@@ -448,7 +482,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//insert some data
 		//Get a test object to insert
 		Map<String, Object> testObject = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), OldKeyspaceDefinition.getDefinitions().get("testtype"));
-		UUID key = om.insert("testtype", testObject);
+		UUID key = (UUID)om.insert("testtype", testObject);
 
 		//Query to get back the object from the database
 		Map<String, Object> dbObject = om.getByKey("testtype", key);
@@ -477,7 +511,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		testObject.put("index_1", "one");
 		testObject.put("index_2", "two");
 		testObject.put("value", "three");
-		key = om.insert("simple", testObject);
+		key = (UUID)om.insert("simple", testObject);
 
 		//Query to get back the object from the database
 		//Query by foreign key

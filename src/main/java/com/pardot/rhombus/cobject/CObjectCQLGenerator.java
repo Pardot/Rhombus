@@ -34,8 +34,8 @@ public class CObjectCQLGenerator {
 
 	private static Logger logger = LoggerFactory.getLogger(CObjectCQLGenerator.class);
 
-	protected static final String TEMPLATE_CREATE_STATIC = "CREATE TABLE \"%s\" (id timeuuid PRIMARY KEY, %s);";
-	protected static final String TEMPLATE_CREATE_WIDE = "CREATE TABLE \"%s\" (id timeuuid, shardid bigint, %s, PRIMARY KEY ((shardid, %s),id) );";
+	protected static final String TEMPLATE_CREATE_STATIC = "CREATE TABLE \"%s\" (id %s PRIMARY KEY, %s);";
+	protected static final String TEMPLATE_CREATE_WIDE = "CREATE TABLE \"%s\" (id %s, shardid bigint, %s, PRIMARY KEY ((shardid, %s),id) );";
 	protected static final String TEMPLATE_CREATE_KEYSPACE_LIST = "CREATE TABLE \"__keyspace_definitions\" (id timeuuid, shardid bigint, def varchar, PRIMARY KEY ((shardid),id) );";
 	protected static final String TEMPLATE_CREATE_WIDE_INDEX = "CREATE TABLE \"%s\" (shardid bigint, tablename varchar, indexvalues varchar, targetrowkey varchar, PRIMARY KEY ((tablename, indexvalues),shardid) );";
 	protected static final String TEMPLATE_CREATE_INDEX_UPDATES = "CREATE TABLE \"__index_updates\" (id timeuuid, statictablename varchar, instanceid timeuuid, indexvalues varchar, PRIMARY KEY ((statictablename,instanceid),id))";
@@ -151,7 +151,7 @@ public class CObjectCQLGenerator {
 	 * @throws CQLGenerationException
 	 */
 	@NotNull
-	public CQLStatementIterator makeCQLforInsert(String objType, Map<String,Object> data, UUID key, Long timestamp) throws CQLGenerationException {
+	public CQLStatementIterator makeCQLforInsert(String objType, Map<String,Object> data, Object key, Long timestamp) throws CQLGenerationException {
 		return makeCQLforInsert(this.keyspace, this.definitions.get(objType), data, key, timestamp, 0);
 	}
 
@@ -162,7 +162,7 @@ public class CObjectCQLGenerator {
 	 * @return Iterator of CQL statements that need to be executed for this task. (Should have a length of 1 for this particular method)
 	 */
 	@NotNull
-	public CQLStatementIterator makeCQLforGet(String objType, UUID key){
+	public CQLStatementIterator makeCQLforGet(String objType, Object key){
 		return makeCQLforGet(this.keyspace, this.definitions.get(objType), key);
 	}
 
@@ -566,9 +566,9 @@ public class CObjectCQLGenerator {
 	}
 
 
-	protected static CQLStatement makeInsertStatementStatic(String keyspace, String tableName, List<String> fields, List values, UUID uuid, Long timestamp, Integer ttl){
+	protected static CQLStatement makeInsertStatementStatic(String keyspace, String tableName, List<String> fields, List values, Object id, Long timestamp, Integer ttl){
 		fields.add(0,"id");
-		values.add(0, uuid);
+		values.add(0, id);
 		String query = String.format(
 				TEMPLATE_INSERT_STATIC,
                 keyspace,
@@ -601,7 +601,7 @@ public class CObjectCQLGenerator {
 		return CQLStatement.make(String.format(TEMPLATE_INSERT_INDEX_UPDATES,keyspace), Arrays.asList(id, tableName, instanceId, indexValuesAsJson).toArray() );
 	}
 
-	protected static CQLStatement makeInsertStatementWide(String keyspace, String tableName, List<String> fields, List<Object> values, UUID uuid, long shardid, Long timestamp, Integer ttl){
+	protected static CQLStatement makeInsertStatementWide(String keyspace, String tableName, List<String> fields, List<Object> values, Object uuid, long shardid, Long timestamp, Integer ttl){
 		fields.add(0,"shardid");
 		values.add(0,Long.valueOf(shardid));
 		fields.add(0,"id");
@@ -641,7 +641,7 @@ public class CObjectCQLGenerator {
 		return makeCQLforInsert(keyspace, def, data, null, null, 0);
 	}
 
-	protected static CQLStatementIterator makeCQLforInsert(@NotNull String keyspace, @NotNull CDefinition def, @NotNull Map<String,Object> data, @Nullable UUID uuid, Long timestamp, Integer ttl) throws CQLGenerationException{
+	protected static CQLStatementIterator makeCQLforInsert(@NotNull String keyspace, @NotNull CDefinition def, @NotNull Map<String,Object> data, @Nullable Object uuid, Long timestamp, Integer ttl) throws CQLGenerationException{
 		List<CQLStatement> ret = Lists.newArrayList();
 		if(uuid == null){
 			uuid = UUIDs.timeBased();
@@ -679,7 +679,7 @@ public class CObjectCQLGenerator {
 		return new BoundedCQLStatementIterator(ret);
 	}
 
-	public static void addCQLStatmentsForIndexInsert(String keyspace, boolean includeShardInsert, List<CQLStatement> statementListToAddTo, CDefinition def, @NotNull Map<String,Object> data, CIndex i, UUID uuid, Map<String,ArrayList> fieldsAndValues,Long timestamp, Integer ttl) throws CQLGenerationException {
+	public static void addCQLStatmentsForIndexInsert(String keyspace, boolean includeShardInsert, List<CQLStatement> statementListToAddTo, CDefinition def, @NotNull Map<String,Object> data, CIndex i, Object uuid, Map<String,ArrayList> fieldsAndValues,Long timestamp, Integer ttl) throws CQLGenerationException {
 		//insert it into the index
 		long shardId = i.getShardingStrategy().getShardKey(uuid);
 		statementListToAddTo.add(makeInsertStatementWide(
@@ -705,7 +705,7 @@ public class CObjectCQLGenerator {
 		}
 	}
 
-	protected static CQLStatementIterator makeCQLforGet(String keyspace, CDefinition def, UUID key){
+	protected static CQLStatementIterator makeCQLforGet(String keyspace, CDefinition def, Object key){
 		Object[] values = {key};
 		CQLStatement statement = CQLStatement.make(String.format(TEMPLATE_SELECT_STATIC, keyspace, def.getName(),"id = ?"), values);
 		return new BoundedCQLStatementIterator(Lists.newArrayList(statement));
@@ -860,6 +860,7 @@ public class CObjectCQLGenerator {
 		String query = String.format(
 			TEMPLATE_CREATE_STATIC,
 			def.getName(),
+			def.getPrimaryKeyType(),
 			makeFieldList(def.getFields().values(),true));
 		return CQLStatement.make(query);
 	}
@@ -868,6 +869,7 @@ public class CObjectCQLGenerator {
 		String query = String.format(
 			TEMPLATE_CREATE_WIDE,
 			makeTableName(def,index),
+			def.getPrimaryKeyType(),
 			makeFieldList(def.getFields().values(), true),
 			makeCommaList(index.getCompositeKeyList()));
 		return CQLStatement.make(query);
@@ -900,7 +902,7 @@ public class CObjectCQLGenerator {
 		ArrayList fieldList = Lists.newArrayList();
 		ArrayList valueList = Lists.newArrayList();
 		for(CField f : def.getFields().values()){
-			if( data.containsKey(f.getName()) ){
+			if( data.containsKey(f.getName()) && !f.getName().equals("id") ){
 				fieldList.add(f.getName());
 				valueList.add(data.get(f.getName()));
 			}
@@ -960,6 +962,9 @@ public class CObjectCQLGenerator {
 		String ret = "";
 		while(it.hasNext()){
 			CField f = it.next();
+			if(f.getName().equals("id")){
+				continue; //ignore the id, if this definition specifies an id
+			}
 			ret = ret + f.getName() +
 					(withType ? " " + f.getType() : "") +
 					(it.hasNext() ? "," : "");

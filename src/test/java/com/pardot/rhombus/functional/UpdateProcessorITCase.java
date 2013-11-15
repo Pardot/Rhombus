@@ -59,7 +59,7 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		testObject.put("data2", "This is data 2");
 		testObject.put("data3", "This is data 3");
 
-		UUID key = om.insert("testtype", testObject);
+		UUID key = (UUID)om.insert("testtype", testObject);
 
 		testObject.put("foreignid", Long.valueOf(200));
 		testObject.put("type", Integer.valueOf(201));
@@ -187,7 +187,7 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		testObject.put("data2", "This is data 2");
 		testObject.put("data3", "This is data 3");
 
-		UUID key = om.insert("testtype", testObject);
+		UUID key = (UUID)om.insert("testtype", testObject);
 
 		Map<String, Object> updateObj = Maps.newTreeMap();
 		updateObj.put("foreignid", Long.valueOf(1));

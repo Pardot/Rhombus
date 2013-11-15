@@ -31,6 +31,20 @@
                     "shardingStrategy": {"type": "ShardingStrategyMonthly"}
                 }
             ]
+        },
+        {
+            "name": "customkey",
+            "allowNullPrimaryKeyInserts": true,
+            "fields": [
+                {"name": "id", "type": "varchar"},
+                {"name": "data1", "type": "varchar"}
+            ],
+            "indexes" : [
+                {
+                    "key": "data1",
+                    "shardingStrategy": {"type": "ShardingStrategyNone"}
+                }
+            ]
         }
     ]
 }

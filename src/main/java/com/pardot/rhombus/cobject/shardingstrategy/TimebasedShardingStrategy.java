@@ -41,8 +41,16 @@ public abstract class TimebasedShardingStrategy {
 	}
 
 	@JsonIgnore
-	public long getShardKey(UUID uuid){
-		return getShardKey(UUIDs.unixTimestamp(uuid));
+	public long getShardKey(Object key){
+		if(key instanceof UUID){
+			return getShardKey(UUIDs.unixTimestamp((UUID)key));
+		}
+		else if(key instanceof Long){
+			return this.getShardKey(((Long)key).longValue());
+		}
+		else{
+			return 1L;
+		}
 	}
 
 	@JsonIgnore
