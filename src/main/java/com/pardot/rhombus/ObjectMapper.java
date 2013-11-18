@@ -219,24 +219,6 @@ public class ObjectMapper implements CObjectShardList {
 		return key;
 	}
 
-	/**
-	 * Insert a batch of objects with specified ids
-	 * @param objectType Object type to insert
-	 * @param objects Map of id to object for inserts
-	 * @throws CQLGenerationException
-	 * @throws RhombusException
-	 */
-	public void insertBatchWithIds(String objectType, Map<UUID, Map<String, Object>> objects) throws CQLGenerationException, RhombusException {
-		logger.debug("Insert batch with ids");
-		List<CQLStatementIterator> statementIterators = Lists.newArrayList();
-		for(UUID id : objects.keySet()) {
-			Map<String, Object> values = objects.get(id);
-			long timestamp = System.currentTimeMillis();
-			CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, id, timestamp);
-			statementIterators.add(statementIterator);
-		}
-		executeStatements(statementIterators);
-	}
 
 	/**
 	 * Insert a new object with values and key
@@ -265,7 +247,15 @@ public class ObjectMapper implements CObjectShardList {
 	 * @throws CQLGenerationException
 	 */
 	public Object insert(String objectType, Map<String, Object> values) throws CQLGenerationException, RhombusException {
-		return insert(objectType, values, System.currentTimeMillis());
+		Object key = null;
+		if(values.containsKey("id")) {
+			key = values.get("id");
+			values.remove("id");
+		}
+		else{
+			key = UUIDs.timeBased();
+		}
+		return insert(objectType, values, key);
 	}
 
 	/**
