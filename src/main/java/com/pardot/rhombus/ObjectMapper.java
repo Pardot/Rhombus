@@ -196,13 +196,20 @@ public class ObjectMapper implements CObjectShardList {
 	 * @return ID of most recently inserted object
 	 * @throws CQLGenerationException
 	 */
-	public UUID insertBatchMixed(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, RhombusException {
+	public Object insertBatchMixed(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, RhombusException {
 		logger.debug("Insert batch mixed");
 		List<CQLStatementIterator> statementIterators = Lists.newArrayList();
-		UUID key = null;
+		Object key = null;
 		for(String objectType : objects.keySet()) {
 			for(Map<String, Object> values : objects.get(objectType)) {
-				key = UUIDs.timeBased();
+				//use the id that was passed in for the insert if it was provided. Otherwise assume the key is a timeuuid
+				if(values.containsKey("id")){
+					key = values.get("id");
+					values.remove("id");
+				}
+				else{
+					key = UUIDs.timeBased();
+				}
 				long timestamp = System.currentTimeMillis();
 				CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, key, timestamp);
 				statementIterators.add(statementIterator);
