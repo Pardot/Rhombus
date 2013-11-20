@@ -50,6 +50,10 @@ public class JsonUtil {
 				rhombusMap.put(field.getName(), typedObjectFromValueAndField(jsonMap.get(field.getName()), field));
 			}
 		}
+		if(jsonMap.containsKey("id") && (!definition.getFields().containsKey("id")) ){
+			//we have a user supplied ID but not a custom key type
+			rhombusMap.put("id", UUID.fromString(jsonMap.get("id").toString()));
+		}
 		return rhombusMap;
 	}
 

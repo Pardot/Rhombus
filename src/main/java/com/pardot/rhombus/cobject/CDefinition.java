@@ -129,4 +129,15 @@ public class CDefinition {
 			return CField.CDataType.TIMEUUID.toString();
 		}
 	}
+
+	@JsonIgnore
+	public Class getPrimaryKeyClass(){
+		if(fields.containsKey("id")){
+			CField idField = fields.get("id");
+			return idField.getEmptyJavaObjectOfThisType().getClass();
+		}
+		else{
+			return UUID.class;
+		}
+	}
 }
