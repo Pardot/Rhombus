@@ -350,6 +350,17 @@ public class ObjectMapper implements CObjectShardList {
 		}
 	}
 
+	public Class getTypeOfKey(String objectType){
+		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
+		if(def.getFields().containsKey("id")){
+			CField idField = def.getFields().get("id");
+			return idField.getEmptyJavaObjectOfThisType().getClass();
+		}
+		else{
+			return UUID.class;
+		}
+	}
+
 	/**
 	 * @param objectType Type of object to query
 	 * @param criteria Criteria to query by
