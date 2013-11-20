@@ -29,12 +29,14 @@ public class CKeyspaceDefinitionMigratorTest {
 		CKeyspaceDefinitionMigrator subject = new CKeyspaceDefinitionMigrator(OldKeyspaceDefinition, NewKeyspaceDefinition);
 		assertTrue(subject.isMigratable());
 
-		//now try adding an invalid Object
+		//now try adding an field (which is now supported)
 		NewKeyspaceDefinition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
 		CField newField = new CField("newfield", CField.CDataType.VARCHAR);
 		NewKeyspaceDefinition.getDefinitions().get("testtype").getFields().put(newField.getName(),newField);
 		subject = new CKeyspaceDefinitionMigrator(OldKeyspaceDefinition, NewKeyspaceDefinition);
-		assertFalse(subject.isMigratable());
+		assertTrue(subject.isMigratable());
+
+		//todo: add test wherein it is an illegal migration
 	}
 
 	@Test

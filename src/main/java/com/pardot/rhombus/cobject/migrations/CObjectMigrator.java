@@ -20,20 +20,16 @@ public class CObjectMigrator {
 	}
 
 	public boolean isMigratable() {
-		//currently we only support adding new indexs and NOT new fields
-		if(OldDefinition.getFields().size() == NewDefinition.getFields().size()){
-			for(CField f: NewDefinition.getFields().values()){
-				if( (!OldDefinition.getFields().containsKey(f.getName())) ||
-					(!OldDefinition.getFields().get(f.getName()).getType().equals(f.getType())) ){
-					return false;
-				}
+		//currently we only support adding new fields not removing old ones
+		for(CField f: OldDefinition.getFields().values()){
+			if( (!NewDefinition.getFields().containsKey(f.getName())) ||
+				(!NewDefinition.getFields().get(f.getName()).getType().equals(f.getType())) ){
+				return false;
 			}
 		}
-		else{
-			return false;
-		}
 
-		//currently we only allow new indexes
+
+		//currently we allow new indexes but not removing old ones
 		for( CIndex i : OldDefinition.getIndexes().values() ){
 			if(!NewDefinition.getIndexes().containsKey(i.getKey())){
 				//we are missing one of our old definitions
@@ -54,12 +50,31 @@ public class CObjectMigrator {
 		if(!isMigratable()){
 			throw new CObjectMigrationException("CDefinition migration requested for "+NewDefinition.getName()+ " is not currently supported");
 		}
-		List<CQLStatement> ret = Lists.newArrayList();
+
+		List<CQLStatementIterator> ret = Lists.newArrayList();
+
+		//first migrate the fields
+		List<CField> newFields = getNewFields();
+		for(CField f: newFields){
+			ret.add(CObjectCQLGenerator.makeCQLforAddFieldToObject(NewDefinition, f.getName()));
+		}
+
+		//next migrate the indexes
+		List<CQLStatement> indexAdds = Lists.newArrayList();
 		List<CIndex> newIndexes = getNewIndexes();
 		for(CIndex i: newIndexes){
-			ret.add(CObjectCQLGenerator.makeWideTableCreate(NewDefinition,i));
+			indexAdds.add(CObjectCQLGenerator.makeWideTableCreate(NewDefinition,i));
 		}
-		return new BoundedCQLStatementIterator(ret);
+		ret.add(new BoundedCQLStatementIterator(indexAdds));
+
+		try{
+			return BoundedCQLStatementIterator.condenseIterators(ret);
+		}
+		catch (CQLGenerationException e){
+			throw new CObjectMigrationException("Encountered error attempting to generate CQL for migration");
+		}
+
+
 	}
 
 	public List<CIndex> getNewIndexes(){
@@ -73,5 +88,15 @@ public class CObjectMigrator {
 		return ret;
 	}
 
+	public List<CField> getNewFields(){
+		List<CField> ret = Lists.newArrayList();
+		for( CField f : NewDefinition.getFields().values() ){
+			if(!OldDefinition.getFields().containsKey(f.getName())){
+				//this field is not in the old definition, so add it as a new one
+				ret.add(f);
+			}
+		}
+		return ret;
+	}
 
 }

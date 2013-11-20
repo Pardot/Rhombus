@@ -57,6 +57,7 @@ public class CObjectCQLGenerator {
 	protected static final String TEMPLATE_SET_COMPACTION_LEVELED = "ALTER TABLE %s.\"%s\" WITH compaction = { 'class' :  'LeveledCompactionStrategy',  'sstable_size_in_mb' : %d }";
 	protected static final String TEMPLATE_SET_COMPACTION_TIERED = "ALTER TABLE %s.\"%s\" WITH compaction = { 'class' :  'SizeTieredCompactionStrategy',  'min_threshold' : %d }";
 	protected static final String TEMPLATE_TABLE_SCAN = "SELECT * FROM %s.\"%s\";";
+	protected static final String TEMPLATE_ADD_FIELD = "ALTER TABLE \"%s\" add %s %s";
 
 	protected Map<String, CDefinition> definitions;
 	protected CObjectShardList shardList;
@@ -298,6 +299,26 @@ public class CObjectCQLGenerator {
 	public static CQLStatement makeCQLforShardIndexTableCreate(){
 		return CQLStatement.make(String.format(TEMPLATE_CREATE_WIDE_INDEX,CObjectShardList.SHARD_INDEX_TABLE_NAME));
 	}
+
+	private static CQLStatement makeCQLforAddFieldToTable(String tableName, CField newField){
+		String query = String.format(TEMPLATE_ADD_FIELD, tableName, newField.getName(), newField.getType());
+		return CQLStatement.make(query);
+	}
+
+	public static CQLStatementIterator makeCQLforAddFieldToObject(CDefinition def, String newFieldName){
+		CField theNewField = def.getField(newFieldName);
+		List<CQLStatement> ret = Lists.newArrayList();
+		//alter statement for the static table
+		ret.add(makeCQLforAddFieldToTable(makeTableName(def,null), theNewField));
+
+		//now make the alter statements for the indexes
+		for(CIndex i: def.getIndexesAsList()){
+			ret.add(makeCQLforAddFieldToTable(makeTableName(def,i),theNewField));
+		}
+
+		return new BoundedCQLStatementIterator(ret);
+	}
+
 
 	/**
 	 *
