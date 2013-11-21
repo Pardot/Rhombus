@@ -305,14 +305,14 @@ public class CObjectCQLGenerator {
 		return CQLStatement.make(query);
 	}
 
-	public static CQLStatementIterator makeCQLforAddFieldToObject(CDefinition def, String newFieldName){
+	public static CQLStatementIterator makeCQLforAddFieldToObject(CDefinition def, String newFieldName, List<CIndex> existingIndexes){
 		CField theNewField = def.getField(newFieldName);
 		List<CQLStatement> ret = Lists.newArrayList();
 		//alter statement for the static table
 		ret.add(makeCQLforAddFieldToTable(makeTableName(def,null), theNewField));
 
 		//now make the alter statements for the indexes
-		for(CIndex i: def.getIndexesAsList()){
+		for(CIndex i: existingIndexes){
 			ret.add(makeCQLforAddFieldToTable(makeTableName(def,i),theNewField));
 		}
 

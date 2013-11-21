@@ -28,6 +28,17 @@ public class CObjectMigrator {
 			}
 		}
 
+		if(NewDefinition.getFields().containsKey("id")){
+			if(!OldDefinition.getFields().containsKey("id")){
+				//You cannot add a custom id in a migration
+				return false;
+			}
+			if(!OldDefinition.getField("id").getType().equals(NewDefinition.getField("id").getType())){
+				//You also cannot change the type
+				return false;
+			}
+		}
+
 
 		//currently we allow new indexes but not removing old ones
 		for( CIndex i : OldDefinition.getIndexes().values() ){
@@ -56,7 +67,7 @@ public class CObjectMigrator {
 		//first migrate the fields
 		List<CField> newFields = getNewFields();
 		for(CField f: newFields){
-			ret.add(CObjectCQLGenerator.makeCQLforAddFieldToObject(NewDefinition, f.getName()));
+			ret.add(CObjectCQLGenerator.makeCQLforAddFieldToObject(NewDefinition, f.getName(), OldDefinition.getIndexesAsList()));
 		}
 
 		//next migrate the indexes

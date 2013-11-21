@@ -34,7 +34,12 @@ public class CObjectMigratorTest {
 		CField newField = new CField("newfield", CField.CDataType.VARCHAR);
 		NewDefinition.getFields().put(newField.getName(),newField);
 
-		//since now we added a new field it should NOT be migratable
+		//since now we added a new field it should also be migratable
+		assertTrue(subject.isMigratable());
+
+		//changing a field type is not migratable
+		CField updatedField = new CField("index_1", CField.CDataType.BIGINT);
+		NewDefinition.getFields().put(updatedField.getName(),updatedField);
 		assertFalse(subject.isMigratable());
 
 	}
@@ -79,12 +84,19 @@ public class CObjectMigratorTest {
 		newIndex2.setKey("value");
 		newIndex2.setShardingStrategy(new ShardingStrategyNone());
 		NewDefinition.getIndexes().put(newIndex2.getName(), newIndex2);
+		CField newField = new CField("newfield", CField.CDataType.VARCHAR);
+		NewDefinition.getFields().put(newField.getName(),newField);
 		CObjectMigrator subject = new CObjectMigrator(OldDefinition,NewDefinition);
 		assertEquals(subject.getNewIndexes().size(), 2);
 
 		CQLStatementIterator result = subject.getMigrationCQL();
-		assertEquals("CREATE TABLE \"simplef27e6d073810cfb7826cf964c67b383e\" (id timeuuid, shardid bigint, value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, value),id) );", result.next().getQuery());
-		assertEquals("CREATE TABLE \"simple02a6bb2fc3293d91f31c3f6ce892fedc\" (id timeuuid, shardid bigint, value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, index_1, index_2),id) );", result.next().getQuery());
+		assertEquals("ALTER TABLE \"simple\" add newfield varchar", result.next().getQuery());
+		assertEquals("ALTER TABLE \"simple3886e3439cce68f6363dc8f9d39ce041\" add newfield varchar", result.next().getQuery());
+		assertEquals("ALTER TABLE \"simple2849d92a26f695e548ccda0db2a09b00\" add newfield varchar", result.next().getQuery());
+
+
+		assertEquals("CREATE TABLE \"simplef27e6d073810cfb7826cf964c67b383e\" (id timeuuid, shardid bigint, newfield varchar,value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, value),id) );", result.next().getQuery());
+		assertEquals("CREATE TABLE \"simple02a6bb2fc3293d91f31c3f6ce892fedc\" (id timeuuid, shardid bigint, newfield varchar,value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, index_1, index_2),id) );", result.next().getQuery());
 		assertEquals(false, result.hasNext());
 	}
 }
