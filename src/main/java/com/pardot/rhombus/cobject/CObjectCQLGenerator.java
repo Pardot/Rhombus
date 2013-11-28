@@ -153,7 +153,7 @@ public class CObjectCQLGenerator {
 	 */
 	@NotNull
 	public CQLStatementIterator makeCQLforInsert(String objType, Map<String,Object> data, Object key, Long timestamp) throws CQLGenerationException {
-		return makeCQLforInsert(this.keyspace, this.definitions.get(objType), data, key, timestamp, 0);
+		return makeCQLforInsert(this.keyspace, this.definitions.get(objType), data, key, timestamp, null);
 	}
 
 	/**
@@ -659,7 +659,7 @@ public class CObjectCQLGenerator {
 	}
 
 	protected static CQLStatementIterator makeCQLforInsert(@NotNull String keyspace, @NotNull CDefinition def, @NotNull Map<String,Object> data) throws CQLGenerationException{
-		return makeCQLforInsert(keyspace, def, data, null, null, 0);
+		return makeCQLforInsert(keyspace, def, data, null, null, null);
 	}
 
 	protected static CQLStatementIterator makeCQLforInsert(@NotNull String keyspace, @NotNull CDefinition def, @NotNull Map<String,Object> data, @Nullable Object uuid, Long timestamp, Integer ttl) throws CQLGenerationException{
