@@ -1,6 +1,8 @@
 package com.pardot.rhombus;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.HostDistance;
+import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
@@ -34,11 +36,17 @@ public class ConnectionManager {
 	private Long batchTimeout = 10000L;
 	private Integer consistencyHorizon = null;
 	private LoadBalancingPolicy loadBalancingPolicy = null;
+	private Integer maxConnectionPerHostLocal = null;
+	private Integer maxConnectionPerHostRemote = null;
+	private Integer maxSimultaneousRequestsPerConnectionTreshold = null;
 
 	public ConnectionManager(CassandraConfiguration configuration) {
 		this.contactPoints = configuration.getContactPoints();
 		this.localDatacenter = configuration.getLocalDatacenter();
 		this.consistencyHorizon = configuration.getConsistencyHorizion();
+		this.maxConnectionPerHostLocal = configuration.getMaxConnectionPerHostLocal() == null ? 16 : configuration.getMaxConnectionPerHostLocal();
+		this.maxConnectionPerHostRemote = configuration.getMaxConnectionPerHostRemote() == null ? 4 : configuration.getMaxConnectionPerHostRemote();
+		this.maxSimultaneousRequestsPerConnectionTreshold = configuration.getMaxSimultaneousRequestsPerConnectionTreshold() == null ? 128 : configuration.getMaxSimultaneousRequestsPerConnectionTreshold();
 		if(configuration.getBatchTimeout() != null) {
 			this.batchTimeout = configuration.getBatchTimeout();
 		}
@@ -68,6 +76,19 @@ public class ConnectionManager {
 			logger.debug("Setting native transport port to {}", this.nativeTransportPort);
 			builder.withPort(this.nativeTransportPort);
 		}
+		PoolingOptions poolingOptions = new PoolingOptions();
+		if(maxConnectionPerHostLocal != null){
+			poolingOptions.setMaxConnectionsPerHost(HostDistance.LOCAL,maxConnectionPerHostLocal);
+		}
+		if(maxConnectionPerHostRemote != null){
+			poolingOptions.setMaxConnectionsPerHost(HostDistance.REMOTE,maxConnectionPerHostRemote);
+		}
+		if(maxSimultaneousRequestsPerConnectionTreshold != null){
+			poolingOptions.setMaxSimultaneousRequestsPerConnectionThreshold(HostDistance.LOCAL,maxSimultaneousRequestsPerConnectionTreshold);
+			poolingOptions.setMaxSimultaneousRequestsPerConnectionThreshold(HostDistance.REMOTE,maxSimultaneousRequestsPerConnectionTreshold);
+
+		}
+		builder.withPoolingOptions(poolingOptions);
         if(withoutJMXReporting){
             cluster = builder.withoutJMXReporting().build();
         }

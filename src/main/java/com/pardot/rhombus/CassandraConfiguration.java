@@ -26,6 +26,17 @@ public class CassandraConfiguration {
 	@JsonProperty
 	private String localDatacenter;
 
+	@JsonProperty
+	private Integer maxConnectionPerHostLocal;
+
+
+	@JsonProperty
+	private Integer maxConnectionPerHostRemote;
+
+
+	@JsonProperty
+	private Integer maxSimultaneousRequestsPerConnectionTreshold;
+
 	public List<String> getContactPoints() {
 		return contactPoints;
 	}
@@ -56,5 +67,29 @@ public class CassandraConfiguration {
 
 	public void setBatchTimeout(Long batchTimeout) {
 		this.batchTimeout = batchTimeout;
+	}
+
+	public Integer getMaxConnectionPerHostLocal() {
+		return maxConnectionPerHostLocal;
+	}
+
+	public void setMaxConnectionPerHostLocal(Integer maxConnectionPerHostLocal) {
+		this.maxConnectionPerHostLocal = maxConnectionPerHostLocal;
+	}
+
+	public Integer getMaxConnectionPerHostRemote() {
+		return maxConnectionPerHostRemote;
+	}
+
+	public void setMaxConnectionPerHostRemote(Integer maxConnectionPerHostRemote) {
+		this.maxConnectionPerHostRemote = maxConnectionPerHostRemote;
+	}
+
+	public Integer getMaxSimultaneousRequestsPerConnectionTreshold() {
+		return maxSimultaneousRequestsPerConnectionTreshold;
+	}
+
+	public void setMaxSimultaneousRequestsPerConnectionTreshold(Integer maxSimultaneousRequestsPerConnectionTreshold) {
+		this.maxSimultaneousRequestsPerConnectionTreshold = maxSimultaneousRequestsPerConnectionTreshold;
 	}
 }
