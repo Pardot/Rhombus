@@ -13,6 +13,7 @@ import com.pardot.rhombus.cobject.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.datastax.driver.core.SocketOptions;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +35,7 @@ public class ConnectionManager {
 	private boolean logCql = false;
 	private Integer nativeTransportPort = null;
 	private Long batchTimeout = 10000L;
+	private Integer individualNodeConnectionTimeout = 2000;
 	private Integer consistencyHorizon = null;
 	private LoadBalancingPolicy loadBalancingPolicy = null;
 	private Integer maxConnectionPerHostLocal = null;
@@ -89,6 +91,9 @@ public class ConnectionManager {
 
 		}
 		builder.withPoolingOptions(poolingOptions);
+		SocketOptions socketOptions = new SocketOptions();
+		socketOptions.setConnectTimeoutMillis(individualNodeConnectionTimeout);
+		builder.withSocketOptions(socketOptions);
         if(withoutJMXReporting){
             cluster = builder.withoutJMXReporting().build();
         }
