@@ -36,6 +36,7 @@ public class ConnectionManager {
 	private Integer nativeTransportPort = null;
 	private Long batchTimeout = 10000L;
 	private Integer individualNodeConnectionTimeout = 2000;
+	private Integer driverReadTimeoutMillis = 2000;
 	private Integer consistencyHorizon = null;
 	private LoadBalancingPolicy loadBalancingPolicy = null;
 	private Integer maxConnectionPerHostLocal = null;
@@ -49,6 +50,13 @@ public class ConnectionManager {
 		this.maxConnectionPerHostLocal = configuration.getMaxConnectionPerHostLocal() == null ? 16 : configuration.getMaxConnectionPerHostLocal();
 		this.maxConnectionPerHostRemote = configuration.getMaxConnectionPerHostRemote() == null ? 4 : configuration.getMaxConnectionPerHostRemote();
 		this.maxSimultaneousRequestsPerConnectionTreshold = configuration.getMaxSimultaneousRequestsPerConnectionTreshold() == null ? 128 : configuration.getMaxSimultaneousRequestsPerConnectionTreshold();
+
+		if(configuration.getIndividualNodeConnectionTimeout() != null) {
+			this.individualNodeConnectionTimeout = configuration.getIndividualNodeConnectionTimeout();
+		}
+		if(configuration.getDriverReadTimeoutMillis() != null) {
+			this.driverReadTimeoutMillis = configuration.getDriverReadTimeoutMillis();
+		}
 		if(configuration.getBatchTimeout() != null) {
 			this.batchTimeout = configuration.getBatchTimeout();
 		}
@@ -93,6 +101,7 @@ public class ConnectionManager {
 		builder.withPoolingOptions(poolingOptions);
 		SocketOptions socketOptions = new SocketOptions();
 		socketOptions.setConnectTimeoutMillis(individualNodeConnectionTimeout);
+		socketOptions.setReadTimeoutMillis(driverReadTimeoutMillis);
 		builder.withSocketOptions(socketOptions);
         if(withoutJMXReporting){
             cluster = builder.withoutJMXReporting().build();

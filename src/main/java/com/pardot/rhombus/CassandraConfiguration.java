@@ -29,13 +29,17 @@ public class CassandraConfiguration {
 	@JsonProperty
 	private Integer maxConnectionPerHostLocal;
 
-
 	@JsonProperty
 	private Integer maxConnectionPerHostRemote;
 
-
 	@JsonProperty
 	private Integer maxSimultaneousRequestsPerConnectionTreshold;
+
+	@JsonProperty
+	private Integer individualNodeConnectionTimeout;
+
+	@JsonProperty
+	private Integer driverReadTimeoutMillis;
 
 	public List<String> getContactPoints() {
 		return contactPoints;
@@ -91,5 +95,21 @@ public class CassandraConfiguration {
 
 	public void setMaxSimultaneousRequestsPerConnectionTreshold(Integer maxSimultaneousRequestsPerConnectionTreshold) {
 		this.maxSimultaneousRequestsPerConnectionTreshold = maxSimultaneousRequestsPerConnectionTreshold;
+	}
+
+	public Integer getIndividualNodeConnectionTimeout() {
+		return individualNodeConnectionTimeout;
+	}
+
+	public void setIndividualNodeConnectionTimeout(Integer individualNodeConnectionTimeout) {
+		this.individualNodeConnectionTimeout = individualNodeConnectionTimeout;
+	}
+
+	public Integer getDriverReadTimeoutMillis() {
+		return driverReadTimeoutMillis;
+	}
+
+	public void setDriverReadTimeoutMillis(Integer driverReadTimeoutMillis) {
+		this.driverReadTimeoutMillis = driverReadTimeoutMillis;
 	}
 }

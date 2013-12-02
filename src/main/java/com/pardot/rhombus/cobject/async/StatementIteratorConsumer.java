@@ -36,6 +36,7 @@ public class StatementIteratorConsumer {
 	private final CountDownLatch shutdownLatch;
 	private final long timeout;
 	private final Set<Future> futures = Collections.synchronizedSet(new HashSet<Future>());
+	private List<Throwable> executionExceptions = new Vector<Throwable>();
 
 	public StatementIteratorConsumer(BoundedCQLStatementIterator statementIterator, CQLExecutor cqlExecutor, long timeout) {
 		this.statementIterator = statementIterator;
@@ -65,7 +66,13 @@ public class StatementIteratorConsumer {
 			if(!complete) {
 				Metrics.defaultRegistry().newMeter(StatementIteratorConsumer.class, "asyncTimeout", "asyncTimeout", TimeUnit.SECONDS).mark();
 				cancelFutures();
+				for(Throwable t : this.executionExceptions) {
+					logger.warn("Timeout executing statements. Found future failure: ", t);
+				}
 				throw new RhombusException("Timout executing statements asynch");
+			}
+			for(Throwable t : this.executionExceptions) {
+				logger.warn("Completed executing statements, but found future failure: ", t);
 			}
 		} catch (InterruptedException e) {
 			logger.warn("Interrupted while executing statements asynch", e);
@@ -100,9 +107,9 @@ public class StatementIteratorConsumer {
 			}
 			@Override
 			public void onFailure(final Throwable t) {
-				//TODO Stop processing and return error
-				logger.error("Error during async request: {}", t);
 				asyncExecTimerContext.stop();
+				logger.debug("Async failure time {}us", (System.nanoTime() - startTime) / 1000);
+				executionExceptions.add(t);
 				shutdownLatch.countDown();
 			}
 		}
