@@ -80,7 +80,6 @@ public class ConnectionManager {
 				loadBalancingPolicy = new DCAwareRoundRobinPolicy(localDatacenter);
 			}
 			builder.withLoadBalancingPolicy(new TokenAwarePolicy(loadBalancingPolicy));
-			builder.withLoadBalancingPolicy(loadBalancingPolicy);
 		}
 		if(this.nativeTransportPort != null) {
 			logger.debug("Setting native transport port to {}", this.nativeTransportPort);
