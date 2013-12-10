@@ -20,6 +20,7 @@ import java.util.UUID;
 		include = JsonTypeInfo.As.PROPERTY,
 		property = "type")
 @JsonSubTypes({
+		@JsonSubTypes.Type(value = ShardingStrategyHourly.class, name = "ShardingStrategyHourly"),
 		@JsonSubTypes.Type(value = ShardingStrategyDaily.class, name = "ShardingStrategyDaily"),
 		@JsonSubTypes.Type(value = ShardingStrategyWeekly.class, name = "ShardingStrategyWeekly"),
 		@JsonSubTypes.Type(value = ShardingStrategyMonthly.class, name = "ShardingStrategyMonthly"),
