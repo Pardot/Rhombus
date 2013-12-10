@@ -24,8 +24,8 @@
         <findbugs.version>2.0.1</findbugs.version>
         <java-driver.version>2.0.0-rc1</java-driver.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cassandra.version>2.0.1</cassandra.version>
-        <cassandra-dependency.version>2.0.1</cassandra-dependency.version>
+        <cassandra.version>2.0.3</cassandra.version>
+        <cassandra-dependency.version>2.0.3</cassandra-dependency.version>
     </properties>
 
     <licenses>
