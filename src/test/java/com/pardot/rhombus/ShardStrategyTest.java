@@ -1,11 +1,7 @@
 package com.pardot.rhombus;
 
 import com.google.common.collect.Range;
-import com.pardot.rhombus.cobject.shardingstrategy.ShardStrategyException;
-import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyDaily;
-import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyWeekly;
-import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyMonthly;
-import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
+import com.pardot.rhombus.cobject.shardingstrategy.*;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -32,6 +28,43 @@ public class ShardStrategyTest extends TestCase {
 	 */
 	public static Test suite() {
 		return new TestSuite( ShardStrategyTest.class );
+	}
+
+	public void testShardingStrategyHourly() throws ShardStrategyException {
+		ShardingStrategyHourly subject = new ShardingStrategyHourly();
+		DateTime d = new DateTime(2000,1,1,0,0,0, DateTimeZone.UTC);
+		long actual = subject.getShardKey(d.getMillis());
+		// 0 based, but shard ids are relative so it doesn't really matter
+		assertEquals("Should generate correct shard key for date", 0, actual);
+
+		d = new DateTime(2006,1,1,1,0,0, DateTimeZone.UTC);
+		actual = subject.getShardKey(d.getMillis());
+		assertEquals("Should generate correct shard key for date given offset", 52609, actual);
+
+		//test with offset
+		subject = new ShardingStrategyHourly();
+		subject.setOffset(20);
+
+		d = new DateTime(2000,1,10,0,0,0, DateTimeZone.UTC);
+		actual = subject.getShardKey(d.getMillis());
+		// 0 based, doesn't really matter
+		assertEquals("Should generate correct shard key for date", 236, actual);
+
+		//test the range bounded
+		subject = new ShardingStrategyHourly();
+		DateTime d1 = new DateTime(2013,2,22,2,0,0, DateTimeZone.UTC); //115226
+		DateTime d2 = new DateTime(2014,2,22,2,0,0, DateTimeZone.UTC); //123986
+		Range<Long> range = subject.getShardKeyRange(d1.getMillis(),d2.getMillis());
+		assertEquals("Range should have appropriate start point", 115226L, range.lowerEndpoint().longValue());
+		assertEquals("Range should have appropriate end point", 123986L, range.upperEndpoint().longValue());
+
+		//test range auto bounded
+		subject = new ShardingStrategyHourly();
+		d1 = new DateTime(2011,2,22,2,0,0, DateTimeZone.UTC); //97682
+		range = subject.getShardKeyRange(d1.getMillis(),null);
+		assertEquals("Range should have appropriate start point", 97682L, range.lowerEndpoint().longValue());
+		assertTrue("Range should have an upper bound", range.hasUpperBound());
+		assertTrue("Range should have a lower bound",range.hasLowerBound());
 	}
 
     public void testShardingStrategyDaily() throws ShardStrategyException {
@@ -70,6 +103,7 @@ public class ShardStrategyTest extends TestCase {
         assertTrue("Range should have an upper bound", range.hasUpperBound());
         assertTrue("Range should have a lower bound",range.hasLowerBound());
     }
+
     public void testShardingStrategyWeekly() throws ShardStrategyException {
         ShardingStrategyWeekly subject = new ShardingStrategyWeekly();
         DateTime d = new DateTime(2000,1,1,0,0,0, DateTimeZone.UTC);
