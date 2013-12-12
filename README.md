@@ -24,6 +24,19 @@ In summary, Rhombus is the right solution if you are storing huge amounts of tim
 
 *note - you wont actually query data from Rhombus via sql, but since sql is something everybody understands it is used above.
 
+
+How fast are Rhombus Inserts and Range Queries with Cassandra?
+==============================================================
+
+Currently we are running Rhombus in production with Cassandra. We use a token aware policy that falls back on a datacenter aware policy. We write with a consistency of One. The vast majority (the fastest 75%) of Inserts (both insertBatchMixed and single inserts) complete within 3ms.
+
+<img src="https://raw.github.com/Pardot/Rhombus/master/info/rhombus-inserts.png" />
+
+Range queries on a given index are about the same speed as inserts (3ms). The slower reads (in green) are those that return a longer range of data requiring multiple cassandra queries over index shards. 
+
+<img src="https://raw.github.com/Pardot/Rhombus/master/info/rhombus-range-query.png" />
+
+
 Define objects by creating a json document for each object type
 ================================================================
 
@@ -170,17 +183,6 @@ For documentation regarding replication class and replication factors go to: htt
 For more usage examples check out the object mapper functional test:
 https://github.com/Pardot/Rhombus/blob/master/src/test/java/com/pardot/rhombus/functional/ObjectMapperITCase.java
 
-
-How fast are Rhombus Inserts and Range Queries with Cassandra?
-==============================================================
-
-Currently we are running Rhombus in production with Cassandra. We use a token aware policy that falls back on a datacenter aware policy. We write with a consistency of One. The vast majority (the fastest 75%) of Inserts (both insertBatchMixed and single inserts) complete within 3ms.
-
-<img src="https://raw.github.com/Pardot/Rhombus/master/info/rhombus-inserts.png" />
-
-Range queries on a given index are about the same speed as inserts (3ms). The slower reads (in green) are those that return a longer range of data requiring multiple cassandra queries over index shards. 
-
-<img src="https://raw.github.com/Pardot/Rhombus/master/info/rhombus-range-query.png" />
 
 
 How to get Rhombus
