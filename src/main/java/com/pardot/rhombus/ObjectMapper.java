@@ -64,8 +64,10 @@ public class ObjectMapper implements CObjectShardList {
 			cqlExecutor.executeSync(cql);
 		} catch(Exception e) {
 			if(forceRebuild) {
+				CQLStatement truncateCql = cqlGenerator.makeCQLforShardIndexTableTruncate();
 				CQLStatement dropCql = cqlGenerator.makeCQLforShardIndexTableDrop();
 				logger.debug("Attempting to drop table with cql {}", dropCql);
+				cqlExecutor.executeSync(truncateCql);
 				cqlExecutor.executeSync(dropCql);
 				cqlExecutor.executeSync(cql);
 			} else {
@@ -92,15 +94,18 @@ public class ObjectMapper implements CObjectShardList {
 		if(keyspaceDefinition.getDefinitions() != null) {
 			for(CDefinition definition : keyspaceDefinition.getDefinitions().values()) {
 				CQLStatementIterator statementIterator = cqlGenerator.makeCQLforCreate(definition.getName());
+				CQLStatementIterator truncateStatementIterator = cqlGenerator.makeCQLforTruncate(definition.getName());
 				CQLStatementIterator dropStatementIterator = cqlGenerator.makeCQLforDrop(definition.getName());
 				while(statementIterator.hasNext()) {
 					cql = statementIterator.next();
+					CQLStatement truncateCql = truncateStatementIterator.next();
 					CQLStatement dropCql = dropStatementIterator.next();
 					try {
 						cqlExecutor.executeSync(cql);
 					} catch (AlreadyExistsException e) {
 						if(forceRebuild) {
 							logger.debug("ForceRebuild is on, dropping table");
+							cqlExecutor.executeSync(truncateCql);
 							cqlExecutor.executeSync(dropCql);
 							cqlExecutor.executeSync(cql);
 						} else {

@@ -40,6 +40,7 @@ public class CObjectCQLGenerator {
 	protected static final String TEMPLATE_CREATE_WIDE_INDEX = "CREATE TABLE \"%s\" (shardid bigint, tablename varchar, indexvalues varchar, targetrowkey varchar, PRIMARY KEY ((tablename, indexvalues),shardid) );";
 	protected static final String TEMPLATE_CREATE_INDEX_UPDATES = "CREATE TABLE \"__index_updates\" (id timeuuid, statictablename varchar, instanceid timeuuid, indexvalues varchar, PRIMARY KEY ((statictablename,instanceid),id))";
 	protected static final String TEMPLATE_DROP = "DROP TABLE %s.\"%s\";";
+	protected static final String TEMPLATE_TRUNCATE = "TRUNCATE TABLE %s.\"%s\";";
 	protected static final String TEMPLATE_INSERT_STATIC = "INSERT INTO %s.\"%s\" (%s) VALUES (%s)%s;";//"USING TIMESTAMP %s%s;";//Add back when timestamps become preparable
 	protected static final String TEMPLATE_INSERT_WIDE = "INSERT INTO %s.\"%s\" (%s) VALUES (%s)%s;";//"USING TIMESTAMP %s%s;";//Add back when timestamps become preparable
 	protected static final String TEMPLATE_INSERT_KEYSPACE = "INSERT INTO %s.\"__keyspace_definitions\" (id, shardid, def) values (?, ?, ?);";
@@ -119,6 +120,15 @@ public class CObjectCQLGenerator {
 	 */
 	public CQLStatementIterator makeCQLforDrop(String objType){
 		return makeCQLforDrop(this.keyspace, this.definitions.get(objType));
+	}
+
+	/**
+	 *
+	 * @param objType - The name of the Object type aka CDefinition.name
+	 * @return Iterator of CQL statements that need to be executed for this task.
+	 */
+	public CQLStatementIterator makeCQLforTruncate(String objType){
+		return makeCQLforTruncate(this.keyspace, this.definitions.get(objType));
 	}
 
 	/**
@@ -326,6 +336,14 @@ public class CObjectCQLGenerator {
 	 */
 	public CQLStatement makeCQLforShardIndexTableDrop(){
 		return CQLStatement.make(String.format(TEMPLATE_DROP, this.keyspace, CObjectShardList.SHARD_INDEX_TABLE_NAME));
+	}
+
+	/**
+	 *
+	 * @return String of single CQL statement required to create the Shard Index Table
+	 */
+	public CQLStatement makeCQLforShardIndexTableTruncate(){
+		return CQLStatement.make(String.format(TEMPLATE_TRUNCATE, this.keyspace, CObjectShardList.SHARD_INDEX_TABLE_NAME));
 	}
 
 	/**
@@ -586,6 +604,16 @@ public class CObjectCQLGenerator {
 		return new BoundedCQLStatementIterator(ret);
 	}
 
+	protected static CQLStatementIterator makeCQLforTruncate(String keyspace, CDefinition def){
+		List<CQLStatement> ret = Lists.newArrayList();
+		ret.add(makeTableDrop(keyspace, def.getName()));
+		if(def.getIndexes() != null) {
+			for(CIndex i : def.getIndexes().values()){
+				ret.add(makeTableTruncate(keyspace, makeTableName(def, i)));
+			}
+		}
+		return new BoundedCQLStatementIterator(ret);
+	}
 
 	protected static CQLStatement makeInsertStatementStatic(String keyspace, String tableName, List<String> fields, List values, Object id, Long timestamp, Integer ttl){
 		fields.add(0,"id");
@@ -875,6 +903,10 @@ public class CObjectCQLGenerator {
 
 	protected static CQLStatement makeTableDrop(String keyspace, String tableName){
 		return CQLStatement.make(String.format(TEMPLATE_DROP, keyspace, tableName));
+	}
+
+	protected static CQLStatement makeTableTruncate(String keyspace, String tableName){
+		return CQLStatement.make(String.format(TEMPLATE_TRUNCATE, keyspace, tableName));
 	}
 
 	protected static CQLStatement makeStaticTableCreate(CDefinition def){
