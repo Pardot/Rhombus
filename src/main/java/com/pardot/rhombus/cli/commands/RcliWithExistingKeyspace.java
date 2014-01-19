@@ -28,7 +28,7 @@ public class RcliWithExistingKeyspace extends RcliWithCassandraConfig {
 		return ret;
 	}
 
-	public boolean executeCommand(CommandLine cl){
+	public boolean executeCommand(CommandLine cl) throws Exception {
 		boolean ret = super.executeCommand(cl);
 		if(!ret){
 			return false;

@@ -2,6 +2,8 @@ package com.pardot.rhombus.cli.commands;
 
 import com.pardot.rhombus.cobject.CQLGenerationException;
 import org.apache.commons.cli.CommandLine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * User: Rob Righter
@@ -9,10 +11,15 @@ import org.apache.commons.cli.CommandLine;
  */
 public class PrepareInserts extends RcliWithCassandraConfig {
 
-
     public boolean executeCommand(CommandLine cl){
 
-	    boolean ret = super.executeCommand(cl);
+	    boolean ret = false;
+		try {
+			ret = super.executeCommand(cl);
+		} catch (Exception e) {
+			System.out.println("Exception executing command");
+			e.printStackTrace();
+		}
 	    if(!ret){
 		    return false;
 	    }
@@ -27,7 +34,10 @@ public class PrepareInserts extends RcliWithCassandraConfig {
             System.out.println(e);
             System.out.println("Error encountered while attempting to prepare the Insert Statements for the keyspace");
 	        return false;
-        }
-
-    }
+        } catch (Exception e) {
+			e.printStackTrace();
+			System.out.print("Error getting object mapper for default keyspace");
+			return false;
+		}
+	}
 }

@@ -2,6 +2,7 @@ package com.pardot.rhombus.cobject.migrations;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
+import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.*;
 
 import java.util.List;
@@ -14,10 +15,12 @@ public class CKeyspaceDefinitionMigrator {
 
 	CKeyspaceDefinition OldKeyspace;
 	CKeyspaceDefinition NewKeyspace;
+	String rhombusKeyspaceName;
 
-	public CKeyspaceDefinitionMigrator(CKeyspaceDefinition oldKeyspace, CKeyspaceDefinition newKeyspace){
+	public CKeyspaceDefinitionMigrator(CKeyspaceDefinition oldKeyspace, CKeyspaceDefinition newKeyspace, String rhombusKeyspaceName){
 		this.OldKeyspace = oldKeyspace;
 		this.NewKeyspace = newKeyspace;
+		this.rhombusKeyspaceName = rhombusKeyspaceName;
 	}
 
 	public boolean isMigratable(){
@@ -37,7 +40,7 @@ public class CKeyspaceDefinitionMigrator {
 		return true;
 	}
 
-	public CQLStatementIterator getMigrationCQL() throws CObjectMigrationException {
+	public CQLStatementIterator getMigrationCQL(CObjectCQLGenerator cqlGenerator) throws CObjectMigrationException {
 		if(!isMigratable()){
 			throw new CObjectMigrationException("CKeyspaceDefinition migration requested for "+NewKeyspace.getName()+ " is not currently supported");
 		}
@@ -45,10 +48,10 @@ public class CKeyspaceDefinitionMigrator {
 		for(CDefinition def : NewKeyspace.getDefinitions().values()){
 			if(OldKeyspace.getDefinitions().containsKey(def.getName())){
 				CObjectMigrator m = new CObjectMigrator(OldKeyspace.getDefinitions().get(def.getName()),def);
-				its.add(m.getMigrationCQL());
+				its.add(m.getMigrationCQL(cqlGenerator));
 			}
 			else {
-				its.add(CObjectCQLGenerator.makeCQLforCreate(def));
+				its.add(cqlGenerator.makeCQLforCreate(def));
 			}
 		}
 
@@ -56,7 +59,7 @@ public class CKeyspaceDefinitionMigrator {
 		try{
 			com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
 			keyspaceDefinitionAsJson = om.writeValueAsString(NewKeyspace);
-			its.add(CObjectCQLGenerator.makeCQLforInsertKeyspaceDefinition(NewKeyspace.getName(), keyspaceDefinitionAsJson, UUIDs.timeBased()));
+			its.add(CObjectCQLGenerator.makeCQLforInsertKeyspaceDefinition(rhombusKeyspaceName, NewKeyspace.getName(), keyspaceDefinitionAsJson, UUIDs.timeBased()));
 		}
 		catch(Exception e) {
 			throw new CObjectMigrationException(e.getMessage());

@@ -12,5 +12,5 @@ import org.apache.commons.cli.Options;
  */
 public interface RhombusCommand {
     public Options getCommandOptions();
-    public boolean executeCommand(CommandLine cl);
+    public boolean executeCommand(CommandLine cl) throws Exception;
 }

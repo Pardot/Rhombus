@@ -1,6 +1,7 @@
 package com.pardot.rhombus.cobject;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.base.Objects;
 import com.pardot.rhombus.util.CDataTypeSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -188,4 +189,17 @@ public class CField {
         }
 
     }
+
+	@Override
+	public boolean equals(Object otherObject) {
+		if(otherObject == null) {
+			return false;
+		}
+		if(this.getClass() != otherObject.getClass()) {
+			return false;
+		}
+		final CField other = (CField)otherObject;
+		return Objects.equal(this.getName(), other.getName())
+				&& Objects.equal(this.getType(), other.getType());
+	}
 }

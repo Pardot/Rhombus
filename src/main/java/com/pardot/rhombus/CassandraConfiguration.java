@@ -41,6 +41,9 @@ public class CassandraConfiguration {
 	@JsonProperty
 	private Integer driverReadTimeoutMillis;
 
+	@JsonProperty
+	private String rhombusKeyspaceName;
+
 	public List<String> getContactPoints() {
 		return contactPoints;
 	}
@@ -111,5 +114,13 @@ public class CassandraConfiguration {
 
 	public void setDriverReadTimeoutMillis(Integer driverReadTimeoutMillis) {
 		this.driverReadTimeoutMillis = driverReadTimeoutMillis;
+	}
+
+	public String getRhombusKeyspaceName() {
+		return rhombusKeyspaceName;
+	}
+
+	public void setRhombusKeyspaceName(String rhombusKeyspaceName) {
+		this.rhombusKeyspaceName = rhombusKeyspaceName;
 	}
 }

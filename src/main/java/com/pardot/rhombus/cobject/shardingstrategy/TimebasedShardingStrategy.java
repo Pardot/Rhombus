@@ -4,9 +4,11 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Objects;
 import com.google.common.collect.Range;
 import org.joda.time.DateTime;
 
+import java.sql.Time;
 import java.util.UUID;
 
 /**
@@ -95,5 +97,17 @@ public abstract class TimebasedShardingStrategy {
 				return Range.closed(start,end);
 			}
 		}
+	}
+
+	@Override
+	public boolean equals(Object otherObject) {
+		if(otherObject == null) {
+			return false;
+		}
+		if(this.getClass() != otherObject.getClass()) {
+			return false;
+		}
+		final TimebasedShardingStrategy other = (TimebasedShardingStrategy)otherObject;
+		return Objects.equal(this.getOffset(), other.getOffset());
 	}
 }

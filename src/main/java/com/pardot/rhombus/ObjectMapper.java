@@ -3,6 +3,7 @@ package com.pardot.rhombus;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.AlreadyExistsException;
+import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -50,24 +51,62 @@ public class ObjectMapper implements CObjectShardList {
 		this.batchTimeout = batchTimeout;
 	}
 
+	public void truncateTables() {
+		// Index table
+		CQLStatement truncateCql = cqlGenerator.makeCQLforShardIndexTableTruncate();
+		logger.debug("Truncating shard index table");
+		try {
+			cqlExecutor.executeSync(truncateCql);
+		} catch(Exception e) {
+			logger.debug("Failed to truncate table with query ", truncateCql.getQuery());
+		}
+
+		// Index updates
+		truncateCql = cqlGenerator.makeCQLforIndexUpdateTableTruncate();
+		logger.debug("Truncating index update table");
+		try {
+			cqlExecutor.executeSync(truncateCql);
+		} catch(Exception e) {
+			logger.debug("Failed to truncate table with query ", truncateCql.getQuery());
+		}
+
+
+		// All of the tables in the keyspace
+		if(keyspaceDefinition.getDefinitions() != null) {
+			for(CDefinition definition : keyspaceDefinition.getDefinitions().values()) {
+				CQLStatementIterator truncateStatementIterator = cqlGenerator.makeCQLforTruncate(definition.getName());
+				while(truncateStatementIterator.hasNext()) {
+					truncateCql = truncateStatementIterator.next();
+					try {
+						cqlExecutor.executeSync(truncateCql);
+					} catch(Exception e) {
+						logger.debug("Failed to truncate table with query ", truncateCql.getQuery());
+					}
+				}
+			}
+		}
+	}
+
 	/**
 	 * Build the tables contained in the keyspace definition.
 	 * This method assumes that its keyspace exists and
 	 * does not contain any tables.
 	 */
 	public void buildKeyspace(Boolean forceRebuild) {
+		if(forceRebuild) {
+			truncateTables();
+		}
 		//we are about to rework the the keyspaces, so lets clear the bounded query cache
 		cqlExecutor.clearStatementCache();
 		//First build the shard index
-		CQLStatement cql = CObjectCQLGenerator.makeCQLforShardIndexTableCreate();
+		CQLStatement cql = cqlGenerator.makeCQLforShardIndexTableCreate();
 		try {
 			cqlExecutor.executeSync(cql);
+			logger.debug("Created shard index table");
 		} catch(Exception e) {
 			if(forceRebuild) {
-				CQLStatement truncateCql = cqlGenerator.makeCQLforShardIndexTableTruncate();
 				CQLStatement dropCql = cqlGenerator.makeCQLforShardIndexTableDrop();
 				logger.debug("Attempting to drop table with cql {}", dropCql);
-				cqlExecutor.executeSync(truncateCql);
 				cqlExecutor.executeSync(dropCql);
 				cqlExecutor.executeSync(cql);
 			} else {
@@ -75,38 +114,34 @@ public class ObjectMapper implements CObjectShardList {
 			}
 		}
 		//Next build the update index
-		cql = CObjectCQLGenerator.makeCQLforIndexUpdateTableCreate();
+		cql = cqlGenerator.makeCQLforIndexUpdateTableCreate();
 		try{
 			cqlExecutor.executeSync(cql);
+			logger.debug("Created index update table");
 		}
 		catch(Exception e) {
 			logger.debug("Unable to create update index table. It may already exist");
 		}
-		//Next build the Keyspace Definition storage table index
-		cql = cqlGenerator.makeCQLforCreateKeyspaceDefinitionsTable();
-		try{
-			cqlExecutor.executeSync(cql);
-		}
-		catch(Exception e) {
-			logger.debug("Unable to create keyspace definitions table. It may already exist");
-		}
+
 		//Now build the tables for each object if the definition contains tables
 		if(keyspaceDefinition.getDefinitions() != null) {
 			for(CDefinition definition : keyspaceDefinition.getDefinitions().values()) {
 				CQLStatementIterator statementIterator = cqlGenerator.makeCQLforCreate(definition.getName());
-				CQLStatementIterator truncateStatementIterator = cqlGenerator.makeCQLforTruncate(definition.getName());
 				CQLStatementIterator dropStatementIterator = cqlGenerator.makeCQLforDrop(definition.getName());
 				while(statementIterator.hasNext()) {
 					cql = statementIterator.next();
-					CQLStatement truncateCql = truncateStatementIterator.next();
 					CQLStatement dropCql = dropStatementIterator.next();
 					try {
+						logger.debug("Creating table in keyspace {}\n{}", this.getKeyspaceDefinition().getName(), cql);
 						cqlExecutor.executeSync(cql);
 					} catch (AlreadyExistsException e) {
 						if(forceRebuild) {
 							logger.debug("ForceRebuild is on, dropping table");
-							cqlExecutor.executeSync(truncateCql);
-							cqlExecutor.executeSync(dropCql);
+							try {
+								cqlExecutor.executeSync(dropCql);
+							} catch (InvalidQueryException qe) {
+								logger.error("Could not rebuild table: {}", cql.getQuery(), qe);
+							}
 							cqlExecutor.executeSync(cql);
 						} else {
 							logger.warn("Table already exists and will not be updated");
@@ -115,18 +150,22 @@ public class ObjectMapper implements CObjectShardList {
 				}
 			}
 		}
+	}
 
-		//Now insert this initial keyspace definition into cassandra
-		try{
-			com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
-			String keyspaceDefinitionAsJson = om.writeValueAsString(keyspaceDefinition);
-			CQLStatementIterator it = cqlGenerator.makeCQLforInsertKeyspaceDefinition(keyspaceDefinitionAsJson);
-			executeStatements(it);
+	public void createKeyspaceDefinitionTableIfNotExists() {
+		CQLStatement cql = cqlGenerator.makeCQLforCreateKeyspaceDefinitionsTable();
+		try {
+			cqlExecutor.executeSync(cql);
+			logger.debug("Created keyspace definition table with cql: {}", cql.getQuery());
 		}
 		catch(Exception e) {
-			logger.debug("Could not upload new keyspace definition");
+			logger.debug("Unable to create keyspace definitions table. It may already exist");
 		}
+	}
 
+	public void insertKeyspaceDefinition(String name, String keyspaceDefinitionAsJson) throws CQLGenerationException, RhombusException {
+		CQLStatementIterator it = cqlGenerator.makeCQLforInsertKeyspaceDefinition(name, keyspaceDefinitionAsJson);
+		executeStatements(it);
 	}
 
 	public UUID getTimeUUIDAtEndOfConsistencyHorizion(){
@@ -487,20 +526,12 @@ public class ObjectMapper implements CObjectShardList {
 	}
 
 
-	public List<CQLStatement> runMigration(CKeyspaceDefinition NewKeyspaceDefinition, boolean executeCql) throws CObjectMigrationException {
+	public List<CQLStatement> runMigration(CKeyspaceDefinition oldKeyspaceDefinition, CKeyspaceDefinition newKeyspaceDefinition, String rhombusKeyspaceName, boolean executeCql) throws CObjectMigrationException {
 		List<CQLStatement> ret = Lists.newArrayList();
 		try{
-			//grab the current keyspace definition
-			CKeyspaceDefinition OldKeyspaceDefinition = null;
-			CQLStatement cql = CObjectCQLGenerator.makeCQLforGetKeyspaceDefinitions(NewKeyspaceDefinition.getName());
-			com.datastax.driver.core.ResultSet r = cqlExecutor.executeSync(cql);
-			OldKeyspaceDefinition = CKeyspaceDefinition.fromJsonString(r.one().getString("def"));
-			if(OldKeyspaceDefinition == null){
-				throw new CObjectMigrationException("Error: Could not hydrate old keypsace definition.");
-			}
 			//we have the keyspace definitions, now run the migration
-			CKeyspaceDefinitionMigrator migrator = new CKeyspaceDefinitionMigrator(OldKeyspaceDefinition, NewKeyspaceDefinition);
-			CQLStatementIterator cqlit = migrator.getMigrationCQL();
+			CKeyspaceDefinitionMigrator migrator = new CKeyspaceDefinitionMigrator(oldKeyspaceDefinition, newKeyspaceDefinition, rhombusKeyspaceName);
+			CQLStatementIterator cqlit = migrator.getMigrationCQL(this.cqlGenerator);
 			while(cqlit.hasNext()){
 				CQLStatement statement = cqlit.next();
 				ret.add(statement);
@@ -659,4 +690,17 @@ public class ObjectMapper implements CObjectShardList {
 		return keyspaceDefinition.getDefinitions().get(objectType);
 	}
 
+	public CKeyspaceDefinition hydrateRhombusKeyspaceDefinition(String keyspaceName) {
+		try{
+			CQLStatement cql = cqlGenerator.makeCQLforGetKeyspaceDefinitions(keyspaceName);
+			com.datastax.driver.core.ResultSet resultSet = cqlExecutor.executeSync(cql);
+			for(Row row : resultSet) {
+				CKeyspaceDefinition definition =  CKeyspaceDefinition.fromJsonString(row.getString("def"));
+				return definition;
+			}
+		} catch(Exception e){
+			logger.warn("Unable to hydrate keyspace {} definition from cassandra", keyspaceName, e);
+		}
+		return null;
+	}
 }

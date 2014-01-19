@@ -3,6 +3,7 @@ package com.pardot.rhombus.cobject;
 
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.util.MapToListSerializer;
@@ -139,5 +140,20 @@ public class CDefinition {
 		else{
 			return UUID.class;
 		}
+	}
+
+	@Override
+	public boolean equals(Object otherObject) {
+		if(otherObject == null) {
+			return false;
+		}
+		if(this.getClass() != otherObject.getClass()) {
+			return false;
+		}
+		final CDefinition other = (CDefinition)otherObject;
+		return Objects.equal(this.getName(), other.getName())
+				&& Objects.equal(this.isAllowNullPrimaryKeyInserts(), other.isAllowNullPrimaryKeyInserts())
+				&& Objects.equal(this.getFields(), other.getFields())
+				&& Objects.equal(this.getIndexes(), other.getIndexes());
 	}
 }

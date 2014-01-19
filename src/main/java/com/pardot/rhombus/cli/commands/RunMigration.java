@@ -1,5 +1,6 @@
 package com.pardot.rhombus.cli.commands;
 
+import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
 import com.pardot.rhombus.cobject.CQLStatement;
@@ -9,6 +10,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -36,7 +39,13 @@ public class RunMigration extends RcliWithExistingKeyspace {
 	}
 
 	public boolean executeCommand(CommandLine cl){
-		boolean ret = super.executeCommand(cl);
+		boolean ret = false;
+		try {
+			ret = super.executeCommand(cl);
+		} catch (Exception e) {
+			System.out.println("Exception executing command");
+			e.printStackTrace();
+		}
 		if(!ret){
 			return false;
 		}
@@ -67,7 +76,7 @@ public class RunMigration extends RcliWithExistingKeyspace {
 		//now run the migration
 		try{
 			boolean printOnly = cl.hasOption("l");
-			return runMigration(this.objectMapper, NewkeyDef, printOnly);
+			return runMigration(this.objectMapper, this.getConnectionManager().hydrateLatestKeyspaceDefinitionFromCassandra(NewkeyDef.getName()), NewkeyDef, this.getConnectionManager().getRhombusKeyspaceName(), printOnly);
 		}
 		catch (Exception e){
 			System.out.println("Error encountered while attempting to rebuild the keyspace");
@@ -75,17 +84,17 @@ public class RunMigration extends RcliWithExistingKeyspace {
 		}
 	}
 
-	public boolean runMigration(ObjectMapper om, CKeyspaceDefinition newKeyspaceDefinition, boolean printOnly) throws CObjectMigrationException {
+	public boolean runMigration(ObjectMapper om, CKeyspaceDefinition oldDefinition, CKeyspaceDefinition newKeyspaceDefinition, String rhombusKeyspaceName, boolean printOnly) throws CObjectMigrationException {
 		if(printOnly){
 			//just print out a list of CQL statements for the migration
-			List<CQLStatement> torun = om.runMigration(newKeyspaceDefinition, false);
+			List<CQLStatement> torun = om.runMigration(oldDefinition, newKeyspaceDefinition, rhombusKeyspaceName, false);
 			for(CQLStatement c:torun){
 				System.out.println(c.getQuery());
 			}
 		}
 		else{
 			//actually run the migration
-			om.runMigration(newKeyspaceDefinition, true);
+			om.runMigration(oldDefinition, newKeyspaceDefinition, rhombusKeyspaceName, true);
 		}
 		return true;
 	}

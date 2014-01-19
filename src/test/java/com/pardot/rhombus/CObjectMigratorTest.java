@@ -89,14 +89,15 @@ public class CObjectMigratorTest {
 		CObjectMigrator subject = new CObjectMigrator(OldDefinition,NewDefinition);
 		assertEquals(subject.getNewIndexes().size(), 2);
 
-		CQLStatementIterator result = subject.getMigrationCQL();
-		assertEquals("ALTER TABLE \"simple\" add newfield varchar", result.next().getQuery());
-		assertEquals("ALTER TABLE \"simple3886e3439cce68f6363dc8f9d39ce041\" add newfield varchar", result.next().getQuery());
-		assertEquals("ALTER TABLE \"simple2849d92a26f695e548ccda0db2a09b00\" add newfield varchar", result.next().getQuery());
+		CObjectCQLGenerator cqlGenerator = new CObjectCQLGenerator(OldDefinition.getName(), 1000);
+		CQLStatementIterator result = subject.getMigrationCQL(cqlGenerator);
+		assertEquals("ALTER TABLE \"simple\".\"simple\" add newfield varchar", result.next().getQuery());
+		assertEquals("ALTER TABLE \"simple\".\"simple3886e3439cce68f6363dc8f9d39ce041\" add newfield varchar", result.next().getQuery());
+		assertEquals("ALTER TABLE \"simple\".\"simple2849d92a26f695e548ccda0db2a09b00\" add newfield varchar", result.next().getQuery());
 
 
-		assertEquals("CREATE TABLE \"simplef27e6d073810cfb7826cf964c67b383e\" (id timeuuid, shardid bigint, newfield varchar,value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, value),id) );", result.next().getQuery());
-		assertEquals("CREATE TABLE \"simple02a6bb2fc3293d91f31c3f6ce892fedc\" (id timeuuid, shardid bigint, newfield varchar,value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, index_1, index_2),id) );", result.next().getQuery());
+		assertEquals("CREATE TABLE \"simple\".\"simplef27e6d073810cfb7826cf964c67b383e\" (id timeuuid, shardid bigint, newfield varchar,value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, value),id) );", result.next().getQuery());
+		assertEquals("CREATE TABLE \"simple\".\"simple02a6bb2fc3293d91f31c3f6ce892fedc\" (id timeuuid, shardid bigint, newfield varchar,value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, index_1, index_2),id) );", result.next().getQuery());
 		assertEquals(false, result.hasNext());
 	}
 }

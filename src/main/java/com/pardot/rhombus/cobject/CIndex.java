@@ -1,6 +1,7 @@
 package com.pardot.rhombus.cobject;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.shardingstrategy.TimebasedShardingStrategy;
@@ -24,7 +25,7 @@ public class CIndex {
 
 	}
 
-	public CIndex(String name, String key, TimebasedShardingStrategy shardingStrategy){
+	public CIndex(String key, TimebasedShardingStrategy shardingStrategy){
 		this.setKey(key);
 		this.shardingStrategy = shardingStrategy;
 	}
@@ -106,4 +107,17 @@ public class CIndex {
 		return ret;
 	}
 
+	@Override
+	public boolean equals(Object otherObject) {
+		if(otherObject == null) {
+			return false;
+		}
+		if(this.getClass() != otherObject.getClass()) {
+			return false;
+		}
+		final CIndex other = (CIndex)otherObject;
+		return Objects.equal(this.getKey(), other.getKey())
+				&& Objects.equal(this.getShardingStrategy(), other.getShardingStrategy())
+				&& Objects.equal(this.getCompositeKeyList(), other.getCompositeKeyList());
+	}
 }

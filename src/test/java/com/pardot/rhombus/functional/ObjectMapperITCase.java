@@ -335,7 +335,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//Rebuild the keyspace and get the object mapper
 		cm.buildKeyspace(definition, true);
 		logger.debug("Built keyspace: {}", definition.getName());
-		ObjectMapper om = cm.getObjectMapper(definition.getName());
+		ObjectMapper om = cm.getObjectMapper(definition);
 		om.setLogCql(true);
 
 		//Insert our test data
@@ -475,6 +475,9 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//Build the connection manager
 		ConnectionManager cm = getConnectionManager();
 
+		//This test requires that the keyspace be dropped before running
+		cm.dropKeyspace(OldKeyspaceDefinition.getName());
+
 		//Rebuild the keyspace and get the object mapper
 		cm.buildKeyspace(OldKeyspaceDefinition, true);
 		ObjectMapper om = cm.getObjectMapper(OldKeyspaceDefinition.getName());
@@ -496,7 +499,10 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//run the migration grabbing a brand new object mapper
 		cm = getConnectionManager();
 		om = cm.getObjectMapper(OldKeyspaceDefinition.getName());
-		om.runMigration(NewKeyspaceDefinition, true);
+		logger.debug("OM: {}", om.getKeyspaceDefinition_ONLY_FOR_TESTING().getName());
+		CKeyspaceDefinition oldKeyspaceDefinition = cm.hydrateLatestKeyspaceDefinitionFromCassandra(OldKeyspaceDefinition.getName());
+		logger.debug("Old definition: {}", oldKeyspaceDefinition);
+		om.runMigration(oldKeyspaceDefinition, NewKeyspaceDefinition, cm.getRhombusKeyspaceName(), true);
 
 		//now query out some data grabbing a brand new object mapper
 		cm = getConnectionManager();
