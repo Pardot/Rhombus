@@ -8,9 +8,12 @@ import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.pardot.rhombus.cobject.*;
+import com.pardot.rhombus.cobject.migrations.CKeyspaceDefinitionMigrator;
+import com.pardot.rhombus.cobject.migrations.CObjectMigrationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -260,6 +263,23 @@ public class ConnectionManager {
 			}
 		}
 		return getObjectMapper(keyspaceDefinition);
+	}
+
+	public List<CQLStatement> runMigration(CKeyspaceDefinition newKeyspaceDefinition, boolean executeCql) throws CObjectMigrationException {
+		List<CQLStatement> ret = Lists.newArrayList();
+		try{
+			CKeyspaceDefinition oldKeyspaceDefinition = hydrateLatestKeyspaceDefinitionFromCassandra(newKeyspaceDefinition);
+			ObjectMapper om = getObjectMapper(newKeyspaceDefinition);
+			om.runMigration(oldKeyspaceDefinition, newKeyspaceDefinition, executeCql);
+			if(executeCql) {
+				addKeyspaceDefinitionToCassandra(newKeyspaceDefinition);
+				om.setKeyspaceDefinition(newKeyspaceDefinition);
+			}
+		}
+		catch(Exception e){
+			throw new CObjectMigrationException(e);
+		}
+		return ret;
 	}
 
 	/**

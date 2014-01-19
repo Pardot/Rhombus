@@ -76,7 +76,7 @@ public class RunMigration extends RcliWithExistingKeyspace {
 		//now run the migration
 		try{
 			boolean printOnly = cl.hasOption("l");
-			return runMigration(this.objectMapper, this.getConnectionManager().hydrateLatestKeyspaceDefinitionFromCassandra(NewkeyDef.getName()), NewkeyDef, this.getConnectionManager().getRhombusKeyspaceName(), printOnly);
+			return runMigration(this.getConnectionManager(), NewkeyDef, printOnly);
 		}
 		catch (Exception e){
 			System.out.println("Error encountered while attempting to rebuild the keyspace");
@@ -84,17 +84,16 @@ public class RunMigration extends RcliWithExistingKeyspace {
 		}
 	}
 
-	public boolean runMigration(ObjectMapper om, CKeyspaceDefinition oldDefinition, CKeyspaceDefinition newKeyspaceDefinition, String rhombusKeyspaceName, boolean printOnly) throws CObjectMigrationException {
+	public boolean runMigration(ConnectionManager cm, CKeyspaceDefinition oldDefinition, boolean printOnly) throws CObjectMigrationException {
 		if(printOnly){
 			//just print out a list of CQL statements for the migration
-			List<CQLStatement> torun = om.runMigration(oldDefinition, newKeyspaceDefinition, rhombusKeyspaceName, false);
+			List<CQLStatement> torun = cm.runMigration(oldDefinition, printOnly);
 			for(CQLStatement c:torun){
 				System.out.println(c.getQuery());
 			}
-		}
-		else{
+		} else {
 			//actually run the migration
-			om.runMigration(oldDefinition, newKeyspaceDefinition, rhombusKeyspaceName, true);
+			cm.runMigration(oldDefinition, printOnly);
 		}
 		return true;
 	}

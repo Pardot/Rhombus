@@ -15,12 +15,10 @@ public class CKeyspaceDefinitionMigrator {
 
 	CKeyspaceDefinition OldKeyspace;
 	CKeyspaceDefinition NewKeyspace;
-	String rhombusKeyspaceName;
 
-	public CKeyspaceDefinitionMigrator(CKeyspaceDefinition oldKeyspace, CKeyspaceDefinition newKeyspace, String rhombusKeyspaceName){
+	public CKeyspaceDefinitionMigrator(CKeyspaceDefinition oldKeyspace, CKeyspaceDefinition newKeyspace){
 		this.OldKeyspace = oldKeyspace;
 		this.NewKeyspace = newKeyspace;
-		this.rhombusKeyspaceName = rhombusKeyspaceName;
 	}
 
 	public boolean isMigratable(){
@@ -53,16 +51,6 @@ public class CKeyspaceDefinitionMigrator {
 			else {
 				its.add(cqlGenerator.makeCQLforCreate(def));
 			}
-		}
-
-		String keyspaceDefinitionAsJson;
-		try{
-			com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
-			keyspaceDefinitionAsJson = om.writeValueAsString(NewKeyspace);
-			its.add(CObjectCQLGenerator.makeCQLforInsertKeyspaceDefinition(rhombusKeyspaceName, NewKeyspace.getName(), keyspaceDefinitionAsJson, UUIDs.timeBased()));
-		}
-		catch(Exception e) {
-			throw new CObjectMigrationException(e.getMessage());
 		}
 
 		BoundedCQLStatementIterator ret = null;

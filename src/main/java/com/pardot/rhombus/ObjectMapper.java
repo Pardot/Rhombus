@@ -51,6 +51,14 @@ public class ObjectMapper implements CObjectShardList {
 		this.batchTimeout = batchTimeout;
 	}
 
+	/**
+	 * This should only be used after a successful migration to update the cached version of the keyspace definition
+	 * @param keyspaceDefinition Updated keyspace definition
+	 */
+	public void setKeyspaceDefinition(CKeyspaceDefinition keyspaceDefinition) {
+		this.keyspaceDefinition = keyspaceDefinition;
+	}
+
 	public void truncateTables() {
 		// Index table
 		CQLStatement truncateCql = cqlGenerator.makeCQLforShardIndexTableTruncate();
@@ -526,11 +534,11 @@ public class ObjectMapper implements CObjectShardList {
 	}
 
 
-	public List<CQLStatement> runMigration(CKeyspaceDefinition oldKeyspaceDefinition, CKeyspaceDefinition newKeyspaceDefinition, String rhombusKeyspaceName, boolean executeCql) throws CObjectMigrationException {
+	public List<CQLStatement> runMigration(CKeyspaceDefinition oldKeyspaceDefinition, CKeyspaceDefinition newKeyspaceDefinition, boolean executeCql) throws CObjectMigrationException {
 		List<CQLStatement> ret = Lists.newArrayList();
 		try{
 			//we have the keyspace definitions, now run the migration
-			CKeyspaceDefinitionMigrator migrator = new CKeyspaceDefinitionMigrator(oldKeyspaceDefinition, newKeyspaceDefinition, rhombusKeyspaceName);
+			CKeyspaceDefinitionMigrator migrator = new CKeyspaceDefinitionMigrator(oldKeyspaceDefinition, newKeyspaceDefinition);
 			CQLStatementIterator cqlit = migrator.getMigrationCQL(this.cqlGenerator);
 			while(cqlit.hasNext()){
 				CQLStatement statement = cqlit.next();
@@ -539,8 +547,7 @@ public class ObjectMapper implements CObjectShardList {
 					cqlExecutor.executeSync(statement);
 				}
 			}
-		}
-		catch(Exception e){
+		} catch(Exception e){
 			throw new CObjectMigrationException(e);
 		}
 		return ret;
