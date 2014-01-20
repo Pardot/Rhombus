@@ -52,11 +52,16 @@ public class UpdateCleaner extends RcliWithExistingKeyspace {
 	}
 
 	public boolean executeCommand(CommandLine cl){
-		boolean ret = super.executeCommand(cl);
+		boolean ret = false;
+		try {
+			ret = super.executeCommand(cl);
+		} catch (Exception e) {
+			System.out.println("Exception executing command");
+			e.printStackTrace();
+		}
 		if(!ret){
 			return false;
 		}
-
 		try{
 			getConnectionManager().setDefaultKeyspace(keyspaceDefinition);
 			String strategy = cl.getOptionValue("strategy");

@@ -29,11 +29,16 @@ public class GetUUIDInfo extends RhombusCli {
 
 	public boolean executeCommand(CommandLine cl){
 
-		boolean ret = super.executeCommand(cl);
+		boolean ret = false;
+		try {
+			ret = super.executeCommand(cl);
+		} catch (Exception e) {
+			System.out.println("Exception executing command");
+			e.printStackTrace();
+		}
 		if(!ret){
 			return false;
 		}
-
 		if(!cl.hasOption("uuid")){
 			displayHelpMessage();
 			return false;

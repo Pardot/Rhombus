@@ -42,9 +42,10 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 		public void testMakeStaticTableCreate() throws CObjectParseException, IOException {
 			String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
 			CDefinition def = CDefinition.fromJsonString(json);
-			CQLStatement cql = Subject.makeStaticTableCreate(def);
+			Subject subject = new Subject(1000);
+			CQLStatement cql = subject.makeStaticTableCreate(def);
 			CQLStatement expected = CQLStatement.make(
-				"CREATE TABLE \"testtype\" (id timeuuid PRIMARY KEY, filtered int,data1 varchar,data2 varchar,data3 varchar,instance bigint,type int,foreignid bigint);"
+				"CREATE TABLE \"testspace\".\"testtype\" (id timeuuid PRIMARY KEY, filtered int,data1 varchar,data2 varchar,data3 varchar,instance bigint,type int,foreignid bigint);"
 			);
 			assertEquals(expected, cql);
 		}
@@ -52,21 +53,22 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 		public void testMakeWideTableCreate() throws CObjectParseException, IOException {
 			String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
 			CDefinition def = CDefinition.fromJsonString(json);
-			CQLStatement cql1 = Subject.makeWideTableCreate(def, def.getIndexes().get("foreignid"));
+			Subject subject = new Subject(1000);
+			CQLStatement cql1 = subject.makeWideTableCreate(def, def.getIndexes().get("foreignid"));
 			CQLStatement expected1 = CQLStatement.make(
-				"CREATE TABLE \"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id timeuuid, shardid bigint, filtered int,data1 varchar,data2 varchar,data3 varchar,instance bigint,type int,foreignid bigint, PRIMARY KEY ((shardid, foreignid),id) );"
+				"CREATE TABLE \"testspace\".\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id timeuuid, shardid bigint, filtered int,data1 varchar,data2 varchar,data3 varchar,instance bigint,type int,foreignid bigint, PRIMARY KEY ((shardid, foreignid),id) );"
 			);
 			assertEquals(expected1, cql1);
 
-			CQLStatement cql2 = Subject.makeWideTableCreate(def, def.getIndexes().get("instance:type"));
+			CQLStatement cql2 = subject.makeWideTableCreate(def, def.getIndexes().get("instance:type"));
 			CQLStatement expected2 = CQLStatement.make(
-				"CREATE TABLE \"testtype6671808f3f51bcc53ddc76d2419c9060\" (id timeuuid, shardid bigint, filtered int,data1 varchar,data2 varchar,data3 varchar,instance bigint,type int,foreignid bigint, PRIMARY KEY ((shardid, instance, type),id) );"
+				"CREATE TABLE \"testspace\".\"testtype6671808f3f51bcc53ddc76d2419c9060\" (id timeuuid, shardid bigint, filtered int,data1 varchar,data2 varchar,data3 varchar,instance bigint,type int,foreignid bigint, PRIMARY KEY ((shardid, instance, type),id) );"
 			);
 			assertEquals(expected2, cql2);
 
-			CQLStatement cql3 = Subject.makeWideTableCreate(def, def.getIndexes().get("foreignid:instance:type"));
+			CQLStatement cql3 = subject.makeWideTableCreate(def, def.getIndexes().get("foreignid:instance:type"));
 			CQLStatement expected3 =  CQLStatement.make(
-				"CREATE TABLE \"testtypef9bf3332bb4ec879849ec43c67776131\" (id timeuuid, shardid bigint, filtered int,data1 varchar,data2 varchar,data3 varchar,instance bigint,type int,foreignid bigint, PRIMARY KEY ((shardid, foreignid, instance, type),id) );"
+				"CREATE TABLE \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" (id timeuuid, shardid bigint, filtered int,data1 varchar,data2 varchar,data3 varchar,instance bigint,type int,foreignid bigint, PRIMARY KEY ((shardid, foreignid, instance, type),id) );"
 			);
 			assertEquals(expected3, cql3);
 		}
@@ -83,40 +85,40 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			assertEquals("Should generate CQL statements for the static table plus all indexes including the filtered index", 6, actual.size());
 			//static table
 			expected = CQLStatement.make(
-					"INSERT INTO testspace.\"testtype\" (id, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?);",
+					"INSERT INTO \"testspace\".\"testtype\" (id, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?);",
 					Arrays.asList(uuid, 1, "This is data one", "This is data two", "This is data three", 222222, 5, 777).toArray()
 			);
 			assertEquals(expected, actual.get(0));
 			Object[] expectedValues = Arrays.asList(uuid, Long.valueOf(160),1, "This is data one", "This is data two", "This is data three", 222222, 5, 777).toArray();
 			expected = CQLStatement.make(
-					"INSERT INTO testspace.\"testtype6671808f3f51bcc53ddc76d2419c9060\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+					"INSERT INTO \"testspace\".\"testtype6671808f3f51bcc53ddc76d2419c9060\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
 					expectedValues
 			);
 			assertEquals(expected, actual.get(1));
 
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
 					Arrays.asList("testtype6671808f3f51bcc53ddc76d2419c9060","222222:5",Long.valueOf(160),"160:222222:5").toArray()
 			);
 			assertEquals(expected, actual.get(2));
 
 
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
 				expectedValues
 			);
 			assertEquals(expected,actual.get(3));
 
 
 			expected = CQLStatement.make(
-					"INSERT INTO testspace.\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
+					"INSERT INTO \"testspace\".\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
 					Arrays.asList("testtypef9bf3332bb4ec879849ec43c67776131","777:222222:5",Long.valueOf(160),"160:777:222222:5").toArray()
 			);
 			assertEquals(expected, actual.get(4));
 
 			expectedValues = Arrays.asList(uuid, Long.valueOf(1),1, "This is data one", "This is data two", "This is data three", 222222, 5, 777).toArray();
 			expected = CQLStatement.make(
-					"INSERT INTO testspace.\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+					"INSERT INTO \"testspace\".\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
 					expectedValues
 			);
 			assertEquals(expected,actual.get(5));
@@ -127,7 +129,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			actual = toList(result);
 			expectedValues = Arrays.asList(uuid, 1, "This is data one", "This is data two", "This is data three", 222222, 5, 777).toArray();
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtype\" (id, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?) USING TTL 20;",
+				"INSERT INTO \"testspace\".\"testtype\" (id, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?) USING TTL 20;",
 				expectedValues
 			);
 			assertEquals(expected, actual.get(0));
@@ -142,39 +144,39 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			//static table
 			expectedValues = Arrays.asList(uuid, 1, "This is data one", 222222, 5, 777).toArray();
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtype\" (id, filtered, data1, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"testtype\" (id, filtered, data1, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?);",
 				expectedValues
 			);
 			assertEquals(expected, actual.get(0));
 
 			expectedValues = Arrays.asList(uuid, Long.valueOf(160), 1, "This is data one", 222222, 5, 777).toArray();
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtype6671808f3f51bcc53ddc76d2419c9060\" (id, shardid, filtered, data1, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"testtype6671808f3f51bcc53ddc76d2419c9060\" (id, shardid, filtered, data1, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?);",
 				expectedValues
 			);
 			assertEquals(expected, actual.get(1));
 
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
 				Arrays.asList("testtype6671808f3f51bcc53ddc76d2419c9060","222222:5",Long.valueOf(160),"160:222222:5").toArray()
 			);
 			assertEquals(expected, actual.get(2));
 
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" (id, shardid, filtered, data1, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" (id, shardid, filtered, data1, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?);",
 				expectedValues
 			);
 			assertEquals(expected,actual.get(3));
 
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
 				Arrays.asList("testtypef9bf3332bb4ec879849ec43c67776131","777:222222:5",Long.valueOf(160),"160:777:222222:5").toArray()
 			);
 			assertEquals(expected, actual.get(4));
 
 			expectedValues = Arrays.asList(uuid, Long.valueOf(1), 1, "This is data one", 222222, 5, 777).toArray();
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id, shardid, filtered, data1, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id, shardid, filtered, data1, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?);",
 				expectedValues
 			);
 			assertEquals(expected,actual.get(5));
@@ -205,13 +207,13 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			assertEquals("Number of CQL statements should be correct",2,actual.size());
 			//static table
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtype\" (id, data1, foreignid) VALUES (?, ?, ?);",
+				"INSERT INTO \"testspace\".\"testtype\" (id, data1, foreignid) VALUES (?, ?, ?);",
 				Arrays.asList(uuid, "this is a test", "777").toArray()
 			);
 			assertEquals(expected, actual.get(0));
 
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id, shardid, data1, foreignid) VALUES (?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id, shardid, data1, foreignid) VALUES (?, ?, ?, ?);",
 				Arrays.asList(uuid, Long.valueOf(1), "this is a test", "777").toArray()
 			);
 			assertEquals(expected,actual.get(1));
@@ -221,7 +223,8 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 		public void testMakeCQLforCreate() throws CObjectParseException, IOException {
 			String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
 			CDefinition def = CDefinition.fromJsonString(json);
-			CQLStatementIterator actual = Subject.makeCQLforCreate(def);
+			Subject subject = new Subject(1000);
+			CQLStatementIterator actual = subject.makeCQLforCreate(def);
 			assertEquals("Should generate CQL statements for the static table plus all indexes", 4, actual.size());
 		}
 
@@ -234,7 +237,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			CQLStatementIterator actual = Subject.makeCQLforGet(KEYSPACE_NAME, def,uuid);
 			assertEquals("Static gets should return bounded query iterator", true,actual.isBounded());
 			assertEquals("Static gets should return an iterator with 1 statement", 1,actual.size());
-			CQLStatement expected = CQLStatement.make("SELECT * FROM testspace.\"testtype\" WHERE id = ?;", Arrays.asList(uuid).toArray());
+			CQLStatement expected = CQLStatement.make("SELECT * FROM \"testspace\".\"testtype\" WHERE id = ?;", Arrays.asList(uuid).toArray());
 			assertEquals("Should generate proper CQL for static table get by ID",expected,toList(actual).get(0));
 
 			CObjectShardList shardIdLists = new ShardListMock(Arrays.asList(1L,2L,3L,4L,5L));
@@ -247,7 +250,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			indexkeys.put("instance", "222222");
 			actual = Subject.makeCQLforGet(KEYSPACE_NAME, shardIdLists, def, indexkeys, Long.valueOf(10));
 			expected = CQLStatement.make(
-					"SELECT * FROM testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
 					Arrays.asList(Long.valueOf(1),"777","222222","5", stop).toArray()
 			);
 			CQLStatement result = actual.next();
@@ -259,7 +262,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 
 			//expected = "SELECT * FROM \"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = 2 AND foreignid = 777 AND instance = 222222 AND type = 5 AND id <";
 			expected = CQLStatement.make(
-					"SELECT * FROM testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
 					Arrays.asList(Long.valueOf(2),"777","222222","5", stop).toArray()
 			);
 			result = actual.next();
@@ -278,7 +281,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			indexkeys.put("instance", "222222");
 			actual = Subject.makeCQLforGet(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.DESCENDING, start, stop,Long.valueOf(10), false);
 			expected = CQLStatement.make(
-				"SELECT * FROM testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id > ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+				"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id > ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
 				Arrays.asList(Long.valueOf(160),"777","222222","5", start, stop).toArray()
 			);
 			//"Should generate proper CQL for wide table get by index values"
@@ -293,21 +296,21 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			actual = Subject.makeCQLforGet(KEYSPACE_NAME, shardIdLists, def, indexkeys,CObjectOrdering.ASCENDING, start, stop,Long.valueOf(10), true);
 			assertEquals("Should be proper size for range", 13, actual.size()); //All of 2011 plus the first month of 2012
 			expected = CQLStatement.make(
-				"SELECT * FROM testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id ASC LIMIT 10 ALLOW FILTERING;",
+				"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id ASC LIMIT 10 ALLOW FILTERING;",
 				Arrays.asList(Long.valueOf(133),"777","222222","5",start,stop).toArray()
 			);
 			//Should generate proper CQL for wide table get by index values"
 			assertEquals(expected,actual.next());
 
 			expected = CQLStatement.make(
-					"SELECT * FROM testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id ASC LIMIT 10 ALLOW FILTERING;",
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id ASC LIMIT 10 ALLOW FILTERING;",
 					Arrays.asList(Long.valueOf(134),"777","222222","5",start,stop).toArray()
 			);
 			//Should generate proper CQL for wide table get by index values
 			assertEquals(expected,actual.next());
 
 			expected = CQLStatement.make(
-					"SELECT * FROM testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id ASC LIMIT 5 ALLOW FILTERING;",
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id ASC LIMIT 5 ALLOW FILTERING;",
 					Arrays.asList(Long.valueOf(135),"777","222222","5",start,stop).toArray()
 			);
 			assertTrue("Should have next when hinted less than the limit",actual.hasNext(5));
@@ -321,18 +324,18 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			actual = Subject.makeCQLforGet(KEYSPACE_NAME, shardIdLists, def, indexkeys,CObjectOrdering.DESCENDING, start, stop,Long.valueOf(10), true);
 			assertEquals("Descending: Should be proper size for range", 13, actual.size()); //All of 2011 plus the first month of 2012
 			expected = CQLStatement.make(
-					"SELECT * FROM testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
 					Arrays.asList(Long.valueOf(145),"777","222222","5",start,stop).toArray()
 			);
 			//"Descending: Should generate proper CQL for wide table get by index values"
 			assertEquals(expected,actual.next());
 			expected = CQLStatement.make(
-					"SELECT * FROM testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
 					Arrays.asList(Long.valueOf(144),"777","222222","5",start,stop).toArray()
 			);
 			assertEquals("Descending: Should generate proper CQL for wide table get by index values",expected,actual.next());
 			expected = CQLStatement.make(
-					"SELECT * FROM testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id DESC LIMIT 5 ALLOW FILTERING;",
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id DESC LIMIT 5 ALLOW FILTERING;",
 					Arrays.asList(Long.valueOf(143),"777","222222","5",start,stop).toArray()
 			);
 			assertTrue("Descending: Should have next when hinted less than the limit",actual.hasNext(5));
@@ -350,18 +353,18 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 
 			CQLStatement expected;
 
-			expected = CQLStatement.make("DELETE FROM testspace.testtype WHERE id = ?;",Arrays.asList(uuid).toArray());
+			expected = CQLStatement.make("DELETE FROM \"testspace\".\"testtype\" WHERE id = ?;",Arrays.asList(uuid).toArray());
 			assertEquals(expected,result.next());
 
 			expected = CQLStatement.make(
-				"DELETE FROM testspace.testtype6671808f3f51bcc53ddc76d2419c9060 WHERE id = ? AND shardid = ? AND instance = ? AND type = ?;",
+				"DELETE FROM \"testspace\".\"testtype6671808f3f51bcc53ddc76d2419c9060\" WHERE id = ? AND shardid = ? AND instance = ? AND type = ?;",
 					Arrays.asList(uuid,Long.valueOf(160), 222222, 5).toArray());
 			assertEquals(expected,result.next());
 			expected = CQLStatement.make(
-				"DELETE FROM testspace.testtypef9bf3332bb4ec879849ec43c67776131 WHERE id = ? AND shardid = ? AND foreignid = ? AND instance = ? AND type = ?;",
+				"DELETE FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE id = ? AND shardid = ? AND foreignid = ? AND instance = ? AND type = ?;",
 				Arrays.asList(uuid,Long.valueOf(160), 777, 222222, 5).toArray());
 			assertEquals(expected,result.next());
-			expected = CQLStatement.make("DELETE FROM testspace.testtype7f9bb4e56d3cae5b11c553547cfe5897 WHERE id = ? AND shardid = ? AND foreignid = ?;",
+			expected = CQLStatement.make("DELETE FROM \"testspace\".\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" WHERE id = ? AND shardid = ? AND foreignid = ?;",
 					Arrays.asList(uuid,Long.valueOf(1), 777).toArray());
 			assertEquals(expected,result.next());
 			assertTrue(!result.hasNext());
@@ -398,17 +401,17 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			newdata.put("type", Integer.valueOf(9));
 			CQLStatementIterator result = Subject.makeCQLforUpdate(KEYSPACE_NAME, def,uuid,data,newdata);
 			CQLStatement expected = CQLStatement.make(
-				"DELETE FROM testspace.testtype6671808f3f51bcc53ddc76d2419c9060 WHERE id = ? AND shardid = ? AND instance = ? AND type = ?;",
+				"DELETE FROM \"testspace\".\"testtype6671808f3f51bcc53ddc76d2419c9060\" WHERE id = ? AND shardid = ? AND instance = ? AND type = ?;",
 				Arrays.asList(UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"), Long.valueOf(160), Integer.valueOf(222222), Integer.valueOf(5)).toArray()
 			);
 			assertEquals(expected, result.next());
 			expected = CQLStatement.make(
-				"DELETE FROM testspace.testtypef9bf3332bb4ec879849ec43c67776131 WHERE id = ? AND shardid = ? AND foreignid = ? AND instance = ? AND type = ?;",
+				"DELETE FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE id = ? AND shardid = ? AND foreignid = ? AND instance = ? AND type = ?;",
 				Arrays.asList(UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"), Long.valueOf(160), Integer.valueOf(777), Integer.valueOf(222222), Integer.valueOf(5)).toArray()
 			);
 			assertEquals(expected, result.next());
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtype6671808f3f51bcc53ddc76d2419c9060\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"testtype6671808f3f51bcc53ddc76d2419c9060\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
 				Arrays.asList(
 					UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"),
 					Long.valueOf(160),
@@ -422,7 +425,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			);
 			assertEquals(expected, result.next());
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
 				Arrays.asList(
 					"testtype6671808f3f51bcc53ddc76d2419c9060",
 					"222222:9",
@@ -431,7 +434,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			);
 			assertEquals(expected, result.next());
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtypef9bf3332bb4ec879849ec43c67776131\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
 				Arrays.asList(
 					UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"),
 					Long.valueOf(160),
@@ -445,7 +448,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			);
 			assertEquals(expected, result.next());
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
 				Arrays.asList(
 					"testtypef9bf3332bb4ec879849ec43c67776131",
 					"777:222222:9",
@@ -454,7 +457,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			);
 			assertEquals(expected, result.next());
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id, shardid, instance, type, foreignid) VALUES (?, ?, ?, ?, ?);",
+				"INSERT INTO \"testspace\".\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id, shardid, instance, type, foreignid) VALUES (?, ?, ?, ?, ?);",
 				Arrays.asList(
 					UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"),
 					Long.valueOf(1),
@@ -466,7 +469,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			//verify that this last insert was on the uneffected index (which is why it does not have a matching __shardindex insert
 			assertEquals("testtype7f9bb4e56d3cae5b11c553547cfe5897",makeTableName(def,def.getIndexes().get("foreignid")));
 			expected = CQLStatement.make(
-				"INSERT INTO testspace.\"testtype\" (id, type) VALUES (?, ?);",
+				"INSERT INTO \"testspace\".\"testtype\" (id, type) VALUES (?, ?);",
 				Arrays.asList(
 					UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"),
 					Integer.valueOf(9)).toArray()
@@ -474,7 +477,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			assertEquals(expected, result.next());
 			CQLStatement next = result.next();
 			expected = CQLStatement.make(
-					"INSERT INTO testspace.\"__index_updates\" (id, statictablename, instanceid, indexvalues) values (?, ?, ?, ?);",
+					"INSERT INTO \"testspace\".\"__index_updates\" (id, statictablename, instanceid, indexvalues) values (?, ?, ?, ?);",
 					Arrays.asList(
 							(UUID)next.getValues()[0],
 							"testtype",

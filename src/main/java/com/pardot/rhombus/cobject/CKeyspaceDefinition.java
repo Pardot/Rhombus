@@ -3,6 +3,7 @@ package com.pardot.rhombus.cobject;
 import com.datastax.driver.core.ConsistencyLevel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.util.MapToListSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -57,6 +58,22 @@ public class CKeyspaceDefinition {
 		for(CDefinition def : definitions) {
 			this.definitions.put(def.getName(), def);
 		}
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if(other == null) {
+			return false;
+		}
+		if(this.getClass() != other.getClass()) {
+			return false;
+		}
+		final CKeyspaceDefinition otherCKeyspaceDefinition = (CKeyspaceDefinition)other;
+		return Objects.equal(this.getName(), otherCKeyspaceDefinition.getName())
+				&& Objects.equal(this.getReplicationClass(), otherCKeyspaceDefinition.getReplicationClass())
+				&& Objects.equal(this.getConsistencyLevel(), otherCKeyspaceDefinition.getConsistencyLevel())
+				&& Objects.equal(this.getReplicationFactors(), otherCKeyspaceDefinition.getReplicationFactors())
+				&& Objects.equal(this.getDefinitions(), otherCKeyspaceDefinition.getDefinitions());
 	}
 
 	public String getReplicationClass() {

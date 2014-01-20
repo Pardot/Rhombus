@@ -2,6 +2,7 @@ package com.pardot.rhombus.functional;
 
 import com.datastax.driver.core.Cluster;
 import com.pardot.rhombus.ConnectionManager;
+import com.pardot.rhombus.helpers.ConnectionManagerTester;
 import com.pardot.rhombus.helpers.TestHelpers;
 
 import java.io.IOException;
@@ -14,9 +15,9 @@ import static org.junit.Assert.assertNotNull;
  */
 public abstract class RhombusFunctionalTest {
 
-    protected ConnectionManager getConnectionManager() throws IOException {
+    protected ConnectionManagerTester getConnectionManager() throws IOException {
         //Get a connection manager based on the test properties
-        ConnectionManager connectionManager = TestHelpers.getTestConnectionManager();
+        ConnectionManagerTester connectionManager = TestHelpers.getTestConnectionManager();
         connectionManager.setLogCql(true);
         connectionManager.buildCluster(true);
         assertNotNull(connectionManager);

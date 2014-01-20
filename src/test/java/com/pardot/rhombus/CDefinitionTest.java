@@ -27,5 +27,28 @@ public class CDefinitionTest extends TestCase{
         assertEquals(CField.CDataType.BIGINT, field.getType());
     }
 
+	public void testEquals() throws IOException {
+		String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
+		CDefinition def1 = CDefinition.fromJsonString(json);
+		CDefinition def2 = CDefinition.fromJsonString(json);
+		assertTrue(def1.equals(def2));
+	}
+
+	public void testNotEquals() throws IOException {
+		String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
+		CDefinition def1 = CDefinition.fromJsonString(json);
+		CDefinition def2 = CDefinition.fromJsonString(json);
+		def2.setName("Other name");
+		assertFalse(def1.equals(def2));
+	}
+
+	public void testNotEqualsFields() throws IOException {
+		String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
+		CDefinition def1 = CDefinition.fromJsonString(json);
+		CDefinition def2 = CDefinition.fromJsonString(json);
+		Map<String, CField> fields = def2.getFields();
+		fields.values().iterator().next().setName("Other name");
+		assertFalse(def1.equals(def2));
+	}
 }
 

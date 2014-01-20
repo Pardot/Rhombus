@@ -34,7 +34,7 @@ public class RcliWithCassandraConfig extends RhombusCli {
         return connectionManager;
     }
 
-    public boolean executeCommand(CommandLine cl){
+    public boolean executeCommand(CommandLine cl) throws Exception {
         boolean ret = super.executeCommand(cl);
 	    if(!ret){
 		    return false;

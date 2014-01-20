@@ -29,7 +29,7 @@ public class RhombusCli implements  RhombusCommand {
         return ret;
     }
 
-    public boolean executeCommand(CommandLine cl){
+    public boolean executeCommand(CommandLine cl) throws Exception {
 	    return true;
     }
 
@@ -54,39 +54,41 @@ public class RhombusCli implements  RhombusCommand {
     public static boolean runit( String[] args ) {
         // create the parser
         CommandLineParser parser = new BasicParser();
-        try {
-            // make sure they gave us a command
-            if( args.length == 0) {
-                HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp( "RhombusCli", makeBootstrapOptions() );
-                return false;
-            }
-            //Load up the class
-            //if the class name is not fully qualified we assume its in com.pardot.rhombus.cli.commands
-            String className = args[0];
-            if(!className.contains(".")){
-                className = "com.pardot.rhombus.cli.commands."+ className;
-            }
+		// make sure they gave us a command
+		if( args.length == 0) {
+			HelpFormatter formatter = new HelpFormatter();
+			formatter.printHelp( "RhombusCli", makeBootstrapOptions() );
+			return false;
+		}
+		//Load up the class
+		//if the class name is not fully qualified we assume its in com.pardot.rhombus.cli.commands
+		String className = args[0];
+		if(!className.contains(".")){
+			className = "com.pardot.rhombus.cli.commands."+ className;
+		}
 
-            try{
-                RhombusCommand cmd = (RhombusCommand)(Class.forName(className)).newInstance();
-                Options commandOptions = cmd.getCommandOptions();
-                return cmd.executeCommand(parser.parse( commandOptions, args ));
-            }
-            catch (ClassNotFoundException e){
-                System.out.println("Could not find Command Class "+className);
-            }
-            catch (IllegalAccessException e){
-                System.out.println("Could not access Command Class "+className);
-            }
-            catch (InstantiationException e){
-                System.out.println("Could not instantiate Command Class "+className);
-            }
-        }
-        catch( ParseException exp ) {
-            // oops, something went wrong
-            System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
-        }
+		try{
+			RhombusCommand cmd = (RhombusCommand)(Class.forName(className)).newInstance();
+			Options commandOptions = cmd.getCommandOptions();
+			return cmd.executeCommand(parser.parse( commandOptions, args ));
+		}
+		catch (ClassNotFoundException e){
+			System.out.println("Could not find Command Class "+className);
+		}
+		catch (IllegalAccessException e){
+			System.out.println("Could not access Command Class "+className);
+		}
+		catch (InstantiationException e){
+			System.out.println("Could not instantiate Command Class "+className);
+		} catch( ParseException exp ) {
+			// oops, something went wrong
+			System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
+		}
+		catch(Exception e) {
+			System.out.println("Exception executing command " + className);
+			e.printStackTrace();
+		}
+
 	    return false;
     }
 

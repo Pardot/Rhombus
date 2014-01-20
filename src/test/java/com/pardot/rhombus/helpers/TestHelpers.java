@@ -24,8 +24,8 @@ public class TestHelpers {
 	private static List<Map<String, Object>> testObjects;
 	private static CriteriaHolder criteriaHolder;
 
-	public static ConnectionManager getTestConnectionManager() throws IOException {
-		ConnectionManager cm = new ConnectionManager(TestHelpers.getTestCassandraConfiguration());
+	public static ConnectionManagerTester getTestConnectionManager() throws IOException {
+		ConnectionManagerTester cm = new ConnectionManagerTester(TestHelpers.getTestCassandraConfiguration());
 		cm.setLogCql(false);
 		String nativeTransportPort = System.getProperty("cassandra.nativeTransportPort");
 		try {

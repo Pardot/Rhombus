@@ -1,6 +1,7 @@
 package com.pardot.rhombus.cobject.migrations;
 
 import com.google.common.collect.Lists;
+import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.*;
 
 import java.util.List;
@@ -57,7 +58,7 @@ public class CObjectMigrator {
 		return true;
 	}
 
-	public CQLStatementIterator getMigrationCQL() throws CObjectMigrationException {
+	public CQLStatementIterator getMigrationCQL(CObjectCQLGenerator cqlGenerator) throws CObjectMigrationException {
 		if(!isMigratable()){
 			throw new CObjectMigrationException("CDefinition migration requested for "+NewDefinition.getName()+ " is not currently supported");
 		}
@@ -67,14 +68,14 @@ public class CObjectMigrator {
 		//first migrate the fields
 		List<CField> newFields = getNewFields();
 		for(CField f: newFields){
-			ret.add(CObjectCQLGenerator.makeCQLforAddFieldToObject(NewDefinition, f.getName(), OldDefinition.getIndexesAsList()));
+			ret.add(cqlGenerator.makeCQLforAddFieldToObject(NewDefinition, f.getName(), OldDefinition.getIndexesAsList()));
 		}
 
 		//next migrate the indexes
 		List<CQLStatement> indexAdds = Lists.newArrayList();
 		List<CIndex> newIndexes = getNewIndexes();
 		for(CIndex i: newIndexes){
-			indexAdds.add(CObjectCQLGenerator.makeWideTableCreate(NewDefinition,i));
+			indexAdds.add(cqlGenerator.makeWideTableCreate(NewDefinition,i));
 		}
 		ret.add(new BoundedCQLStatementIterator(indexAdds));
 

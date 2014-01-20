@@ -33,8 +33,16 @@ public class RebuildKeyspace  extends RcliWithCassandraConfig {
     }
 
     public boolean executeCommand(CommandLine cl){
-        boolean ret = super.executeCommand(cl);
-
+		boolean ret = false;
+		try {
+			ret = super.executeCommand(cl);
+		} catch (Exception e) {
+			System.out.println("Exception executing command");
+			e.printStackTrace();
+		}
+		if(!ret){
+			return false;
+		}
 	    if(!(cl.hasOption("keyspacefile") || cl.hasOption("keyspaceresource"))){
 		    displayHelpMessage();
 		    return false;
