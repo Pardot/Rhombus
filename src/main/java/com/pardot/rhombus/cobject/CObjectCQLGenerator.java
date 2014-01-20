@@ -3,7 +3,6 @@ package com.pardot.rhombus.cobject;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Using;
 import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
@@ -11,7 +10,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import com.pardot.rhombus.Criteria;
-import com.pardot.rhombus.RhombusException;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardStrategyException;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -36,7 +34,7 @@ public class CObjectCQLGenerator {
 
 	protected static final String TEMPLATE_CREATE_STATIC = "CREATE TABLE \"%s\".\"%s\" (id %s PRIMARY KEY, %s);";
 	protected static final String TEMPLATE_CREATE_WIDE = "CREATE TABLE \"%s\".\"%s\" (id %s, shardid bigint, %s, PRIMARY KEY ((shardid, %s),id) );";
-	protected static final String TEMPLATE_CREATE_KEYSPACE_LIST = "CREATE TABLE \"%s\".\"__keyspace_definitions\" (name varchar, def varchar, PRIMARY KEY (name));";
+	protected static final String TEMPLATE_CREATE_KEYSPACE_LIST = "CREATE TABLE \"%s\".\"__keyspace_definitions\" (id uuid, name varchar, def varchar, PRIMARY KEY ((name), id));";
 	protected static final String TEMPLATE_CREATE_WIDE_INDEX = "CREATE TABLE \"%s\".\"%s\" (shardid bigint, tablename varchar, indexvalues varchar, targetrowkey varchar, PRIMARY KEY ((tablename, indexvalues),shardid) );";
 	protected static final String TEMPLATE_CREATE_INDEX_UPDATES = "CREATE TABLE \"%s\".\"__index_updates\" (id timeuuid, statictablename varchar, instanceid timeuuid, indexvalues varchar, PRIMARY KEY ((statictablename,instanceid),id))";
 	protected static final String TEMPLATE_TRUNCATE_INDEX_UPDATES = "TRUNCATE \"%s\".\"__index_updates\";";
@@ -44,12 +42,12 @@ public class CObjectCQLGenerator {
 	protected static final String TEMPLATE_TRUNCATE = "TRUNCATE \"%s\".\"%s\";";
 	protected static final String TEMPLATE_INSERT_STATIC = "INSERT INTO \"%s\".\"%s\" (%s) VALUES (%s)%s;";//"USING TIMESTAMP %s%s;";//Add back when timestamps become preparable
 	protected static final String TEMPLATE_INSERT_WIDE = "INSERT INTO \"%s\".\"%s\" (%s) VALUES (%s)%s;";//"USING TIMESTAMP %s%s;";//Add back when timestamps become preparable
-	protected static final String TEMPLATE_INSERT_KEYSPACE = "INSERT INTO \"%s\".\"__keyspace_definitions\" (name, def) values (?, ?);";
+	protected static final String TEMPLATE_INSERT_KEYSPACE = "INSERT INTO \"%s\".\"__keyspace_definitions\" (id, name, def) values (?, ?, ?);";
 	protected static final String TEMPLATE_INSERT_WIDE_INDEX = "INSERT INTO \"%s\".\"%s\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);";//"USING TIMESTAMP %s;";//Add back when timestamps become preparable
 	protected static final String TEMPLATE_INSERT_INDEX_UPDATES = "INSERT INTO \"%s\".\"__index_updates\" (id, statictablename, instanceid, indexvalues) values (?, ?, ?, ?);";
 	protected static final String TEMPLATE_SELECT_STATIC = "SELECT * FROM \"%s\".\"%s\" WHERE %s;";
 	protected static final String TEMPLATE_SELECT_WIDE = "SELECT %s FROM \"%s\".\"%s\" WHERE shardid = %s AND %s ORDER BY id %s %s ALLOW FILTERING;";
-	protected static final String TEMPLATE_SELECT_KEYSPACE = "SELECT def FROM \"%s\".\"__keyspace_definitions\" WHERE name = ?;";
+	protected static final String TEMPLATE_SELECT_KEYSPACE = "SELECT def FROM \"%s\".\"__keyspace_definitions\" WHERE name = ? ORDER BY id DESC LIMIT 1;";
 	protected static final String TEMPLATE_SELECT_WIDE_INDEX = "SELECT shardid FROM \"%s\".\"%s\" WHERE tablename = ? AND indexvalues = ?%s ORDER BY shardid %s ALLOW FILTERING;";
 	protected static final String TEMPLATE_DELETE = "DELETE FROM \"%s\".\"%s\" WHERE %s;";//"DELETE FROM %s USING TIMESTAMP %s WHERE %s;"; //Add back when timestamps become preparable
 	protected static final String TEMPLATE_DELETE_OBSOLETE_UPDATE_INDEX_COLUMN = "DELETE FROM \"%s\".\"__index_updates\" WHERE  statictablename = ? and instanceid = ? and id = ?";
@@ -610,7 +608,7 @@ public class CObjectCQLGenerator {
 
 	protected static CQLStatementIterator makeCQLforTruncate(String keyspace, CDefinition def){
 		List<CQLStatement> ret = Lists.newArrayList();
-		ret.add(makeTableDrop(keyspace, def.getName()));
+		ret.add(makeTableTruncate(keyspace, def.getName()));
 		if(def.getIndexes() != null) {
 			for(CIndex i : def.getIndexes().values()){
 				ret.add(makeTableTruncate(keyspace, makeTableName(def, i)));
@@ -686,7 +684,7 @@ public class CObjectCQLGenerator {
 
 	public static CQLStatementIterator makeCQLforInsertKeyspaceDefinition(@NotNull String keyspace, @NotNull String name, @NotNull String keyspaceDefinition, @NotNull UUID id) throws CQLGenerationException{
 		ArrayList<CQLStatement> ret = Lists.newArrayList();
-		ret.add(CQLStatement.make(String.format(TEMPLATE_INSERT_KEYSPACE, keyspace, name), Arrays.asList(name, keyspaceDefinition).toArray()));
+		ret.add(CQLStatement.make(String.format(TEMPLATE_INSERT_KEYSPACE, keyspace), Arrays.asList(id, name, keyspaceDefinition).toArray()));
 		return new BoundedCQLStatementIterator(ret);
 	}
 

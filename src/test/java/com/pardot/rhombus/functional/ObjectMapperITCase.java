@@ -1,6 +1,7 @@
 package com.pardot.rhombus.functional;
 
 
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -530,4 +531,35 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		assertEquals(20000, visitor.getCount());
 	}
 
+
+	@Test
+	public void testTruncateKeyspace() throws Exception {
+		logger.debug("testTruncateKeyspace");
+		// Set up a connection manager and build the cluster
+		ConnectionManager cm = getConnectionManager();
+
+		// Build the keyspace
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
+		assertNotNull(definition);
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper(definition.getName());
+
+		// Insert something
+		Map<String, Object> testObject = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), definition.getDefinitions().get("testtype"));
+		UUID key = (UUID)om.insert("testtype", testObject);
+
+		// Truncate tables
+		om.truncateTables();
+
+		// Make sure it is gone
+		Map<String, Object> returnedObject = om.getByKey("testtype", key);
+		assertNull(returnedObject);
+
+		// Insert something new
+		key = (UUID)om.insert("testtype", testObject);
+
+		// Make sure it is there
+		returnedObject = om.getByKey("testtype", key);
+		assertNotNull(returnedObject);
+	}
 }

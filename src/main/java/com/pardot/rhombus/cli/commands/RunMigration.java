@@ -79,7 +79,7 @@ public class RunMigration extends RcliWithExistingKeyspace {
 			return runMigration(this.getConnectionManager(), NewkeyDef, printOnly);
 		}
 		catch (Exception e){
-			System.out.println("Error encountered while attempting to rebuild the keyspace");
+			System.out.println("Error encountered while attempting to run migration");
 			return false;
 		}
 	}

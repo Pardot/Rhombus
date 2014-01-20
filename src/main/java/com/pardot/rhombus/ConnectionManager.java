@@ -270,11 +270,13 @@ public class ConnectionManager {
 		try{
 			CKeyspaceDefinition oldKeyspaceDefinition = hydrateLatestKeyspaceDefinitionFromCassandra(newKeyspaceDefinition);
 			ObjectMapper om = getObjectMapper(newKeyspaceDefinition);
+			boolean oldExecuteAsync = om.getExecuteAsync();
 			om.runMigration(oldKeyspaceDefinition, newKeyspaceDefinition, executeCql);
 			if(executeCql) {
 				addKeyspaceDefinitionToCassandra(newKeyspaceDefinition);
 				om.setKeyspaceDefinition(newKeyspaceDefinition);
 			}
+			om.setExecuteAsync(oldExecuteAsync);
 		}
 		catch(Exception e){
 			throw new CObjectMigrationException(e);
