@@ -3,6 +3,7 @@ package com.pardot.rhombus.functional;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.utils.UUIDs;
@@ -227,6 +228,7 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 
 		//This test requires that the keyspace be dropped before running
 		cm.dropKeyspace(OldKeyspaceDefinition.getName());
+		cm.dropKeyspace(cm.getRhombusKeyspaceName());
 
 		//Rebuild the keyspace and get the object mapper
 		cm.buildKeyspace(OldKeyspaceDefinition, true);
@@ -296,6 +298,21 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		assertEquals("two",result.get("index_2"));
 		assertEquals("three",result.get("value"));
 
-
+		// Make sure we have saved both versions of the keyspace
+		Session session = cm.getEmptySession();
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT id from \"");
+		sb.append(cm.getRhombusKeyspaceName());
+		sb.append("\".\"__keyspace_definitions\" where name='");
+		sb.append(NewKeyspaceDefinition.getName());
+		sb.append("';");
+		ResultSet resultSet = session.execute(sb.toString());
+		Iterator<Row> rsIter = resultSet.iterator();
+		int counter = 0;
+		while(rsIter.hasNext()) {
+			counter++;
+			rsIter.next();
+		}
+		assertEquals(2, counter);
 	}
 }
