@@ -18,7 +18,7 @@ public class CassandraConfiguration {
 
 	@NotNull
 	@JsonProperty
-	private Integer consistencyHorizion;
+	private Integer consistencyHorizon;
 
 	@JsonProperty
 	private Long batchTimeout;
@@ -60,12 +60,12 @@ public class CassandraConfiguration {
 		this.localDatacenter = localDatacenter;
 	}
 
-	public Integer getConsistencyHorizion() {
-		return consistencyHorizion;
+	public Integer getConsistencyHorizon() {
+		return consistencyHorizon;
 	}
 
-	public void setConsistencyHorizion(Integer consistencyHorizion) {
-		this.consistencyHorizion = consistencyHorizion;
+	public void setConsistencyHorizon(Integer consistencyHorizon) {
+		this.consistencyHorizon = consistencyHorizon;
 	}
 
 	public Long getBatchTimeout() {
