@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -19,6 +21,7 @@ import java.util.UUID;
  */
 public class UpdateProcessor {
 
+	private static Logger logger = LoggerFactory.getLogger(ObjectMapper.class);
 	private ObjectMapper objectMapper;
 
 	public UpdateProcessor(ObjectMapper om){
@@ -42,12 +45,22 @@ public class UpdateProcessor {
 	}
 
 	public List<Map<String,Object>> getUpdatesThatHappenedWithinTimeframe(Long timeInNanos) throws IOException {
+		return getUpdatesThatHappenedWithinTimeframe(timeInNanos, 0l);
+	}
+
+	public List<Map<String,Object>> getUpdatesThatHappenedWithinTimeframe(Long timeInNanos, long rowLimit) throws IOException {
+		logger.info("rowLimit: {} ", rowLimit);
 		List<Map<String,Object>> ret = Lists.newArrayList();
 		IndexUpdateRow row = objectMapper.getNextUpdateIndexRow(null);
+		long examinedRows = 0l;
 		while(row != null){
 			List<Map<String,Object>> toadd = findUpdatesWithinTimeframe(row,timeInNanos);
 			if(toadd.size() > 0){
 				ret.addAll(toadd);
+			}
+			examinedRows++;
+			if(rowLimit > 0 && examinedRows >= rowLimit) {
+				break;
 			}
 			row = objectMapper.getNextUpdateIndexRow(row.getRowKey());
 		}
