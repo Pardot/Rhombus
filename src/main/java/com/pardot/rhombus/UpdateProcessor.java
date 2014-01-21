@@ -37,10 +37,19 @@ public class UpdateProcessor {
 	}
 
 	public void process() throws IOException {
+		process(0l);
+	}
+
+	public void process(long rowLimit) throws IOException {
 		IndexUpdateRow row = objectMapper.getNextUpdateIndexRow(null);
+		long examinedRows = 0l;
 		while(row != null){
 			processRow(row);
 			row = objectMapper.getNextUpdateIndexRow(row.getRowKey());
+			examinedRows++;
+			if(rowLimit > 0 && examinedRows >= rowLimit) {
+				break;
+			}
 		}
 	}
 
@@ -49,7 +58,6 @@ public class UpdateProcessor {
 	}
 
 	public List<Map<String,Object>> getUpdatesThatHappenedWithinTimeframe(Long timeInNanos, long rowLimit) throws IOException {
-		logger.info("rowLimit: {} ", rowLimit);
 		List<Map<String,Object>> ret = Lists.newArrayList();
 		IndexUpdateRow row = objectMapper.getNextUpdateIndexRow(null);
 		long examinedRows = 0l;
@@ -158,5 +166,22 @@ public class UpdateProcessor {
 		return true;
 	}
 
+	public void displayListResults(List<Map<String,Object>> results){
+		System.out.println(" Difference | Type | Instance | New Values | Old Values");
+		System.out.println("--------------------------------------------------------");
+		for(Map<String,Object> item : results){
+			String difference = item.get("difference").toString();
+			String objName = ((IndexUpdateRowKey)item.get("rowkey")).getObjectName();
+			String instanceId = ((IndexUpdateRowKey)item.get("rowkey")).getInstanceId().toString();
+			String newValue = item.get("new-item").toString();
+			String oldValue = item.get("old-item").toString();
 
+			System.out.println(String.format("%s  %s  %s  %s  %s",
+					difference,
+					objName,
+					instanceId,
+					newValue,
+					oldValue));
+		}
+	}
 }

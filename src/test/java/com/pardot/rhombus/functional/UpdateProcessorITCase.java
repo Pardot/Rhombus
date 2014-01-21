@@ -45,6 +45,8 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		cm.buildKeyspace(definition, true);
 		cm.setDefaultKeyspace(definition);
 		ObjectMapper om = cm.getObjectMapper();
+		om.truncateTables();
+
 		CDefinition def1 = om.getKeyspaceDefinition_ONLY_FOR_TESTING().getDefinitions().get("testtype");
 		//do an insert on an object
 		Map<String, Object> testObject = Maps.newTreeMap();
@@ -123,7 +125,7 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 
 
 		//wait for consistency
-		Thread.sleep(1000);
+		Thread.sleep(3000);
 
 		//now run the processor
 		UpdateProcessor up = new UpdateProcessor(om);
