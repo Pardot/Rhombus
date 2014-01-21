@@ -53,7 +53,7 @@ public class ConnectionManager {
 	public ConnectionManager(CassandraConfiguration configuration) {
 		this.contactPoints = configuration.getContactPoints();
 		this.localDatacenter = configuration.getLocalDatacenter();
-		this.consistencyHorizon = configuration.getConsistencyHorizion();
+		this.consistencyHorizon = configuration.getConsistencyHorizon();
 		this.maxConnectionPerHostLocal = configuration.getMaxConnectionPerHostLocal() == null ? 16 : configuration.getMaxConnectionPerHostLocal();
 		this.maxConnectionPerHostRemote = configuration.getMaxConnectionPerHostRemote() == null ? 4 : configuration.getMaxConnectionPerHostRemote();
 		this.maxSimultaneousRequestsPerConnectionTreshold = configuration.getMaxSimultaneousRequestsPerConnectionTreshold() == null ? 128 : configuration.getMaxSimultaneousRequestsPerConnectionTreshold();
