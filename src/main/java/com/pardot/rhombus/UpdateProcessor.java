@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -19,6 +21,7 @@ import java.util.UUID;
  */
 public class UpdateProcessor {
 
+	private static Logger logger = LoggerFactory.getLogger(ObjectMapper.class);
 	private ObjectMapper objectMapper;
 
 	public UpdateProcessor(ObjectMapper om){
@@ -34,20 +37,38 @@ public class UpdateProcessor {
 	}
 
 	public void process() throws IOException {
+		process(0l);
+	}
+
+	public void process(long rowLimit) throws IOException {
 		IndexUpdateRow row = objectMapper.getNextUpdateIndexRow(null);
+		long examinedRows = 0l;
 		while(row != null){
 			processRow(row);
 			row = objectMapper.getNextUpdateIndexRow(row.getRowKey());
+			examinedRows++;
+			if(rowLimit > 0 && examinedRows >= rowLimit) {
+				break;
+			}
 		}
 	}
 
 	public List<Map<String,Object>> getUpdatesThatHappenedWithinTimeframe(Long timeInNanos) throws IOException {
+		return getUpdatesThatHappenedWithinTimeframe(timeInNanos, 0l);
+	}
+
+	public List<Map<String,Object>> getUpdatesThatHappenedWithinTimeframe(Long timeInNanos, long rowLimit) throws IOException {
 		List<Map<String,Object>> ret = Lists.newArrayList();
 		IndexUpdateRow row = objectMapper.getNextUpdateIndexRow(null);
+		long examinedRows = 0l;
 		while(row != null){
 			List<Map<String,Object>> toadd = findUpdatesWithinTimeframe(row,timeInNanos);
 			if(toadd.size() > 0){
 				ret.addAll(toadd);
+			}
+			examinedRows++;
+			if(rowLimit > 0 && examinedRows >= rowLimit) {
+				break;
 			}
 			row = objectMapper.getNextUpdateIndexRow(row.getRowKey());
 		}
@@ -145,5 +166,22 @@ public class UpdateProcessor {
 		return true;
 	}
 
+	public void displayListResults(List<Map<String,Object>> results){
+		System.out.println(" Difference | Type | Instance | New Values | Old Values");
+		System.out.println("--------------------------------------------------------");
+		for(Map<String,Object> item : results){
+			String difference = item.get("difference").toString();
+			String objName = ((IndexUpdateRowKey)item.get("rowkey")).getObjectName();
+			String instanceId = ((IndexUpdateRowKey)item.get("rowkey")).getInstanceId().toString();
+			String newValue = item.get("new-item").toString();
+			String oldValue = item.get("old-item").toString();
 
+			System.out.println(String.format("%s  %s  %s  %s  %s",
+					difference,
+					objName,
+					instanceId,
+					newValue,
+					oldValue));
+		}
+	}
 }

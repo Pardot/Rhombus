@@ -11,16 +11,13 @@ import com.pardot.rhombus.cobject.CIndex;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
 import com.pardot.rhombus.cobject.CQLStatement;
 import com.pardot.rhombus.helpers.TestHelpers;
-import com.pardot.rhombus.util.JsonUtil;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * Pardot, An ExactTarget Company
@@ -48,6 +45,8 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		cm.buildKeyspace(definition, true);
 		cm.setDefaultKeyspace(definition);
 		ObjectMapper om = cm.getObjectMapper();
+		om.truncateTables();
+
 		CDefinition def1 = om.getKeyspaceDefinition_ONLY_FOR_TESTING().getDefinitions().get("testtype");
 		//do an insert on an object
 		Map<String, Object> testObject = Maps.newTreeMap();
@@ -176,7 +175,8 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		cm.buildKeyspace(definition, true);
 		cm.setDefaultKeyspace(definition);
 		ObjectMapper om = cm.getObjectMapper();
-		CDefinition def1 = om.getKeyspaceDefinition_ONLY_FOR_TESTING().getDefinitions().get("testtype");
+		om.truncateTables();
+
 		//do an insert on an object
 		Map<String, Object> testObject = Maps.newTreeMap();
 		testObject.put("foreignid", Long.valueOf(100));
@@ -220,14 +220,76 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 
 
 		UpdateProcessor up = new UpdateProcessor(om);
-		//Test that we only see 4 happening within 50 milliseconds of each other
+		//Test that we only see 4 happening within 90 milliseconds of each other
 		assertEquals(4, up.getUpdatesThatHappenedWithinTimeframe(900000L).size()); //90 milliseconds
 
-		//Test that we can see all 5 diffs when we search for those happening within 3 seconds of each other
+		//Test that we can see all 5 diffs when we search for those happening within 9 seconds of each other
 		assertEquals(5, up.getUpdatesThatHappenedWithinTimeframe(900000L * 1000).size()); //9 seconds
+	}
 
 
+	@Test
+	public void testUpdateRowLimit() throws Exception {
+		logger.debug("Starting testObjectMapper");
 
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+
+		//Build our keyspace definition object
+		String json = TestHelpers.readFileToString(this.getClass(), "CKeyspaceTestData.js");
+		CKeyspaceDefinition definition = CKeyspaceDefinition.fromJsonString(json);
+		String keyspace = definition.getName();
+		assertNotNull(definition);
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, false);
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper();
+		om.truncateTables();
+
+		//do an insert on an object
+		Map<String, Object> testObject = Maps.newTreeMap();
+		testObject.put("foreignid", Long.valueOf(100));
+		testObject.put("type", Integer.valueOf(101));
+		testObject.put("instance", Long.valueOf(102));
+		testObject.put("filtered", Integer.valueOf(103));
+		testObject.put("data1", "This is data 1");
+		testObject.put("data2", "This is data 2");
+		testObject.put("data3", "This is data 3");
+
+		Map<String, Object> testObject2 = Maps.newTreeMap();
+		testObject.put("foreignid", Long.valueOf(200));
+		testObject.put("type", Integer.valueOf(201));
+		testObject.put("instance", Long.valueOf(202));
+		testObject.put("filtered", Integer.valueOf(203));
+		testObject.put("data1", "This is data 2-1");
+		testObject.put("data2", "This is data 2-2");
+		testObject.put("data3", "This is data 2-3");
+
+		UUID key = (UUID)om.insert("testtype", testObject);
+		Map<String, Object> updateObj = Maps.newTreeMap();
+		updateObj.put("foreignid", 1l);
+		om.update("testtype", key, updateObj);
+
+		updateObj = Maps.newTreeMap();
+		updateObj.put("foreignid", 2l);
+		om.update("testtype", key, updateObj);
+
+		UUID key2 = (UUID)om.insert("testtype", testObject2);
+		updateObj = Maps.newTreeMap();
+		updateObj.put("foreignid", 4l);
+		om.update("testtype", key2, updateObj);
+
+		updateObj = Maps.newTreeMap();
+		updateObj.put("foreignid", 5l);
+		om.update("testtype", key2, updateObj);
+
+		Thread.sleep(3000);
+
+		// Test row examine limit
+		UpdateProcessor up = new UpdateProcessor(om);
+		assertEquals(1, up.getUpdatesThatHappenedWithinTimeframe(900000L, 1).size());
+		assertEquals(2, up.getUpdatesThatHappenedWithinTimeframe(900000L, 2).size());
 	}
 
 }

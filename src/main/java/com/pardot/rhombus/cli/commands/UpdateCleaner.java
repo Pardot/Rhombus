@@ -23,32 +23,21 @@ public class UpdateCleaner extends RcliWithExistingKeyspace {
 	public Options getCommandOptions(){
 		Options ret = super.getCommandOptions();
 		Option process = new Option( "p", "Process update fixes" );
-		Option list = OptionBuilder.withArgName("timeInNanos")
-				.hasArg()
-				.withDescription("List all updates in the system where the same object has been updated within timeInNanos")
-				.create( "listUpdates" );
 		ret.addOption(process);
+
+		OptionBuilder.withArgName("timeInNanos");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("List all updates in the system where the same object has been updated within timeInNanos");
+		Option list = OptionBuilder.create( "listUpdates" );
 		ret.addOption(list);
+
+		OptionBuilder.withArgName("rowLimit");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Limit the processer to only examine rowLimit rows");
+		Option rowLimit = OptionBuilder.create( "rowLimit" );
+		ret.addOption(rowLimit);
+
 		return ret;
-	}
-
-	public void displayListResults(List<Map<String,Object>> results){
-		System.out.println(" Difference | Type | Instance | New Values | Old Values");
-		System.out.println("--------------------------------------------------------");
-		for(Map<String,Object> item : results){
-			String difference = item.get("difference").toString();
-			String objName = ((IndexUpdateRowKey)item.get("rowkey")).getObjectName();
-			String instanceId = ((IndexUpdateRowKey)item.get("rowkey")).getInstanceId().toString();
-			String newValue = item.get("new-item").toString();
-			String oldValue = item.get("old-item").toString();
-
-			System.out.println(String.format("%s  %s  %s  %s  %s",
-					difference,
-					objName,
-					instanceId,
-					newValue,
-					oldValue));
-		}
 	}
 
 	public boolean executeCommand(CommandLine cl){
@@ -64,31 +53,31 @@ public class UpdateCleaner extends RcliWithExistingKeyspace {
 		}
 		try{
 			getConnectionManager().setDefaultKeyspace(keyspaceDefinition);
-			String strategy = cl.getOptionValue("strategy");
 			UpdateProcessor up = new UpdateProcessor(this.objectMapper);
 
 			boolean didwork = false;
+			long rowLimit = 0;
+			if(cl.hasOption("rowLimit")) {
+				rowLimit = Long.parseLong(cl.getOptionValue("rowLimit"));
+			}
 			if(cl.hasOption("listUpdates")){
 				String timestr = cl.getOptionValue("listUpdates");
 				long time = Long.parseLong(timestr);
-				displayListResults(up.getUpdatesThatHappenedWithinTimeframe(time));
+				up.displayListResults(up.getUpdatesThatHappenedWithinTimeframe(time, rowLimit));
 				didwork = true;
 			}
 
 			if(cl.hasOption("p")){
-				up.process();
+				up.process(rowLimit);
 				didwork = true;
 			}
 
 			if(didwork){
 				return true;
-			}
-			else{
+			} else {
 				displayHelpMessage();
 				return false;
 			}
-
-
 		}
 		catch (IOException e){
 			System.out.println("Error encountered processing updates: " + e.getMessage());
