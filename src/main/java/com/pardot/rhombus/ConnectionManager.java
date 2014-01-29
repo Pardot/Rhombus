@@ -189,6 +189,7 @@ public class ConnectionManager {
 			String cql = "CREATE KEYSPACE " + sb.toString();
 			session.execute(cql);
 			session.shutdown();
+			logger.debug("Successfully created keyspace {}", keyspaceName);
 			return false;
 		} catch(AlreadyExistsException e) {
 			logger.debug("Keyspace {} already exists", keyspaceName);
@@ -380,8 +381,16 @@ public class ConnectionManager {
 	}
 
 	private Session getSessionForKeyspace(CKeyspaceDefinition keyspace) throws Exception {
-		createKeyspaceIfNotExists(keyspace.getName(), keyspace, true);
-		return cluster.connect(keyspace.getName());
+		Session ret = null;
+		try {
+			ret = cluster.connect(keyspace.getName());
+			logger.debug("Successfully connected session for keyspace {}", keyspace.getName());
+		} catch(Exception e) {
+			logger.debug("Unable to connect session for keyspace {}, attempting to create it if it does not exist", keyspace.getName());
+			createKeyspaceIfNotExists(keyspace.getName(), keyspace, false);
+			ret = cluster.connect(keyspace.getName());
+		}
+		return ret;
 	}
 
 	/**
