@@ -131,13 +131,16 @@ public class ConnectionManager {
 	protected Session getRhombusSession(CKeyspaceDefinition definition) {
 		if(this.rhombusSession == null) {
 			logger.debug("Creating new Rhombus session");
+			Session ret = null;
 			try {
-				this.rhombusSession = cluster.connect(rhombusKeyspaceName);
-			} catch(InvalidQueryException e) {
-				logger.debug("Unable to connect to Rhombus keyspace: {}, attempting to create it", this.rhombusKeyspaceName);
+				ret = cluster.connect(rhombusKeyspaceName);
+				logger.debug("Successfully connected session for keyspace {}", rhombusKeyspaceName);
+			} catch(Exception e) {
+				logger.debug("Unable to connect session for keyspace {}, attempting to create it if it does not exist", rhombusKeyspaceName);
 				createKeyspaceIfNotExists(rhombusKeyspaceName, definition, true);
-				this.rhombusSession = cluster.connect(rhombusKeyspaceName);
+				ret = cluster.connect(rhombusKeyspaceName);
 			}
+			this.rhombusSession = ret;
 		}
 		return this.rhombusSession;
 	}
