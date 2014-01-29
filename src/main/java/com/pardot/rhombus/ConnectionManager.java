@@ -131,13 +131,16 @@ public class ConnectionManager {
 	protected Session getRhombusSession(CKeyspaceDefinition definition) {
 		if(this.rhombusSession == null) {
 			logger.debug("Creating new Rhombus session");
+			Session ret = null;
 			try {
-				this.rhombusSession = cluster.connect(rhombusKeyspaceName);
-			} catch(InvalidQueryException e) {
-				logger.debug("Unable to connect to Rhombus keyspace: {}, attempting to create it", this.rhombusKeyspaceName);
+				ret = cluster.connect(rhombusKeyspaceName);
+				logger.debug("Successfully connected session for keyspace {}", rhombusKeyspaceName);
+			} catch(Exception e) {
+				logger.debug("Unable to connect session for keyspace {}, attempting to create it if it does not exist", rhombusKeyspaceName);
 				createKeyspaceIfNotExists(rhombusKeyspaceName, definition, true);
-				this.rhombusSession = cluster.connect(rhombusKeyspaceName);
+				ret = cluster.connect(rhombusKeyspaceName);
 			}
+			this.rhombusSession = ret;
 		}
 		return this.rhombusSession;
 	}
@@ -189,6 +192,7 @@ public class ConnectionManager {
 			String cql = "CREATE KEYSPACE " + sb.toString();
 			session.execute(cql);
 			session.shutdown();
+			logger.debug("Successfully created keyspace {}", keyspaceName);
 			return false;
 		} catch(AlreadyExistsException e) {
 			logger.debug("Keyspace {} already exists", keyspaceName);
@@ -380,8 +384,16 @@ public class ConnectionManager {
 	}
 
 	private Session getSessionForKeyspace(CKeyspaceDefinition keyspace) throws Exception {
-		createKeyspaceIfNotExists(keyspace.getName(), keyspace, true);
-		return cluster.connect(keyspace.getName());
+		Session ret = null;
+		try {
+			ret = cluster.connect(keyspace.getName());
+			logger.debug("Successfully connected session for keyspace {}", keyspace.getName());
+		} catch(Exception e) {
+			logger.debug("Unable to connect session for keyspace {}, attempting to create it if it does not exist", keyspace.getName());
+			createKeyspaceIfNotExists(keyspace.getName(), keyspace, false);
+			ret = cluster.connect(keyspace.getName());
+		}
+		return ret;
 	}
 
 	/**

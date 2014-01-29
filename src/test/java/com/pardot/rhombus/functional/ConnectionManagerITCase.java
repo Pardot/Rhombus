@@ -148,6 +148,12 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		ObjectMapper rhombusObjectMapper = cm.getRhombusObjectMapper(definition);
 		CKeyspaceDefinition createdDefinition = rhombusObjectMapper.hydrateRhombusKeyspaceDefinition(definition.getName());
 		assertEquals(definition, createdDefinition);
+
+		// Close down our ConnectionManager, make a new one, and verify that we get the proper keyspace
+		cm.teardown();
+		cm = getConnectionManager();
+		ObjectMapper defObjectMapper = cm.getObjectMapper(definition);
+		assertEquals(definition, defObjectMapper.getKeyspaceDefinition_ONLY_FOR_TESTING());
 	}
 
 	@Test
