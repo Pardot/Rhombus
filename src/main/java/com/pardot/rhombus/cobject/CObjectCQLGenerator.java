@@ -9,9 +9,11 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
+import com.google.common.collect.Sets;
 import com.pardot.rhombus.Criteria;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardStrategyException;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
+import com.pardot.rhombus.cobject.statement.*;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -773,20 +775,40 @@ public class CObjectCQLGenerator {
 	}
 
 	@NotNull
-	protected static CQLStatementIterator makeCQLforGet(String keyspace, CObjectShardList shardList, CDefinition def, SortedMap<String,Object> indexValues, CObjectOrdering ordering,@Nullable UUID start, @Nullable UUID end, Long limit, boolean inclusive) throws CQLGenerationException {
+	protected static CQLStatementIterator makeCQLforGet(String keyspace, CObjectShardList shardList, CDefinition def, SortedMap<String,Object> indexValues, CObjectOrdering ordering, @Nullable UUID start, @Nullable UUID end, Long limit, boolean inclusive) throws CQLGenerationException {
 		return makeCQLforGet(keyspace, shardList, def, indexValues, ordering, start, end, limit, inclusive, false);
 	}
 
-		@NotNull
-	protected static CQLStatementIterator makeCQLforGet(String keyspace, CObjectShardList shardList, CDefinition def, SortedMap<String,Object> indexValues, CObjectOrdering ordering,@Nullable UUID start, @Nullable UUID end, Long limit, boolean inclusive, boolean countOnly) throws CQLGenerationException {
-
+	@NotNull
+	protected static CQLStatementIterator makeCQLforGet(String keyspace, CObjectShardList shardList, CDefinition def, SortedMap<String,Object> indexValues,
+														CObjectOrdering ordering, @Nullable UUID start, @Nullable UUID end, Long limit,
+														boolean inclusive, boolean countOnly) throws CQLGenerationException {
+		// Get matching index from definition
 		CIndex i = def.getIndex(indexValues);
 		if(i == null){
 			throw new CQLGenerationException(String.format("Could not find specified index on CDefinition %s",def.getName()));
 		}
+
+		// Determine client filters and fix index values
+		Map<String, Object> clientFilters = null;
+		if(i.getCompositeKeyList().size() < indexValues.keySet().size()) {
+			clientFilters = Maps.newHashMap();
+			SortedMap<String, Object> newIndexValues = Maps.newTreeMap();
+			for(String key : indexValues.keySet()) {
+				if(i.getCompositeKeyList().contains(key)) {
+					newIndexValues.put(key, indexValues.get(key));
+				} else {
+					clientFilters.put(key, indexValues.get(key));
+				}
+			}
+			indexValues = newIndexValues;
+		}
+
+		// Now validate the remaining index values
 		if(!i.validateIndexKeys(indexValues)){
 			throw new CQLGenerationException(String.format("Cannot query index %s on CDefinition %s with the provided list of index values",i.getName(),def.getName()));
 		}
+
 		CQLStatement whereCQL = makeAndedEqualList(def,indexValues);
 		String whereQuery = whereCQL.getQuery();
 		List values = new ArrayList(Arrays.asList(whereCQL.getValues()));
@@ -817,11 +839,13 @@ public class CObjectCQLGenerator {
 
 		Long starttime = (start == null) ? null : Long.valueOf(UUIDs.unixTimestamp(start));
 		Long endtime = (end == null) ? null : Long.valueOf(UUIDs.unixTimestamp(end));
+
+		CQLStatementIterator returnIterator = null;
 		if( (starttime != null && endtime != null) || (i.getShardingStrategy() instanceof ShardingStrategyNone) ){
 			//the query is either bounded or unsharded, so we do not need to check the shardindex
 			try{
 				Range<Long> shardIdRange = i.getShardingStrategy().getShardKeyRange(starttime,endtime);
-				return new UnboundableCQLStatementIterator(shardIdRange,limit,ordering,templateCQLStatement);
+				returnIterator = new UnboundableCQLStatementIterator(shardIdRange,limit,ordering,templateCQLStatement);
 			}
 			catch(ShardStrategyException e){
 				throw new CQLGenerationException(e.getMessage());
@@ -829,12 +853,16 @@ public class CObjectCQLGenerator {
 		}
 		else{
 			//we have an unbounded query
-			return new BoundedLazyCQLStatementIterator(
+			returnIterator = new BoundedLazyCQLStatementIterator(
 					shardList.getShardIdList(def,indexValues,ordering,start,end),
 					templateCQLStatement,
 					limit
 			);
 		}
+
+		// Set the client filters on the returned iterator so the client can take care of them
+		returnIterator.setClientFilters(clientFilters);
+		return returnIterator;
 	}
 
 	protected static CQLStatementIterator makeCQLforGet(String keyspace, CObjectShardList shardList, CDefinition def, SortedMap<String,Object> indexvalues, Long limit) throws CQLGenerationException {

@@ -3,6 +3,8 @@ package com.pardot.rhombus;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.*;
+import com.pardot.rhombus.cobject.statement.CQLStatement;
+import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
 import com.pardot.rhombus.helpers.TestHelpers;
 import junit.framework.Test;
 import junit.framework.TestCase;

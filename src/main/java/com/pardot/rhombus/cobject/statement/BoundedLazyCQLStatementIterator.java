@@ -1,42 +1,36 @@
-package com.pardot.rhombus.cobject;
+package com.pardot.rhombus.cobject.statement;
 
-import com.google.common.collect.ContiguousSet;
-import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Range;
+import com.pardot.rhombus.cobject.statement.CQLStatement;
+import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
+
 import java.util.Iterator;
 import java.util.List;
-
 
 /**
  * Pardot, An ExactTarget Company
  * User: robrighter
- * Date: 4/13/13
+ * Date: 4/17/13
  */
-public class UnboundableCQLStatementIterator implements CQLStatementIterator {
-
+public class BoundedLazyCQLStatementIterator extends BaseCQLStatementIterator {
 
 	private long limit = 0;
 	private long numberRemaining = 0;
 	private long size = 0;
 	private CQLStatement CQLTemplate = null;
-	private Range<Long> keyRange;
-	private Iterator<Long> keyIterator = null;
+	private Iterator<Long> shardIdIterator;
 
-
-	public UnboundableCQLStatementIterator(Range<Long> shardKeyList, long limit, CObjectOrdering ordering, CQLStatement CQLTemplate){
-		this.keyRange = shardKeyList;
-		ContiguousSet<Long> set = ContiguousSet.create(shardKeyList, DiscreteDomain.longs());
-		this.keyIterator = (ordering == CObjectOrdering.ASCENDING) ? set.iterator() : set.descendingIterator();
-		this.size = (long)set.size();
+	public BoundedLazyCQLStatementIterator(List<Long> shardIds, CQLStatement CQLTemplate, long limit){
+		this.size = (long)shardIds.size();
 		this.limit = limit;
 		this.numberRemaining = this.limit;
 		this.CQLTemplate = CQLTemplate;
+		this.shardIdIterator = shardIds.iterator();
 	}
 
 	@Override
 	public boolean hasNext() {
-		return keyIterator.hasNext();
+		return shardIdIterator.hasNext();
 	}
 
 	public boolean hasNext(long currentResultCount){
@@ -49,16 +43,17 @@ public class UnboundableCQLStatementIterator implements CQLStatementIterator {
 
 	@Override
 	public CQLStatement next() {
+		CQLStatement ret = CQLStatement.make(String.format(CQLTemplate.getQuery(),numberRemaining));
 		List values = Lists.newArrayList(CQLTemplate.getValues());
 		//shardid is the first value and limit should be the last value
-		values.add(0,this.keyIterator.next());
-		CQLStatement ret = CQLStatement.make(String.format(CQLTemplate.getQuery(),numberRemaining),values.toArray());
+		values.add(0,this.shardIdIterator.next());
+		ret.setValues(values.toArray());
 		ret.setCacheable(CQLTemplate.isCacheable());
 		return ret;
 	}
 
 	public boolean isBounded(){
-		return (keyRange.hasLowerBound() && keyRange.hasUpperBound());
+		return true;
 	}
 
 	public long size(){

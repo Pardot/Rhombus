@@ -5,22 +5,16 @@ import com.google.common.collect.Maps;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.Criteria;
 import com.pardot.rhombus.ObjectMapper;
-import com.pardot.rhombus.UpdateProcessor;
 import com.pardot.rhombus.cobject.CDefinition;
-import com.pardot.rhombus.cobject.CIndex;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
-import com.pardot.rhombus.cobject.CQLStatement;
 import com.pardot.rhombus.helpers.TestHelpers;
-import org.joda.time.DateTime;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

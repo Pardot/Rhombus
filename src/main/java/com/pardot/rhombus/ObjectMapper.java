@@ -5,18 +5,19 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.AlreadyExistsException;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.utils.UUIDs;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.*;
 import com.pardot.rhombus.cobject.async.StatementIteratorConsumer;
 import com.pardot.rhombus.cobject.migrations.CKeyspaceDefinitionMigrator;
 import com.pardot.rhombus.cobject.migrations.CObjectMigrationException;
+import com.pardot.rhombus.cobject.statement.BoundedCQLStatementIterator;
+import com.pardot.rhombus.cobject.statement.CQLStatement;
+import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
 import com.pardot.rhombus.util.JsonUtil;
-import com.yammer.metrics.*;
 import com.yammer.metrics.core.*;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -504,13 +505,20 @@ public class ObjectMapper implements CObjectShardList {
 		List<Map<String, Object>> results = Lists.newArrayList();
 		int statementNumber = 0;
 		int resultNumber = 0;
+		Map<String, Object> clientFilters = statementIterator.getClientFilters();
 		while(statementIterator.hasNext(resultNumber) ) {
 			CQLStatement cql = statementIterator.next();
 			ResultSet resultSet = cqlExecutor.executeSync(cql);
 			for(Row row : resultSet) {
 				Map<String, Object> result = mapResult(row, definition);
-				results.add(result);
-				resultNumber++;
+				boolean resultMatchesFilters = true;
+				if(clientFilters != null) {
+					resultMatchesFilters = this.resultMatchesFilters(result, clientFilters);
+				}
+				if(resultMatchesFilters) {
+					results.add(result);
+					resultNumber++;
+				}
 			}
 			statementNumber++;
 			if((limit > 0 && resultNumber >= limit) || statementNumber > reasonableStatementLimit) {
@@ -519,6 +527,23 @@ public class ObjectMapper implements CObjectShardList {
 			}
 		}
 		return results;
+	}
+
+	/**
+	 * Make sure values in result match values in filter
+	 * @param result Result retrieved from persistence
+	 * @param filters Filters not applied at persistence layer
+	 * @return true if filters match, false if not
+	 */
+	public boolean resultMatchesFilters(Map<String, Object> result, Map<String, Object> filters) {
+		for(String filterKey : filters.keySet()) {
+			Object resultValue = result.get(filterKey);
+			Object filterValue = filters.get(filterKey);
+			if(!Objects.equal(resultValue, filterValue)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private Long mapCount(CQLStatementIterator statementIterator){

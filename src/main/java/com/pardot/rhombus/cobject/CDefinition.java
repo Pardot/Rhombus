@@ -37,6 +37,8 @@ public class CDefinition {
 
 	private boolean allowNullPrimaryKeyInserts = false;
 
+	private boolean allowClientFiltering = false;
+
 	public CDefinition(){
 	}
 
@@ -104,8 +106,48 @@ public class CDefinition {
 	}
 
 	public CIndex getIndex(SortedMap<String,Object> indexValues){
-		String key = Joiner.on(":").join(indexValues.keySet());
-		return indexesIndexedByFields.get(key);
+		if(allowClientFiltering) {
+			return getMostSelectiveMatchingIndex(indexValues);
+		} else {
+			String key = Joiner.on(":").join(indexValues.keySet());
+			return indexesIndexedByFields.get(key);
+		}
+	}
+
+	/**
+	 * Return the most selective index for a set of index keys
+	 * @param indexValues Index values from a query to get list of keys from
+	 * @return The most selective index matching keys in indexValues
+	 */
+	public CIndex getMostSelectiveMatchingIndex(SortedMap<String,Object> indexValues) {
+		List<String> keys = Lists.newArrayList();
+		for(String key : indexValues.keySet()) {
+			if(this.isFieldUsedInAnyIndex(key)) {
+				keys.add(key);
+			}
+		}
+		while(!keys.isEmpty()) {
+			String key = Joiner.on(":").join(keys);
+			CIndex index = indexesIndexedByFields.get(key);
+			if(index != null) {
+				return index;
+			}
+			keys.remove(keys.size() - 1);
+		}
+		return null;
+	}
+
+	/**
+	 * @param field Name of field to check
+	 * @return true if the supplied field is used in any index
+	 */
+	public boolean isFieldUsedInAnyIndex(String field) {
+		for(CIndex index : indexes.values()) {
+			if(index.getCompositeKeyList().contains(field)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@JsonIgnore
@@ -140,6 +182,14 @@ public class CDefinition {
 		else{
 			return UUID.class;
 		}
+	}
+
+	public boolean isAllowClientFiltering() {
+		return allowClientFiltering;
+	}
+
+	public void setAllowClientFiltering(boolean allowClientFiltering) {
+		this.allowClientFiltering = allowClientFiltering;
 	}
 
 	@Override

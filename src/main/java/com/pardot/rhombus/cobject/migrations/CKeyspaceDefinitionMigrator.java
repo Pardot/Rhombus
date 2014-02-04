@@ -1,9 +1,9 @@
 package com.pardot.rhombus.cobject.migrations;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
-import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.*;
+import com.pardot.rhombus.cobject.statement.BoundedCQLStatementIterator;
+import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
 
 import java.util.List;
 

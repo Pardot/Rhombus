@@ -1,12 +1,16 @@
 package com.pardot.rhombus;
 
+import com.google.common.base.Joiner;
 import com.pardot.rhombus.cobject.CDefinition;
 import com.pardot.rhombus.cobject.CField;
+import com.pardot.rhombus.cobject.CIndex;
 import com.pardot.rhombus.helpers.TestHelpers;
 import junit.framework.TestCase;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Pardot, An ExactTarget Company
@@ -49,6 +53,54 @@ public class CDefinitionTest extends TestCase{
 		Map<String, CField> fields = def2.getFields();
 		fields.values().iterator().next().setName("Other name");
 		assertFalse(def1.equals(def2));
+	}
+
+	public void testGetMostSelectiveMatchingIndexMostSelective() throws IOException {
+		String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
+		CDefinition definition = CDefinition.fromJsonString(json);
+		SortedMap<String, Object> indexValues = new TreeMap<String, Object>();
+		indexValues.put("type", "typeValue");
+		indexValues.put("foreignid", 13);
+		indexValues.put("instance", 11);
+
+		CIndex matchingIndex = definition.getMostSelectiveMatchingIndex(indexValues);
+		String expectedIndexKey = Joiner.on(":").join(indexValues.keySet());
+		assertEquals(expectedIndexKey, matchingIndex.getKey());
+	}
+
+	public void testGetMostSelectiveMatchingIndexMiddle() throws IOException {
+		String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
+		CDefinition definition = CDefinition.fromJsonString(json);
+		SortedMap<String, Object> indexValues = new TreeMap<String, Object>();
+		indexValues.put("type", "typeValue");
+		indexValues.put("instance", 11);
+
+		CIndex matchingIndex = definition.getMostSelectiveMatchingIndex(indexValues);
+		String expectedIndexKey = Joiner.on(":").join(indexValues.keySet());
+		assertEquals(expectedIndexKey, matchingIndex.getKey());
+	}
+
+	public void testGetMostSelectiveMatchingIndexLeastSelective() throws IOException {
+		String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
+		CDefinition definition = CDefinition.fromJsonString(json);
+		SortedMap<String, Object> indexValues = new TreeMap<String, Object>();
+		indexValues.put("foreignid", 13);
+
+		CIndex matchingIndex = definition.getMostSelectiveMatchingIndex(indexValues);
+		String expectedIndexKey = Joiner.on(":").join(indexValues.keySet());
+		assertEquals(expectedIndexKey, matchingIndex.getKey());
+	}
+
+	public void testIsFieldUsedInAnyIndexYes() throws IOException {
+		String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
+		CDefinition definition = CDefinition.fromJsonString(json);
+		assertTrue(definition.isFieldUsedInAnyIndex("foreignid"));
+	}
+
+	public void testIsFieldUsedInAnyIndexNo() throws IOException {
+		String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
+		CDefinition definition = CDefinition.fromJsonString(json);
+		assertFalse(definition.isFieldUsedInAnyIndex("filtered"));
 	}
 }
 

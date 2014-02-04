@@ -2,7 +2,6 @@ package com.pardot.rhombus;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.AlreadyExistsException;
-import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
@@ -12,8 +11,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.pardot.rhombus.cobject.*;
-import com.pardot.rhombus.cobject.migrations.CKeyspaceDefinitionMigrator;
 import com.pardot.rhombus.cobject.migrations.CObjectMigrationException;
+import com.pardot.rhombus.cobject.statement.CQLStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

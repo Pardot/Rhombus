@@ -1,6 +1,7 @@
 package com.pardot.rhombus;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Objects;
 import com.pardot.rhombus.cobject.CObjectOrdering;
 import org.slf4j.Logger;
@@ -61,6 +62,11 @@ public class Criteria {
 
 	public void setOrdering(String ordering) {
 		this.ordering = CObjectOrdering.fromString(ordering);
+	}
+
+	@JsonIgnore
+	public void setOrdering(CObjectOrdering ordering) {
+		this.ordering = ordering;
 	}
 
 	public UUID getStartUuid() {

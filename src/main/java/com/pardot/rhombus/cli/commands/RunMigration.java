@@ -1,17 +1,14 @@
 package com.pardot.rhombus.cli.commands;
 
 import com.pardot.rhombus.ConnectionManager;
-import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
-import com.pardot.rhombus.cobject.CQLStatement;
+import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.pardot.rhombus.cobject.migrations.CObjectMigrationException;
 import com.pardot.rhombus.util.JsonUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;

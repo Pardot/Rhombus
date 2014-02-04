@@ -1,16 +1,13 @@
 package com.pardot.rhombus.cobject.async;
 
 import com.datastax.driver.core.*;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.pardot.rhombus.RhombusException;
-import com.pardot.rhombus.cobject.BoundedCQLStatementIterator;
+import com.pardot.rhombus.cobject.statement.BoundedCQLStatementIterator;
 import com.pardot.rhombus.cobject.CQLExecutor;
-import com.pardot.rhombus.cobject.CQLStatement;
+import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;

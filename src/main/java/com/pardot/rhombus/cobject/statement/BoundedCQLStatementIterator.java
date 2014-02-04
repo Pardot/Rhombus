@@ -1,6 +1,7 @@
-package com.pardot.rhombus.cobject;
+package com.pardot.rhombus.cobject.statement;
 
 import com.google.common.collect.Lists;
+import com.pardot.rhombus.cobject.CQLGenerationException;
 
 import java.util.List;
 import java.util.Iterator;
@@ -10,7 +11,7 @@ import java.util.Iterator;
  * User: robrighter
  * Date: 4/15/13
  */
-public class BoundedCQLStatementIterator implements CQLStatementIterator {
+public class BoundedCQLStatementIterator extends BaseCQLStatementIterator {
 
 	private long size = 0;
 	private Iterator<CQLStatement> statementIterator;

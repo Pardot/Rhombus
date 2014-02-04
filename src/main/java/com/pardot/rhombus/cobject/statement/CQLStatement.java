@@ -1,8 +1,4 @@
-package com.pardot.rhombus.cobject;
-
-import com.datastax.driver.core.BoundStatement;
-
-import java.sql.PreparedStatement;
+package com.pardot.rhombus.cobject.statement;
 
 /**
  * Pardot, An ExactTarget Company
