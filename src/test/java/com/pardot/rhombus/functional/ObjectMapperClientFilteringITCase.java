@@ -80,7 +80,7 @@ public class ObjectMapperClientFilteringITCase extends RhombusFunctionalTest {
 		assertEquals(1, dbObjects.size());
 		assertEquals(notFilteredKey, dbObjects.get(0).get("id"));
 
-		// Make sure we only get one back when searching for not filtered
+		// Make sure we only get one back when searching for filtered
 		Criteria foreignIdAndFilteredCriteria = new Criteria();
 		foreignIdAndFilteredCriteria.setOrdering(CObjectOrdering.DESCENDING);
 		foreignIdAndFilteredCriteria.setLimit(50l);
