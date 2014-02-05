@@ -26,6 +26,7 @@ public class Criteria {
 	private UUID endUuid;
 	private Long limit = 0L;
 	private Boolean inclusive = true;
+	private Boolean allowFiltering = false;
 
 
 	public String toString() {
@@ -36,6 +37,7 @@ public class Criteria {
 				.add("endTimestamp", uuidToDateString(endUuid))
 				.add("limit", limit)
 				.add("inclusive", inclusive)
+				.add("allowFiltering", allowFiltering)
 				.toString();
 	}
 
@@ -107,5 +109,13 @@ public class Criteria {
 
 	public void setInclusive(Boolean inclusive) {
 		this.inclusive = inclusive;
+	}
+
+	public Boolean getAllowFiltering() {
+		return allowFiltering;
+	}
+
+	public void setAllowFiltering(Boolean allowFiltering) {
+		this.allowFiltering = allowFiltering;
 	}
 }

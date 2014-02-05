@@ -1,5 +1,6 @@
 package com.pardot.rhombus;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.*;
@@ -9,6 +10,7 @@ import com.pardot.rhombus.helpers.TestHelpers;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -250,7 +252,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			indexkeys.put("foreignid","777");
 			indexkeys.put("type", "5");
 			indexkeys.put("instance", "222222");
-			actual = Subject.makeCQLforGet(KEYSPACE_NAME, shardIdLists, def, indexkeys, Long.valueOf(10));
+			actual = CObjectCQLGenerator.makeCQLforList(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.DESCENDING, null, UUIDs.startOf(DateTime.now().getMillis()), 10l, false, false, false);
 			expected = CQLStatement.make(
 					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
 					Arrays.asList(Long.valueOf(1),"777","222222","5", stop).toArray()
@@ -281,7 +283,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			indexkeys.put("foreignid","777");
 			indexkeys.put("type", "5");
 			indexkeys.put("instance", "222222");
-			actual = Subject.makeCQLforGet(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.DESCENDING, start, stop,Long.valueOf(10), false);
+			actual = CObjectCQLGenerator.makeCQLforList(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.DESCENDING, start, stop, 10l, false, false, false);
 			expected = CQLStatement.make(
 				"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id > ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
 				Arrays.asList(Long.valueOf(160),"777","222222","5", start, stop).toArray()
@@ -295,7 +297,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			//wide table inclusive slice ascending bounded
 			start = UUID.fromString("b4c10d80-15f0-11e0-8080-808080808080"); // 1/1/2011 long startd = 1293918439000L;
 			stop = UUID.fromString("2d87f48f-34c2-11e1-7f7f-7f7f7f7f7f7f"); //1/1/2012 long endd = 1325454439000L;
-			actual = Subject.makeCQLforGet(KEYSPACE_NAME, shardIdLists, def, indexkeys,CObjectOrdering.ASCENDING, start, stop,Long.valueOf(10), true);
+			actual = CObjectCQLGenerator.makeCQLforList(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.ASCENDING, start, stop, 10l, true, false, false);
 			assertEquals("Should be proper size for range", 13, actual.size()); //All of 2011 plus the first month of 2012
 			expected = CQLStatement.make(
 				"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id ASC LIMIT 10 ALLOW FILTERING;",
@@ -323,7 +325,7 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			//wide table inclusive slice descending bounded
 			start = UUID.fromString("b4c10d80-15f0-11e0-8080-808080808080"); // 1/1/2011 long startd = 1293918439000L;
 			stop = UUID.fromString("2d87f48f-34c2-11e1-7f7f-7f7f7f7f7f7f"); //1/1/2012 long endd = 1325454439000L;
-			actual = Subject.makeCQLforGet(KEYSPACE_NAME, shardIdLists, def, indexkeys,CObjectOrdering.DESCENDING, start, stop,Long.valueOf(10), true);
+			actual = Subject.makeCQLforList(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.DESCENDING, start, stop, 10l, true, false, false);
 			assertEquals("Descending: Should be proper size for range", 13, actual.size()); //All of 2011 plus the first month of 2012
 			expected = CQLStatement.make(
 					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",

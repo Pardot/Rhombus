@@ -35,7 +35,7 @@ public class ObjectMapperClientFilteringITCase extends RhombusFunctionalTest {
 		//Build our keyspace definition object
 		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
 		assertNotNull(definition);
-		definition.getDefinitions().get("testtype").setAllowClientFiltering(true);
+		definition.getDefinitions().get("testtype");
 
 		//Build the keyspace, get the object mapper, and truncate data
 		cm.buildKeyspace(definition, false);
@@ -60,6 +60,7 @@ public class ObjectMapperClientFilteringITCase extends RhombusFunctionalTest {
 		Criteria foreignIdCriteria = new Criteria();
 		foreignIdCriteria.setOrdering(CObjectOrdering.DESCENDING);
 		foreignIdCriteria.setLimit(50l);
+		foreignIdCriteria.setAllowFiltering(true);
 		SortedMap<String, Object> indexKeys = Maps.newTreeMap();
 		indexKeys.put("foreignid", 123l);
 		foreignIdCriteria.setIndexKeys(indexKeys);
@@ -70,6 +71,7 @@ public class ObjectMapperClientFilteringITCase extends RhombusFunctionalTest {
 		Criteria foreignIdAndNotFilteredCriteria = new Criteria();
 		foreignIdAndNotFilteredCriteria.setOrdering(CObjectOrdering.DESCENDING);
 		foreignIdAndNotFilteredCriteria.setLimit(50l);
+		foreignIdAndNotFilteredCriteria.setAllowFiltering(true);
 		indexKeys = Maps.newTreeMap();
 		indexKeys.put("foreignid", 123l);
 		indexKeys.put("filtered", 0);
@@ -82,6 +84,7 @@ public class ObjectMapperClientFilteringITCase extends RhombusFunctionalTest {
 		Criteria foreignIdAndFilteredCriteria = new Criteria();
 		foreignIdAndFilteredCriteria.setOrdering(CObjectOrdering.DESCENDING);
 		foreignIdAndFilteredCriteria.setLimit(50l);
+		foreignIdAndFilteredCriteria.setAllowFiltering(true);
 		indexKeys = Maps.newTreeMap();
 		indexKeys.put("foreignid", 123l);
 		indexKeys.put("filtered", 1);

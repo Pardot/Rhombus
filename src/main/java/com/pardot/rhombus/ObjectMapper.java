@@ -33,7 +33,7 @@ import java.util.*;
 public class ObjectMapper implements CObjectShardList {
 
 	private static Logger logger = LoggerFactory.getLogger(ObjectMapper.class);
-	private static final int reasonableStatementLimit = 20;
+	private static final int reasonableStatementLimit = 50;
 	private boolean executeAsync = true;
 	private boolean useCqlBatching = false;
 	private boolean logCql = false;
@@ -329,7 +329,7 @@ public class ObjectMapper implements CObjectShardList {
 	 * @param objectType Type of object to delete
 	 * @param key Key of object to delete
 	 */
-	public void delete(String objectType, UUID key) {
+	public void delete(String objectType, UUID key) throws RhombusException {
 		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
 		Map<String, Object> values = getByKey(objectType, key);
 		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforDelete(objectType, key, values, null);
@@ -392,7 +392,7 @@ public class ObjectMapper implements CObjectShardList {
 	 * @param key Key of object to get
 	 * @return Object of type with key or null if it does not exist
 	 */
-	public Map<String, Object> getByKey(String objectType, Object key) {
+	public Map<String, Object> getByKey(String objectType, Object key) throws RhombusException {
 		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
 		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforGet(objectType, key);
 		List<Map<String, Object>> results = mapResults(statementIterator, def, 1L);
@@ -416,12 +416,13 @@ public class ObjectMapper implements CObjectShardList {
 	/**
 	 * @param objectType Type of object to query
 	 * @param criteria Criteria to query by
+	 * @param allowFiltering Allow client side filtering
 	 * @return List of objects that match the specified type and criteria
 	 * @throws CQLGenerationException
 	 */
-	public List<Map<String, Object>> list(String objectType, Criteria criteria) throws CQLGenerationException {
+	public List<Map<String, Object>> list(String objectType, Criteria criteria) throws CQLGenerationException, RhombusException {
 		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
-		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforGet(objectType, criteria);
+		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforList(objectType, criteria, false);
 		return mapResults(statementIterator, def, criteria.getLimit());
 	}
 
@@ -433,7 +434,7 @@ public class ObjectMapper implements CObjectShardList {
 	 */
 	public long count(String objectType, Criteria criteria) throws CQLGenerationException {
 		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
-		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforCount(objectType, criteria);
+		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforList(objectType, criteria, true);
 		return mapCount(statementIterator);
 	}
 
@@ -501,7 +502,7 @@ public class ObjectMapper implements CObjectShardList {
 	 * @param definition definition to execute the statements against
 	 * @return Ordered resultset concatenating results from statements in statement iterator.
 	 */
-	private List<Map<String, Object>> mapResults(CQLStatementIterator statementIterator, CDefinition definition, Long limit) {
+	private List<Map<String, Object>> mapResults(CQLStatementIterator statementIterator, CDefinition definition, Long limit) throws RhombusException {
 		List<Map<String, Object>> results = Lists.newArrayList();
 		int statementNumber = 0;
 		int resultNumber = 0;
@@ -521,9 +522,12 @@ public class ObjectMapper implements CObjectShardList {
 				}
 			}
 			statementNumber++;
-			if((limit > 0 && resultNumber >= limit) || statementNumber > reasonableStatementLimit) {
+			if((limit > 0 && resultNumber >= limit)) {
 				logger.debug("Breaking from mapping results");
 				break;
+			}
+			if(statementNumber > reasonableStatementLimit) {
+				throw new RhombusException("Query attempted to execute more than " + reasonableStatementLimit + " statements.");
 			}
 		}
 		return results;

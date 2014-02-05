@@ -37,8 +37,6 @@ public class CDefinition {
 
 	private boolean allowNullPrimaryKeyInserts = false;
 
-	private boolean allowClientFiltering = false;
-
 	public CDefinition(){
 	}
 
@@ -105,8 +103,8 @@ public class CDefinition {
 		return ret;
 	}
 
-	public CIndex getIndex(SortedMap<String,Object> indexValues){
-		if(allowClientFiltering) {
+	public CIndex getIndex(SortedMap<String,Object> indexValues, boolean allowFiltering){
+		if(allowFiltering) {
 			return getMostSelectiveMatchingIndex(indexValues);
 		} else {
 			String key = Joiner.on(":").join(indexValues.keySet());
@@ -182,14 +180,6 @@ public class CDefinition {
 		else{
 			return UUID.class;
 		}
-	}
-
-	public boolean isAllowClientFiltering() {
-		return allowClientFiltering;
-	}
-
-	public void setAllowClientFiltering(boolean allowClientFiltering) {
-		this.allowClientFiltering = allowClientFiltering;
 	}
 
 	@Override
