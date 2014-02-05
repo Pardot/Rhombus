@@ -3,11 +3,12 @@ package com.pardot.rhombus.cobject;
 import com.datastax.driver.core.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pardot.rhombus.cobject.statement.CQLStatement;
+import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.pardot.rhombus.util.StringUtil;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

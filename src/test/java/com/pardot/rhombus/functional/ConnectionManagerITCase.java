@@ -6,14 +6,13 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Maps;
-import com.pardot.rhombus.CassandraConfiguration;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.Criteria;
 import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.*;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
+import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.pardot.rhombus.helpers.ConnectionManagerTester;
 import com.pardot.rhombus.helpers.TestHelpers;
 import com.pardot.rhombus.util.JsonUtil;
@@ -21,7 +20,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;

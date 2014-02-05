@@ -4,6 +4,7 @@ import com.pardot.rhombus.cobject.*;
 import com.pardot.rhombus.cobject.migrations.CObjectMigrationException;
 import com.pardot.rhombus.cobject.migrations.CObjectMigrator;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
+import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
 import com.pardot.rhombus.util.JsonUtil;
 import org.junit.Test;
 

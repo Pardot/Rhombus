@@ -1,6 +1,7 @@
 package com.pardot.rhombus;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Objects;
 import com.pardot.rhombus.cobject.CObjectOrdering;
 import org.slf4j.Logger;
@@ -25,6 +26,7 @@ public class Criteria {
 	private UUID endUuid;
 	private Long limit = 0L;
 	private Boolean inclusive = true;
+	private Boolean allowFiltering = false;
 
 
 	public String toString() {
@@ -35,6 +37,7 @@ public class Criteria {
 				.add("endTimestamp", uuidToDateString(endUuid))
 				.add("limit", limit)
 				.add("inclusive", inclusive)
+				.add("allowFiltering", allowFiltering)
 				.toString();
 	}
 
@@ -61,6 +64,11 @@ public class Criteria {
 
 	public void setOrdering(String ordering) {
 		this.ordering = CObjectOrdering.fromString(ordering);
+	}
+
+	@JsonIgnore
+	public void setOrdering(CObjectOrdering ordering) {
+		this.ordering = ordering;
 	}
 
 	public UUID getStartUuid() {
@@ -101,5 +109,13 @@ public class Criteria {
 
 	public void setInclusive(Boolean inclusive) {
 		this.inclusive = inclusive;
+	}
+
+	public Boolean getAllowFiltering() {
+		return allowFiltering;
+	}
+
+	public void setAllowFiltering(Boolean allowFiltering) {
+		this.allowFiltering = allowFiltering;
 	}
 }

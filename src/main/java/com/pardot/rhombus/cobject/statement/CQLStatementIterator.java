@@ -1,6 +1,9 @@
-package com.pardot.rhombus.cobject;
+package com.pardot.rhombus.cobject.statement;
+
+import com.pardot.rhombus.cobject.statement.CQLStatement;
 
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Pardot, An ExactTarget Company
@@ -9,6 +12,8 @@ import java.util.Iterator;
  */
 public interface CQLStatementIterator extends Iterator<CQLStatement>{
 
+	public void setClientFilters(Map<String, Object> clientFilters);
+	public Map<String, Object> getClientFilters();
 	public boolean hasNext(long currentResultCount);
 	public boolean isBounded();
 	public long size();

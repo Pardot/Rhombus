@@ -9,7 +9,7 @@ import com.pardot.rhombus.UpdateProcessor;
 import com.pardot.rhombus.cobject.CDefinition;
 import com.pardot.rhombus.cobject.CIndex;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
-import com.pardot.rhombus.cobject.CQLStatement;
+import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.pardot.rhombus.helpers.TestHelpers;
 import org.junit.Test;
 import org.slf4j.Logger;
