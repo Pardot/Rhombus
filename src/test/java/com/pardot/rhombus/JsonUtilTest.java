@@ -120,7 +120,7 @@ public class JsonUtilTest extends JsonUtil{
     public void typedObjectFromNumericalStringAndBoolean() throws CObjectParseException {
         CField field = new CField("test", "boolean");
         String jsonValue = "1";
-        Boolean expected = false;
+        Boolean expected = true;
 
         Object result = JsonUtil.typedObjectFromValueAndField(jsonValue, field);
         assertEquals(expected, result);
