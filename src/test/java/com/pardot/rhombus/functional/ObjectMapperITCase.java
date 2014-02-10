@@ -416,46 +416,6 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 	}
 
 	@Test
-	public void testShardedQueries() throws Exception {
-		logger.debug("Starting testShardedQueries");
-
-		//Build the connection manager
-		ConnectionManager cm = getConnectionManager();
-
-		//Build our keyspace definition object
-		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "ShardedKeyspace.js");
-		assertNotNull(definition);
-
-		//Rebuild the keyspace and get the object mapper
-		cm.buildKeyspace(definition, true);
-		logger.debug("Built keyspace: {}", definition.getName());
-		cm.setDefaultKeyspace(definition);
-		ObjectMapper om = cm.getObjectMapper();
-		om.setLogCql(true);
-
-		//Set up test data
-		List<Map<String, Object>> values = JsonUtil.rhombusMapFromResource(this.getClass().getClassLoader(), "ShardedTestData.js");
-		for(Map<String, Object> object : values) {
-			Map<String, Object> updatedObject = JsonUtil.rhombusMapFromJsonMap(object, definition.getDefinitions().get("object1"));
-			Long createdAt = ((Date)(updatedObject.get("created_at"))).getTime();
-			logger.debug("Inserting object with created_at: {}", createdAt);
-			UUID id = (UUID)om.insert("object1", updatedObject, createdAt);
-			logger.debug("Inserted object with uuid unix time: {}", UUIDs.unixTimestamp(id));
-		}
-
-		//Query it back out
-		//Make sure that we have the proper number of results
-		SortedMap<String, Object> indexValues = Maps.newTreeMap();
-		indexValues.put("account_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
-		indexValues.put("user_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
-		Criteria criteria = new Criteria();
-		criteria.setIndexKeys(indexValues);
-		criteria.setLimit(50L);
-		List<Map<String, Object>> results = om.list("object1", criteria);
-		assertEquals(3, results.size());
-	}
-
-	@Test
 	public void testVisitAllEntries() throws Exception {
 		logger.debug("Starting testVisitAllEntries");
 

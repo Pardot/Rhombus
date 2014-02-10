@@ -739,4 +739,11 @@ public class ObjectMapper implements CObjectShardList {
 		}
 		return null;
 	}
+
+	/**
+	 * @return Number of statements that will be executed in a query without throwing an exception
+	 */
+	public int getReasonableStatementLimit() {
+		return ObjectMapper.reasonableStatementLimit;
+	}
 }

@@ -16,11 +16,15 @@ import static org.junit.Assert.assertNotNull;
 public abstract class RhombusFunctionalTest {
 
     protected ConnectionManagerTester getConnectionManager() throws IOException {
-        //Get a connection manager based on the test properties
-        ConnectionManagerTester connectionManager = TestHelpers.getTestConnectionManager();
-        connectionManager.setLogCql(true);
-        connectionManager.buildCluster(true);
-        assertNotNull(connectionManager);
-        return connectionManager;
+		return RhombusFunctionalTest.getConnectionManagerStatic();
     }
+
+	protected static ConnectionManagerTester getConnectionManagerStatic() throws IOException {
+		//Get a connection manager based on the test properties
+		ConnectionManagerTester connectionManager = TestHelpers.getTestConnectionManager();
+		connectionManager.setLogCql(true);
+		connectionManager.buildCluster(true);
+		assertNotNull(connectionManager);
+		return connectionManager;
+	}
 }
