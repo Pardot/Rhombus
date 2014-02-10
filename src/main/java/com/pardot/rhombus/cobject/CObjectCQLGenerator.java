@@ -512,12 +512,29 @@ public class CObjectCQLGenerator {
 	public static CQLStatementIterator makeCQLforUpdate(String keyspace, CDefinition def, UUID key, Map<String,Object> oldValues, Map<String, Object> newValues) throws CQLGenerationException {
 		List<CQLStatement> ret = Lists.newArrayList();
 		//(1) Detect if there are any changed index values in values
-		List<CIndex> effectedIndexes = getEffectedIndexes(def, oldValues, newValues);
-		List<CIndex> uneffectedIndexes = getUneffectedIndexes(def, oldValues, newValues);
+		List<CIndex> affectedIndexes = getAffectedIndexes(def, oldValues, newValues);
+		List<CIndex> unaffectedIndexes = getUnaffectedIndexes(def, oldValues, newValues);
 
-		//(2) Delete from any indexes that are no longer applicable
-		for(CIndex i : effectedIndexes){
+		//(2) Construct a complete copy of the object
+		Map<String,Object> completeValues = Maps.newHashMap(oldValues);
+		for(String k : newValues.keySet()){
+			completeValues.put(k, newValues.get(k));
+		}
+		Map<String,ArrayList> fieldsAndValues = makeFieldAndValueList(def,completeValues);
+
+		//(3) Delete from any indexes that are no longer applicable
+		for(CIndex i : affectedIndexes){
 			Map<String,Object> compositeKeyToDelete = i.getIndexKeyAndValues(oldValues);
+
+			//just ignore the delete if the old index values are the same as the new index values.
+			//We will update with the new fields later on in the method. Ignoring the delete in this
+			//case will solve the problem of async deletes and inserts happening in parallel
+			Map<String,Object> compositeKeyOfCompleteValues = i.getIndexKeyAndValues(completeValues);
+			if(compositeKeyOfCompleteValues.equals(compositeKeyToDelete)){
+				continue;
+			}
+
+			//ok we can move forward with the delete now
 			if(def.isAllowNullPrimaryKeyInserts()){
 				//check if we have the necessary primary fields to delete on this index. If not just continue
 				// because it would be ignored on insert
@@ -527,13 +544,6 @@ public class CObjectCQLGenerator {
 			}
 			ret.add(makeCQLforDeleteUUIDFromIndex(keyspace, def, i, key, compositeKeyToDelete, null));
 		}
-
-		//(3) Construct a complete copy of the object
-		Map<String,Object> completeValues = Maps.newHashMap(oldValues);
-		for(String k : newValues.keySet()){
-			completeValues.put(k, newValues.get(k));
-		}
-		Map<String,ArrayList> fieldsAndValues = makeFieldAndValueList(def,completeValues);
 
 		//(4) Add index values to the new values list
 		Map<String,Object> newValuesAndIndexValues = Maps.newHashMap(newValues);
@@ -545,7 +555,7 @@ public class CObjectCQLGenerator {
 		Map<String,ArrayList> fieldsAndValuesForNewValuesAndIndexValues = makeFieldAndValueList(def,newValuesAndIndexValues);
 
 		//(5) Insert into the new indexes like a new insert
-		for(CIndex i: effectedIndexes){
+		for(CIndex i: affectedIndexes){
 			if(def.isAllowNullPrimaryKeyInserts()){
 				//check if we have the necessary primary fields to insert on this index. If not just continue;
 				if(!i.validateIndexKeys(i.getIndexKeyAndValues(completeValues))){
@@ -556,7 +566,7 @@ public class CObjectCQLGenerator {
 		}
 
 		//(6) Insert into the existing indexes without the shard index addition
-		for(CIndex i: uneffectedIndexes){
+		for(CIndex i: unaffectedIndexes){
 			if(def.isAllowNullPrimaryKeyInserts()){
 				//check if we have the necessary primary fields to insert on this index. If not just continue;
 				if(!i.validateIndexKeys(i.getIndexKeyAndValues(newValuesAndIndexValues))){
@@ -584,7 +594,7 @@ public class CObjectCQLGenerator {
 		return new BoundedCQLStatementIterator(ret);
 	}
 
-	public static List<CIndex> getEffectedIndexes(CDefinition def, Map<String,Object> oldValues, Map<String,Object> newValues){
+	public static List<CIndex> getAffectedIndexes(CDefinition def, Map<String,Object> oldValues, Map<String,Object> newValues){
 		List<CIndex> ret = Lists.newArrayList();
 		if(def.getIndexes() == null) {
 			return ret;
@@ -598,7 +608,7 @@ public class CObjectCQLGenerator {
 		return ret;
 	}
 
-	public static List<CIndex> getUneffectedIndexes(CDefinition def, Map<String,Object> oldValues, Map<String,Object> newValues){
+	public static List<CIndex> getUnaffectedIndexes(CDefinition def, Map<String,Object> oldValues, Map<String,Object> newValues){
 		List<CIndex> ret = Lists.newArrayList();
 		if(def.getIndexes() == null) {
 			return ret;

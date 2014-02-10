@@ -491,6 +491,95 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			assertEquals(expected, next);
 			//should be no results left
 			assertTrue(!result.hasNext());
+
+
+
+
+			//Now try the same update, but this time we dont change anything and send the same values. In this case
+			//It should not generate any deletes
+			newdata.put("type", Integer.valueOf(5));
+			 result = Subject.makeCQLforUpdate(KEYSPACE_NAME, def,uuid,data,newdata);
+			//no deletes
+			//Go right to the inserts
+			expected = CQLStatement.make(
+					"INSERT INTO \"testspace\".\"testtype6671808f3f51bcc53ddc76d2419c9060\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+					Arrays.asList(
+							UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"),
+							Long.valueOf(160),
+							Integer.valueOf(1),
+							"This is data one",
+							"This is data two",
+							"This is data three",
+							Integer.valueOf(222222),
+							Integer.valueOf(5),
+							Integer.valueOf(777)).toArray()
+			);
+			assertEquals(expected, result.next());
+			expected = CQLStatement.make(
+					"INSERT INTO \"testspace\".\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
+					Arrays.asList(
+							"testtype6671808f3f51bcc53ddc76d2419c9060",
+							"222222:5",
+							Long.valueOf(160),
+							"160:222222:5").toArray()
+			);
+			assertEquals(expected, result.next());
+			expected = CQLStatement.make(
+					"INSERT INTO \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" (id, shardid, filtered, data1, data2, data3, instance, type, foreignid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+					Arrays.asList(
+							UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"),
+							Long.valueOf(160),
+							Integer.valueOf(1),
+							"This is data one",
+							"This is data two",
+							"This is data three",
+							Integer.valueOf(222222),
+							Integer.valueOf(5),
+							Integer.valueOf(777)).toArray()
+			);
+			assertEquals(expected, result.next());
+			expected = CQLStatement.make(
+					"INSERT INTO \"testspace\".\"__shardindex\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);",
+					Arrays.asList(
+							"testtypef9bf3332bb4ec879849ec43c67776131",
+							"777:222222:5",
+							Long.valueOf(160),
+							"160:777:222222:5").toArray()
+			);
+			assertEquals(expected, result.next());
+			expected = CQLStatement.make(
+					"INSERT INTO \"testspace\".\"testtype7f9bb4e56d3cae5b11c553547cfe5897\" (id, shardid, instance, type, foreignid) VALUES (?, ?, ?, ?, ?);",
+					Arrays.asList(
+							UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"),
+							Long.valueOf(1),
+							222222,
+							5,
+							777).toArray()
+			);
+			assertEquals(expected, result.next());
+			//verify that this last insert was on the uneffected index (which is why it does not have a matching __shardindex insert
+			assertEquals("testtype7f9bb4e56d3cae5b11c553547cfe5897",makeTableName(def,def.getIndexes().get("foreignid")));
+			expected = CQLStatement.make(
+					"INSERT INTO \"testspace\".\"testtype\" (id, type) VALUES (?, ?);",
+					Arrays.asList(
+							UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"),
+							Integer.valueOf(5)).toArray()
+			);
+			assertEquals(expected, result.next());
+			next = result.next();
+			expected = CQLStatement.make(
+					"INSERT INTO \"testspace\".\"__index_updates\" (id, statictablename, instanceid, indexvalues) values (?, ?, ?, ?);",
+					Arrays.asList(
+							(UUID)next.getValues()[0],
+							"testtype",
+							UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43"),
+							"{\"foreignid\":777,\"instance\":222222,\"type\":5}").toArray()
+			);
+			assertEquals(expected, next);
+			//should be no results left
+			assertTrue(!result.hasNext());
+
+
 		}
 
 	}
