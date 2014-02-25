@@ -18,6 +18,8 @@ import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
 import com.pardot.rhombus.util.JsonUtil;
 import com.yammer.metrics.core.*;
+import org.apache.cassandra.exceptions.InvalidRequestException;
+import org.apache.cassandra.io.sstable.CQLSSTableWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +45,10 @@ public class ObjectMapper implements CObjectShardList {
 	private CKeyspaceDefinition keyspaceDefinition;
 	private CObjectCQLGenerator cqlGenerator;
 	private Long batchTimeout;
+    private String defaultSSTableOutputPath = System.getProperty("user.dir");
+    private Map<String, CQLSSTableWriter> SSTableWriters = new HashMap<String, CQLSSTableWriter>();
+    private Map<String, List<String>> tableCreateCQL = new HashMap<String, List<String>>();
+    private Map<String, List<String>> tableInsertCQL = new HashMap<String, List<String>>();
 
 	public ObjectMapper(Session session, CKeyspaceDefinition keyspaceDefinition, Integer consistencyHorizon, Long batchTimeout) {
 		this.cqlExecutor = new CQLExecutor(session, logCql, keyspaceDefinition.getConsistencyLevel());
@@ -674,6 +680,66 @@ public class ObjectMapper implements CObjectShardList {
 	public Map<String, Object> coerceRhombusValuesFromJsonMap(String objectType, Map<String, Object> values) {
 		return JsonUtil.rhombusMapFromJsonMap(values, keyspaceDefinition.getDefinitions().get(objectType));
 	}
+
+    public void insertIntoSSTable(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException {
+        for (String tableName : objects.keySet()) {
+            CQLSSTableWriter writer;
+            // Pull an existing SStableWriter for this object type if we already have one, if not make a new one
+            if (this.SSTableWriters.containsKey(tableName)) {
+                writer = this.SSTableWriters.get(tableName);
+            } else {
+                writer = buildSSTableWriter(tableName);
+                this.SSTableWriters.put(tableName, writer);
+            }
+            List<Map<String, Object>> insertList = objects.get(tableName);
+
+            // Iterate over all the objects for this type and insert them into the SSTable
+            for (Map<String, Object> insert : insertList) {
+                try {
+                    writer.addRow(insert);
+                } catch (IOException e) {
+                    logger.error("Could not insert row into SSTable: {}", insert.toString(), e);
+                } catch (InvalidRequestException e) {
+                    logger.error("Could not insert row into SSTable: {}", insert.toString(), e);
+                }
+            }
+        }
+    }
+
+    private CQLSSTableWriter buildSSTableWriter(String tableName) throws CQLGenerationException {
+        // Generate and store CQL create syntax
+        List<String> createCQL = new ArrayList<String>();
+        Map<String, CDefinition> definitions = this.keyspaceDefinition.getDefinitions();
+        String create = this.cqlGenerator.makeStaticTableCreate(definitions.get(tableName)).getQuery();
+        createCQL.add(create);
+        this.tableCreateCQL.put(tableName, createCQL);
+
+        // Generate and store CQL insert syntax
+        List<String> insertCQL = new ArrayList<String>();
+        insertCQL.add(this.cqlGenerator.makeCQLforInsertNoValues(tableName).getQuery());
+        this.tableInsertCQL.put(tableName, insertCQL);
+
+        return CQLSSTableWriter.builder()
+            .inDirectory(this.defaultSSTableOutputPath)
+            // The first entry in each list is the CQL for the static table
+            .forTable(createCQL.get(0))
+            .using(insertCQL.get(0)).build();
+    }
+
+    public void setSSTableOutputPath(String path) {
+        this.defaultSSTableOutputPath = path;
+    }
+
+    public void completeSSTableWrites() {
+        for (String tableName : this.SSTableWriters.keySet()) {
+            try {
+                this.SSTableWriters.get(tableName).close();
+                this.SSTableWriters.remove(tableName);
+            } catch (IOException e) {
+                logger.error("Failed to close SSTableWriter for table name: {}", tableName, e);
+            }
+        }
+    }
 
 	public void setLogCql(boolean logCql) {
 		this.logCql = logCql;

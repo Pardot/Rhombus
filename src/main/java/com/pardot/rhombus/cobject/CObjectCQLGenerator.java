@@ -132,6 +132,21 @@ public class CObjectCQLGenerator {
 		return makeCQLforTruncate(this.keyspace, this.definitions.get(objType));
 	}
 
+    /**
+     *
+     * @param objType - The name of the Object type aka CDefinition.name
+     * @return Iterator of CQL statements that need to be executed for this task.
+     * @throws CQLGenerationException
+     */
+    @NotNull
+    public CQLStatement makeCQLforInsertNoValues(String objType) throws CQLGenerationException {
+        CDefinition definition = this.definitions.get(objType);
+        Map<String, CField> fields = definition.getFields();
+        List<String> fieldNames = new ArrayList<String>(definition.getFields().keySet());
+        List<String> valuePlaceholders = new ArrayList<String>(fields.keySet());
+        return makeInsertStatementStatic(this.keyspace, definition.getName(), fieldNames, valuePlaceholders, null, null, null);
+    }
+
 	/**
 	 *
 	 * @param objType - The name of the Object type aka CDefinition.name
@@ -869,7 +884,7 @@ public class CObjectCQLGenerator {
 		return CQLStatement.make(String.format(TEMPLATE_TRUNCATE, keyspace, tableName));
 	}
 
-	protected CQLStatement makeStaticTableCreate(CDefinition def){
+	public CQLStatement makeStaticTableCreate(CDefinition def){
 		String query = String.format(
 			TEMPLATE_CREATE_STATIC,
 			keyspace,
