@@ -1,22 +1,26 @@
 { "values": [
     {
-        "index_1": "index1-1",
-        "index_2": "index2-1",
-        "value": "value1"
+        "index_1": "index1",
+        "index_2": "index2",
+        "value": "value1",
+        "created_at": "1393450000"
     },
     {
-        "index_1": "index1-2",
-        "index_2": "index2-2",
-        "value": "value2"
+        "index_1": "index1",
+        "index_2": "index2",
+        "value": "value2",
+        "created_at": "1393460000"
     },
     {
-        "index_1": "index1-3",
-        "index_2": "index2-3",
-        "value": "value3"
+        "index_1": "index1",
+        "index_2": "other index 2",
+        "value": "value3",
+        "created_at": "1393470000"
     },
     {
-        "index_1": "index1-4",
-        "index_2": "index2-4",
-        "value": "value4"
+        "index_1": "other index 1",
+        "index_2": "index2",
+        "value": "value4",
+        "created_at": "1393480000"
     }
 ]}

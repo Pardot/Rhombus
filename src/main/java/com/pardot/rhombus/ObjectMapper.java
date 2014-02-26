@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -47,8 +48,6 @@ public class ObjectMapper implements CObjectShardList {
 	private Long batchTimeout;
     private String defaultSSTableOutputPath = System.getProperty("user.dir");
     private Map<String, CQLSSTableWriter> SSTableWriters = new HashMap<String, CQLSSTableWriter>();
-    private Map<String, List<String>> tableCreateCQL = new HashMap<String, List<String>>();
-    private Map<String, List<String>> tableInsertCQL = new HashMap<String, List<String>>();
 
 	public ObjectMapper(Session session, CKeyspaceDefinition keyspaceDefinition, Integer consistencyHorizon, Long batchTimeout) {
 		this.cqlExecutor = new CQLExecutor(session, logCql, keyspaceDefinition.getConsistencyLevel());
@@ -681,14 +680,19 @@ public class ObjectMapper implements CObjectShardList {
 		return JsonUtil.rhombusMapFromJsonMap(values, keyspaceDefinition.getDefinitions().get(objectType));
 	}
 
-    public void insertIntoSSTable(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException {
+    public void insertIntoSSTable(Map<String, List<Map<String, Object>>> objects, Map<String, CIndex> indexes, Map<String, String> indexTableToStaticTableName) throws CQLGenerationException, IOException {
+        Map<String, CDefinition> definitions = this.keyspaceDefinition.getDefinitions();
         for (String tableName : objects.keySet()) {
             CQLSSTableWriter writer;
             // Pull an existing SStableWriter for this object type if we already have one, if not make a new one
             if (this.SSTableWriters.containsKey(tableName)) {
                 writer = this.SSTableWriters.get(tableName);
             } else {
-                writer = buildSSTableWriter(tableName);
+                if (indexes.containsKey(tableName) && indexTableToStaticTableName.containsKey(tableName)) {
+                    writer = buildSSTableWriterForWideTable(definitions.get(indexTableToStaticTableName.get(tableName)), indexes.get(tableName));
+                } else {
+                    writer = buildSSTableWriterForStaticTable(definitions.get(tableName));
+                }
                 this.SSTableWriters.put(tableName, writer);
             }
             List<Map<String, Object>> insertList = objects.get(tableName);
@@ -706,39 +710,70 @@ public class ObjectMapper implements CObjectShardList {
         }
     }
 
-    private CQLSSTableWriter buildSSTableWriter(String tableName) throws CQLGenerationException {
-        // Generate and store CQL create syntax
-        List<String> createCQL = new ArrayList<String>();
-        Map<String, CDefinition> definitions = this.keyspaceDefinition.getDefinitions();
-        String create = this.cqlGenerator.makeStaticTableCreate(definitions.get(tableName)).getQuery();
-        createCQL.add(create);
-        this.tableCreateCQL.put(tableName, createCQL);
+    private CQLSSTableWriter buildSSTableWriterForStaticTable(CDefinition definition) throws CQLGenerationException, IOException {
+        // Generate CQL create syntax
+        String tableName = definition.getName();
+        String createCQL = this.cqlGenerator.makeStaticTableCreate(definition).getQuery();
 
-        // Generate and store CQL insert syntax
-        List<String> insertCQL = new ArrayList<String>();
-        insertCQL.add(this.cqlGenerator.makeCQLforInsertNoValues(tableName).getQuery());
-        this.tableInsertCQL.put(tableName, insertCQL);
+        // Generate CQL insert syntax
+        String insertCQL = this.cqlGenerator.makeCQLforInsertNoValuesforStaticTable(tableName).getQuery();
+
+        String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + tableName;
+        if (!new File(SSTablePath).mkdir()) {
+            throw new IOException("Failed to create new directory for SSTable writing at path: " + SSTablePath);
+        }
+        return CQLSSTableWriter.builder()
+            .inDirectory(SSTablePath)
+            .forTable(createCQL)
+            .using(insertCQL).build();
+    }
+
+    /**
+     *
+     * @param definition The definition this index/wide table is on
+     * @param index The index/wide table to create an SSTableWriter for
+     * @return An SSTableWriter for this wide table
+     * @throws CQLGenerationException
+     */
+    private CQLSSTableWriter buildSSTableWriterForWideTable(CDefinition definition, CIndex index) throws CQLGenerationException, IOException {
+        String indexTableName = CObjectCQLGenerator.makeTableName(definition, index);
+        // Generate CQL create syntax
+        String createCQL = this.cqlGenerator.makeWideTableCreate(definition, index).getQuery();
+
+        // Generate CQL insert syntax
+        // Just use 1 as the value for shardId, doesn't matter since we're not actually using values here
+        String insertCQL = this.cqlGenerator.makeCQLforInsertNoValuesforWideTable(definition, indexTableName, 1L).getQuery();
+
+        String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + indexTableName;
+        if (!new File(SSTablePath).mkdir()) {
+            throw new IOException("Failed to create new directory for SSTable writing at path: " + SSTablePath);
+        }
 
         return CQLSSTableWriter.builder()
-            .inDirectory(this.defaultSSTableOutputPath)
-            // The first entry in each list is the CQL for the static table
-            .forTable(createCQL.get(0))
-            .using(insertCQL.get(0)).build();
+            .inDirectory(SSTablePath)
+            .forTable(createCQL)
+            .using(insertCQL).build();
     }
 
     public void setSSTableOutputPath(String path) {
         this.defaultSSTableOutputPath = path;
     }
 
-    public void completeSSTableWrites() {
+    public boolean completeSSTableWrites() {
+        List<String> closedTables = new ArrayList<String>();
         for (String tableName : this.SSTableWriters.keySet()) {
             try {
                 this.SSTableWriters.get(tableName).close();
-                this.SSTableWriters.remove(tableName);
+                closedTables.add(tableName);
             } catch (IOException e) {
                 logger.error("Failed to close SSTableWriter for table name: {}", tableName, e);
             }
         }
+        // Don't just clear all the tables so we can track if we missed any
+        for (String table : closedTables) {
+            this.SSTableWriters.remove(table);
+        }
+        return this.SSTableWriters.isEmpty();
     }
 
 	public void setLogCql(boolean logCql) {
