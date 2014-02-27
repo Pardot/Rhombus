@@ -190,7 +190,7 @@ public class ConnectionManager {
 		try {
 			String cql = "CREATE KEYSPACE " + sb.toString();
 			session.execute(cql);
-			session.shutdown();
+			session.close();
 			logger.debug("Successfully created keyspace {}", keyspaceName);
 			return false;
 		} catch(AlreadyExistsException e) {
@@ -203,7 +203,7 @@ public class ConnectionManager {
 					logger.error("Unable to alter keyspace {}", keyspaceName, e2);
 				}
 			}
-			session.shutdown();
+			session.close();
 			return true;
 		}
 	}
@@ -366,7 +366,7 @@ public class ConnectionManager {
 		} catch(Exception e) {
 			logger.warn("Unable to drop keyspace {}", keyspaceName, e);
 		}
-		session.shutdown();
+		session.close();
 		if(objectMappers.containsKey(keyspaceName)) {
 			objectMappers.remove(keyspaceName);
 		}
@@ -403,7 +403,7 @@ public class ConnectionManager {
 		for(ObjectMapper mapper : objectMappers.values()) {
 			mapper.teardown();
 		}
-		cluster.shutdown();
+		cluster.close();
 	}
 
 	public void setDefaultKeyspace(CKeyspaceDefinition keyspaceDefinition) {
