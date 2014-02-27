@@ -203,6 +203,9 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <excludes>
+                        <exclude>**/SSTableWriterITCase.java</exclude>
+                    </excludes>
                     <skipTests>false</skipTests>
                 </configuration>
             </plugin>
