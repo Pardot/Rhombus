@@ -36,6 +36,7 @@ public class ObjectMapperClientFilteringITCase extends RhombusFunctionalTest {
 		cm.buildKeyspace(definition, true);
 		cm.setDefaultKeyspace(definition);
 		ObjectMapper om = cm.getObjectMapper(definition.getName());
+		om.setExecuteAsync(false);
 
 		//Insert one object which is filtered and one which is not
 		Map<String, Object> testObject = Maps.newHashMap();
