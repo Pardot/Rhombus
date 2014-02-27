@@ -43,7 +43,7 @@ public class CassandraConnectionITCase extends RhombusFunctionalTest {
 		}
 
 		//Shutdown the session
-		session.shutdown();
+		session.close();
 
 		//Teardown the connection manager
 		cm.teardown();

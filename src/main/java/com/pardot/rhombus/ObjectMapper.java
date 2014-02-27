@@ -690,7 +690,7 @@ public class ObjectMapper implements CObjectShardList {
 	}
 
 	public void teardown() {
-		session.shutdown();
+		session.close();
 	}
 
 	public boolean isCacheBoundedQueries() {
