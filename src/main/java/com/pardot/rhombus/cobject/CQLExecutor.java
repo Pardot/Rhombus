@@ -44,7 +44,7 @@ public class CQLExecutor {
 		PreparedStatement ps = preparedStatementCache.get(cql.getQuery());
 		if(ps == null){
 			ps = prepareStatement(session, cql);
-			com.yammer.metrics.Metrics.defaultRegistry().newMeter(CQLExecutor.class, "statement", "prepared", TimeUnit.SECONDS).mark();
+			com.yammer.metrics.Metrics.defaultRegistry().newMeter(CQLExecutor.class, "statement.prepared", "prepared", TimeUnit.SECONDS).mark();
 		}
 		BoundStatement ret = new BoundStatement(ps);
 		ret.bind(cql.getValues());
@@ -96,7 +96,7 @@ public class CQLExecutor {
 		if(cql.isPreparable()){
 			BoundStatement bs = getBoundStatement(session, cql);
 			ResultSetFuture result = session.executeAsync(bs);
-			com.yammer.metrics.Metrics.defaultRegistry().newMeter(CQLExecutor.class, "statement", "executed", TimeUnit.SECONDS).mark();
+			com.yammer.metrics.Metrics.defaultRegistry().newMeter(CQLExecutor.class, "statement.executed", "executed", TimeUnit.SECONDS).mark();
 			return result;
 		}
 		else{
