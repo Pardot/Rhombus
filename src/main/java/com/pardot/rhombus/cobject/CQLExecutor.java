@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
+import com.yammer.metrics.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.pardot.rhombus.util.StringUtil;
@@ -12,6 +13,7 @@ import com.pardot.rhombus.util.StringUtil;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Pardot, An ExactTarget Company
@@ -42,6 +44,7 @@ public class CQLExecutor {
 		PreparedStatement ps = preparedStatementCache.get(cql.getQuery());
 		if(ps == null){
 			ps = prepareStatement(session, cql);
+			com.yammer.metrics.Metrics.defaultRegistry().newMeter(CQLExecutor.class, "statement", "prepared", TimeUnit.SECONDS).mark();
 		}
 		BoundStatement ret = new BoundStatement(ps);
 		ret.bind(cql.getValues());
@@ -92,7 +95,9 @@ public class CQLExecutor {
 		}
 		if(cql.isPreparable()){
 			BoundStatement bs = getBoundStatement(session, cql);
-			return session.executeAsync(bs);
+			ResultSetFuture result = session.executeAsync(bs);
+			com.yammer.metrics.Metrics.defaultRegistry().newMeter(CQLExecutor.class, "statement", "executed", TimeUnit.SECONDS).mark();
+			return result;
 		}
 		else{
 			//just run a normal execute without a prepared statement
