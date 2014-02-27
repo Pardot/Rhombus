@@ -1,12 +1,11 @@
 package com.pardot.rhombus.functional;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.collect.Lists;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.CDefinition;
-import com.pardot.rhombus.cobject.CIndex;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
-import com.pardot.rhombus.cobject.CObjectCQLGenerator;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyMonthly;
 import com.pardot.rhombus.util.JsonUtil;
 import org.apache.cassandra.io.util.FileUtils;
@@ -40,6 +39,7 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
         CKeyspaceDefinition keyspaceDefinition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "TableWriterSimpleKeyspace.js");
         assertNotNull(keyspaceDefinition);
         String keyspaceName = keyspaceDefinition.getName();
+        // Hardcode this for simplicity
         ShardingStrategyMonthly shardStrategy = new ShardingStrategyMonthly();
 
         // SSTableWriter craps out if we try to close a writer on a table and then create a new one on the same table, so each test should write to different tables
@@ -65,18 +65,6 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
 
         // This is the only static table definition this test keyspace has
         List<String> staticTableNames = Arrays.asList(testUniqueTableName);
-        Map<String, CIndex> indexes = new HashMap<String, CIndex>();
-        Map<String, String> indexTableToStaticTableName = new HashMap<String, String>();
-        // Pull the definition and associated indexes for each static table
-        for (String staticTableName : staticTableNames) {
-            CDefinition definition = keyspaceDefinition.getDefinitions().get(staticTableName);
-            List<CIndex> indexDefinitions = definition.getIndexesAsList();
-            for (CIndex index : indexDefinitions) {
-                String indexTableName = CObjectCQLGenerator.makeTableName(definition, index);
-                indexes.put(indexTableName, index);
-                indexTableToStaticTableName.put(indexTableName, staticTableName);
-            }
-        }
 
         //Insert our test data into the SSTable
         // For this test, all this data goes into the one table we have defined
@@ -90,20 +78,21 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
         for (String staticTableName : staticTableNames) {
             insert.put(staticTableName, values);
         }
-        // Add in shardId for index tables
-        for (Map<String, Object> map : values) {
-            map.put("shardid", shardStrategy.getShardKey(Long.parseLong(map.get("created_at").toString(), 10)));
-        }
-        for (String indexTableName : indexes.keySet()) {
-            insert.put(indexTableName, values);
-        }
-        // Actually insert the data into the SSTableWriters
-        om.insertIntoSSTable(insert, indexes, indexTableToStaticTableName);
-        assertTrue(om.completeSSTableWrites());
 
-        // Make a list of all table names so we can load them into Cassandra
-        List<String> allTableNames = new ArrayList<String>(indexes.keySet());
-        allTableNames.addAll(staticTableNames);
+        // Actually insert the data into the SSTableWriters
+        om.initializeSSTableWriters(false);
+        om.insertIntoSSTable(insert);
+        om.completeSSTableWrites();
+
+        // Figure out all the table names (including index tables) so we can load them into Cassandra
+        File[] tableDirs = keyspaceDir.listFiles();
+        assertNotNull(tableDirs);
+        List<String> allTableNames = Lists.newArrayList();
+        for (File file : tableDirs) {
+            if (file != null) {
+                allTableNames.add(file.getName());
+            }
+        }
         for (String tableName : allTableNames) {
             String SSTablePath = keyspaceName + "/" + tableName;
 
@@ -143,6 +132,8 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
         CKeyspaceDefinition keyspaceDefinition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "TableWriterSimpleKeyspace.js");
         assertNotNull(keyspaceDefinition);
         String keyspaceName = keyspaceDefinition.getName();
+        // Hardcode this for simplicity
+        ShardingStrategyMonthly shardStrategy = new ShardingStrategyMonthly();
 
         // SSTableWriter craps out if we try to close a writer on a table and then create a new one on the same table, so each test should write to different tables
         Map<String, CDefinition> tableDefs = keyspaceDefinition.getDefinitions();
@@ -150,8 +141,6 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
         def.setName(testUniqueTableName);
         tableDefs.remove(defaultTableName);
         tableDefs.put(testUniqueTableName, def);
-
-        ShardingStrategyMonthly shardStrategy = new ShardingStrategyMonthly();
 
         // Make sure the SSTableOutput directory exists and is clear
         File keyspaceDir = new File(keyspaceName);
@@ -169,18 +158,6 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
 
         // This is the only static table definition this test keyspace has
         List<String> staticTableNames = Arrays.asList(testUniqueTableName);
-        Map<String, CIndex> indexes = new HashMap<String, CIndex>();
-        Map<String, String> indexTableToStaticTableName = new HashMap<String, String>();
-        // Pull the definition and associated indexes for each static table
-        for (String staticTableName : staticTableNames) {
-            CDefinition definition = keyspaceDefinition.getDefinitions().get(staticTableName);
-            List<CIndex> indexDefinitions = definition.getIndexesAsList();
-            for (CIndex index : indexDefinitions) {
-                String indexTableName = CObjectCQLGenerator.makeTableName(definition, index);
-                indexes.put(indexTableName, index);
-                indexTableToStaticTableName.put(indexTableName, staticTableName);
-            }
-        }
 
         //Insert our test data into the SSTable
         // For this test, all this data goes into the one table we have defined
@@ -196,21 +173,22 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
         for (String staticTableName : staticTableNames) {
             insert.put(staticTableName, values);
         }
-        // Add in shardId for index tables
-        for (Map<String, Object> map : values) {
-            map.put("shardid", shardStrategy.getShardKey(Long.parseLong(map.get("created_at").toString(), 10)));
-        }
-        for (String indexTableName : indexes.keySet()) {
-            insert.put(indexTableName, values);
-        }
-        // Actually insert the data into the SSTableWriters
-        // NPE happens here, should be fixed in Cassandra 2.0.6 per https://issues.apache.org/jira/browse/CASSANDRA-6526
-        om.insertIntoSSTable(insert, indexes, indexTableToStaticTableName);
-        assertTrue(om.completeSSTableWrites());
 
-        // Make a list of all table names so we can load them into Cassandra
-        List<String> allTableNames = new ArrayList<String>(indexes.keySet());
-        allTableNames.addAll(staticTableNames);
+        // Actually insert the data into the SSTableWriters
+        om.initializeSSTableWriters(false);
+        // NPE happens here, should be fixed in Cassandra 2.0.6 per https://issues.apache.org/jira/browse/CASSANDRA-6526
+        om.insertIntoSSTable(insert);
+        om.completeSSTableWrites();
+
+        // Figure out all the table names (including index tables) so we can load them into Cassandra
+        File[] tableDirs = keyspaceDir.listFiles();
+        assertNotNull(tableDirs);
+        List<String> allTableNames = Lists.newArrayList();
+        for (File file : tableDirs) {
+            if (file != null) {
+                allTableNames.add(file.getName());
+            }
+        }
         for (String tableName : allTableNames) {
             String SSTablePath = keyspaceName + "/" + tableName;
 
