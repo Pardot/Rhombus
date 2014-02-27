@@ -43,18 +43,13 @@ public class CObjectMigrator {
 		}
 
 
-		//currently we allow new indexes but not removing old ones
+		//currently we allow new indexes but and removing old ones
+		//we do not support changing the sharding strategy
 		for( CIndex i : OldDefinition.getIndexes().values() ){
-			if(!NewDefinition.getIndexes().containsKey(i.getKey())){
-				//we are missing one of our old definitions
-				return false;
-			}
-
 			if(!NewDefinition.getIndexes().get(i.getKey()).getShardingStrategy().getClass().equals(i.getShardingStrategy().getClass())){
 				//this index changed sharding strategy. We do not support that yet
 				return false;
 			}
-
 		}
 		// Looks like we are good to migrate this CDefinition
 		return true;
@@ -80,6 +75,10 @@ public class CObjectMigrator {
 			indexAdds.add(cqlGenerator.makeWideTableCreate(NewDefinition,i));
 		}
 		ret.add(new BoundedCQLStatementIterator(indexAdds));
+
+		//note we do not need to do anything with removed indexes. As long as it's removed
+		//from the updated cDefinition no more writes will be processed to that table. It
+		// is the responsibility of the user to manually truncate and drop tables if desired.
 
 		try{
 			return BoundedCQLStatementIterator.condenseIterators(ret);
