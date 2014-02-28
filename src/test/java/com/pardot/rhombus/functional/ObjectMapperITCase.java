@@ -362,6 +362,60 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		}
 	}
 
+    @Test
+    public void testLargeCount() throws Exception {
+        logger.debug("Starting testLargeCount");
+
+        //Build the connection manager
+        ConnectionManager cm = getConnectionManager();
+
+        //Build our keyspace definition object
+        CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "MultiInsertKeyspace.js");
+        assertNotNull(definition);
+
+        //Rebuild the keyspace and get the object mapper
+        cm.buildKeyspace(definition, true);
+        logger.debug("Built keyspace: {}", definition.getName());
+        cm.setDefaultKeyspace(definition);
+        ObjectMapper om = cm.getObjectMapper();
+        om.setLogCql(true);
+
+        //Set up test data
+        List<Map<String, Object>> values2 = JsonUtil.rhombusMapFromResource(this.getClass().getClassLoader(), "MultiInsertTestData2.js");
+
+        // insert additional data, we are testing for counts > 50
+        int nDataItems = 200;
+        for (int i=0; i < nDataItems; i++) {
+            Map<String, Object> value = Maps.newHashMap();
+            value.put("account_id","00000003-0000-0030-0040-000000030000");
+            value.put("user_id","00000003-0000-0030-0040-000000030000");
+            value.put("field2", "Value"+(i+8));
+            values2.add(value);
+        }
+
+        List<Map<String, Object>> updatedValues2 = Lists.newArrayList();
+        for(Map<String, Object> baseValue : values2) {
+            updatedValues2.add(JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2")));
+        }
+
+        Map<String, List<Map<String, Object>>> multiInsertMap = Maps.newHashMap();
+        multiInsertMap.put("object2", updatedValues2);
+
+        //Insert data
+        om.insertBatchMixed(multiInsertMap);
+
+        //Count the number of inserts we made
+        SortedMap<String, Object> indexValues = Maps.newTreeMap();
+        indexValues.put("account_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        indexValues.put("user_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        Criteria criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+
+        //now test the count function
+        long count = om.count("object2", criteria);
+        assertEquals(nDataItems+4, count);
+    }
+
 	@Test
 	public void testMultiInsert() throws Exception {
 		logger.debug("Starting testMultiInsert");
@@ -389,7 +443,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		List<Map<String, Object>> values2 = JsonUtil.rhombusMapFromResource(this.getClass().getClassLoader(), "MultiInsertTestData2.js");
 		List<Map<String, Object>> updatedValues2 = Lists.newArrayList();
 		for(Map<String, Object> baseValue : values2) {
-			updatedValues2.add(JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object1")));
+			updatedValues2.add(JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2")));
 		}
 		Map<String, List<Map<String, Object>>> multiInsertMap = Maps.newHashMap();
 		multiInsertMap.put("object1", updatedValues1);
