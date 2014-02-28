@@ -381,10 +381,11 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
         om.setLogCql(true);
 
         //Set up test data
-        List<Map<String, Object>> values2 = JsonUtil.rhombusMapFromResource(this.getClass().getClassLoader(), "MultiInsertTestData2.js");
+        int nDataItems = 200;
+
+        List<Map<String, Object>> values2 =  Lists.newArrayList();
 
         // insert additional data, we are testing for counts > 50
-        int nDataItems = 200;
         for (int i=0; i < nDataItems; i++) {
             Map<String, Object> value = Maps.newHashMap();
             value.put("account_id","00000003-0000-0030-0040-000000030000");
@@ -413,7 +414,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 
         //now test the count function
         long count = om.count("object2", criteria);
-        assertEquals(nDataItems+4, count);
+        assertEquals(nDataItems, count);
     }
 
 	@Test
