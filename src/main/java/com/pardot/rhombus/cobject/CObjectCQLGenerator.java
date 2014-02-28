@@ -132,6 +132,36 @@ public class CObjectCQLGenerator {
 		return makeCQLforTruncate(this.keyspace, this.definitions.get(objType));
 	}
 
+    /**
+     *
+     * @param objType - The name of the Object type aka CDefinition.name
+     * @return Iterator of CQL statements that need to be executed for this task.
+     * @throws CQLGenerationException
+     */
+    @NotNull
+    public CQLStatement makeCQLforInsertNoValuesforStaticTable(String objType) throws CQLGenerationException {
+        CDefinition definition = this.definitions.get(objType);
+        Map<String, CField> fields = definition.getFields();
+        List<String> fieldNames = new ArrayList<String>(definition.getFields().keySet());
+        List<String> valuePlaceholders = new ArrayList<String>(fields.keySet());
+        return makeInsertStatementStatic(this.keyspace, definition.getName(), fieldNames, valuePlaceholders, null, null, null);
+    }
+
+    /**
+     * @param definition The object definition of the wide table to insert into
+     * @param tableName - The name of the wide table to insert into
+     * @return CQL insert statement
+     * @throws CQLGenerationException
+     */
+    @NotNull
+    public CQLStatement makeCQLforInsertNoValuesforWideTable(CDefinition definition, String tableName, Long shardId) throws CQLGenerationException {
+        Map<String, CField> fields = definition.getFields();
+        List<String> fieldNames = new ArrayList<String>(definition.getFields().keySet());
+        List<Object> valuePlaceholders = new ArrayList<Object>(fields.keySet());
+        shardId = (shardId == null) ? 1L : shardId;
+        return makeInsertStatementWide(this.keyspace, tableName, fieldNames, valuePlaceholders, null, shardId, null, null);
+    }
+
 	/**
 	 *
 	 * @param objType - The name of the Object type aka CDefinition.name
@@ -520,7 +550,7 @@ public class CObjectCQLGenerator {
 		for(String k : newValues.keySet()){
 			completeValues.put(k, newValues.get(k));
 		}
-		Map<String,ArrayList> fieldsAndValues = makeFieldAndValueList(def,completeValues);
+		Map<String,ArrayList> fieldsAndValues = makeFieldAndValueList(def, completeValues);
 
 		//(3) Delete from any indexes that are no longer applicable
 		for(CIndex i : affectedIndexes){
@@ -869,7 +899,7 @@ public class CObjectCQLGenerator {
 		return CQLStatement.make(String.format(TEMPLATE_TRUNCATE, keyspace, tableName));
 	}
 
-	protected CQLStatement makeStaticTableCreate(CDefinition def){
+	public CQLStatement makeStaticTableCreate(CDefinition def){
 		String query = String.format(
 			TEMPLATE_CREATE_STATIC,
 			keyspace,
@@ -987,7 +1017,7 @@ public class CObjectCQLGenerator {
 		return ret;
 	}
 
-	protected static String makeTableName(CDefinition def, @Nullable CIndex index){
+	public static String makeTableName(CDefinition def, @Nullable CIndex index){
 		String objName = def.getName();
 		if(index == null){
 			return objName;
