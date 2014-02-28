@@ -27,6 +27,7 @@ public class CObjectMigratorTest {
 		newIndex.setKey("index_1:index_2");
 		newIndex.setShardingStrategy(new ShardingStrategyNone());
 		NewDefinition.getIndexes().put(newIndex.getName(), newIndex);
+		NewDefinition.getIndexes().remove("index_1:value");
 		CObjectMigrator subject = new CObjectMigrator(OldDefinition,NewDefinition);
 
 		//since we only added an index it should be migratable
@@ -77,6 +78,7 @@ public class CObjectMigratorTest {
 	public void testGetMigrationCQL() throws IOException, CObjectMigrationException {
 		CDefinition OldDefinition = JsonUtil.objectFromJsonResource(CDefinition.class, this.getClass().getClassLoader(), "MigrationTestCDefinition.js");
 		CDefinition NewDefinition = JsonUtil.objectFromJsonResource(CDefinition.class, this.getClass().getClassLoader(), "MigrationTestCDefinition.js");
+		NewDefinition.getIndexes().remove("index_1:value");
 		CIndex newIndex1 = new CIndex();
 		newIndex1.setKey("index_1:index_2");
 		newIndex1.setShardingStrategy(new ShardingStrategyNone());
