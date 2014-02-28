@@ -101,8 +101,9 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
             builder.redirectErrorStream(true);
             Process p = builder.start();
             BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            long startTime = System.currentTimeMillis();
             // TODO: sleep is the devil
-            while (!r.readLine().contains("100%")) {
+            while (!r.readLine().contains("100%") && ((System.currentTimeMillis() - startTime) < 10000)) {
                 Thread.sleep(100);
             }
         }
@@ -110,7 +111,6 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
         String staticTableName = staticTableNames.get(0);
         for (Map<String, Object> expected : values) {
             Map<String, Object> actual = om.getByKey(staticTableName, expected.get("id"));
-            actual.put("shardid", shardStrategy.getShardKey(Long.parseLong(actual.get("created_at").toString(), 10)));
             assertEquals(expected, actual);
         }
 
@@ -197,8 +197,9 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
             builder.redirectErrorStream(true);
             Process p = builder.start();
             BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            long startTime = System.currentTimeMillis();
             // TODO: sleep is the devil
-            while (!r.readLine().contains("100%")) {
+            while (!r.readLine().contains("100%") && ((System.currentTimeMillis() - startTime) < 10000)) {
                 Thread.sleep(100);
             }
         }
@@ -206,7 +207,6 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
         String staticTableName = staticTableNames.get(0);
         for (Map<String, Object> expected : values) {
             Map<String, Object> actual = om.getByKey(staticTableName, expected.get("id"));
-            actual.put("shardid", shardStrategy.getShardKey(Long.parseLong(actual.get("created_at").toString(), 10)));
             assertEquals(expected, actual);
         }
 

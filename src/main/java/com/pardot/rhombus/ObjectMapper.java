@@ -720,7 +720,7 @@ public class ObjectMapper implements CObjectShardList {
 
     /**
      * Writes Rhombus objects into the appropriate static and index SSTableWriters for their object definition. Requires that initializeSSTableWriters
-     * be called first and completeSSTableWrites be called when you're done inserting things.
+     * be called first and completeSSTableWrites be called when you're done inserting things. Object values with key "shardid" will be ignored and removed.
      * @param objects Map keyed by object name with a list of Rhombus objects to insert for that table
      * @throws CQLGenerationException
      * @throws IOException
@@ -741,6 +741,8 @@ public class ObjectMapper implements CObjectShardList {
                     // Add the shard id to index writes
                     insert.put("shardid", index.getShardingStrategy().getShardKey(insert.get("id")));
                     indexWriters.get(index).addRow(insert);
+                    // Pull the shardid back out to avoid the overhead of cloning the values and keep our abstraction from leaking
+                    insert.remove("shardid");
                 }
             }
         }
