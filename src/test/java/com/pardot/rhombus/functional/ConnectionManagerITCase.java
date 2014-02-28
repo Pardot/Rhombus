@@ -106,7 +106,7 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		} catch(InvalidQueryException e) {
 			caught = true;
 		}
-		session.shutdown();
+		session.close();
 		assertTrue(caught);
 	}
 
