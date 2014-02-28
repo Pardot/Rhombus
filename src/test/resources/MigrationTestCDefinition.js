@@ -14,6 +14,10 @@
         {
             "key": "index_2",
             "shardingStrategy": {"type": "ShardingStrategyNone"}
+        },
+        {
+            "key": "index_1:value",
+            "shardingStrategy": {"type": "ShardingStrategyMonthly"}
         }
     ]
 }

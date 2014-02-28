@@ -43,10 +43,10 @@ public class CObjectMigrator {
 		}
 
 
-		//currently we allow new indexes but and removing old ones
+		//currently we allow new indexes and removing old ones
 		//we do not support changing the sharding strategy
 		for( CIndex i : OldDefinition.getIndexes().values() ){
-			if(!NewDefinition.getIndexes().get(i.getKey()).getShardingStrategy().getClass().equals(i.getShardingStrategy().getClass())){
+			if(NewDefinition.getIndexes().containsKey(i.getKey()) && !NewDefinition.getIndexes().get(i.getKey()).getShardingStrategy().getClass().equals(i.getShardingStrategy().getClass())){
 				//this index changed sharding strategy. We do not support that yet
 				return false;
 			}
@@ -65,7 +65,7 @@ public class CObjectMigrator {
 		//first migrate the fields
 		List<CField> newFields = getNewFields();
 		for(CField f: newFields){
-			ret.add(cqlGenerator.makeCQLforAddFieldToObject(NewDefinition, f.getName(), OldDefinition.getIndexesAsList()));
+			ret.add(cqlGenerator.makeCQLforAddFieldToObject(NewDefinition, f.getName(), getIndexesToUpgrade()));
 		}
 
 		//next migrate the indexes
@@ -88,6 +88,17 @@ public class CObjectMigrator {
 		}
 
 
+	}
+
+	public List<CIndex> getIndexesToUpgrade(){
+		List<CIndex> ret = Lists.newArrayList();
+		for( CIndex i: NewDefinition.getIndexes().values() ){
+			if( OldDefinition.getIndexes().containsKey(i.getKey()) ){
+				//this index existed before and will exist in the future, so add it to the upgrade list
+				ret.add(i);
+			}
+		}
+		return ret;
 	}
 
 	public List<CIndex> getNewIndexes(){
