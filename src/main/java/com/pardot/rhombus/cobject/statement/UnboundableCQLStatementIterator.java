@@ -26,9 +26,9 @@ public class UnboundableCQLStatementIterator extends BaseCQLStatementIterator {
 	private CQLStatement CQLTemplate = null;
 	private Range<Long> keyRange;
 	private Iterator<Long> keyIterator = null;
+	private String objectName;
 
-
-	public UnboundableCQLStatementIterator(Range<Long> shardKeyList, long limit, CObjectOrdering ordering, CQLStatement CQLTemplate){
+	public UnboundableCQLStatementIterator(Range<Long> shardKeyList, long limit, CObjectOrdering ordering, CQLStatement CQLTemplate, String objectName){
 		this.keyRange = shardKeyList;
 		ContiguousSet<Long> set = ContiguousSet.create(shardKeyList, DiscreteDomain.longs());
 		this.keyIterator = (ordering == CObjectOrdering.ASCENDING) ? set.iterator() : set.descendingIterator();
@@ -36,6 +36,7 @@ public class UnboundableCQLStatementIterator extends BaseCQLStatementIterator {
 		this.limit = limit;
 		this.numberRemaining = this.limit;
 		this.CQLTemplate = CQLTemplate;
+		this.setObjectName(objectName);
 	}
 
 	@Override
@@ -56,8 +57,7 @@ public class UnboundableCQLStatementIterator extends BaseCQLStatementIterator {
 		List values = Lists.newArrayList(CQLTemplate.getValues());
 		//shardid is the first value and limit should be the last value
 		values.add(0,this.keyIterator.next());
-		CQLStatement ret = CQLStatement.make(String.format(CQLTemplate.getQuery(),numberRemaining),values.toArray());
-		ret.setCacheable(CQLTemplate.isCacheable());
+		CQLStatement ret = CQLStatement.make(String.format(CQLTemplate.getQuery(),numberRemaining), this.getObjectName(), values.toArray());
 		return ret;
 	}
 
@@ -74,4 +74,11 @@ public class UnboundableCQLStatementIterator extends BaseCQLStatementIterator {
 		//To change body of implemented methods use File | Settings | File Templates.
 	}
 
+	public String getObjectName() {
+		return objectName;
+	}
+
+	public void setObjectName(String objectName) {
+		this.objectName = objectName;
+	}
 }

@@ -91,6 +91,7 @@ public class CKeyspaceDefinitionMigratorTest {
 		assertEquals("CREATE TABLE \"functional\".\"testtypeb4e47a87138afd20159a6522134a3bc2\" (id timeuuid, shardid bigint, newfield varchar,filtered int,data1 varchar,data2 varchar,data3 varchar,instance bigint,type int,foreignid bigint, PRIMARY KEY ((shardid, data1, data2),id) );",result.next().getQuery());
 		assertEquals("CREATE TABLE \"functional\".\"simple\" (id timeuuid PRIMARY KEY, value varchar,index_1 varchar,index_2 varchar);", result.next().getQuery());
 		assertEquals("CREATE TABLE \"functional\".\"simple3886e3439cce68f6363dc8f9d39ce041\" (id timeuuid, shardid bigint, value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, index_1),id) );", result.next().getQuery());
+		assertEquals("CREATE TABLE \"functional\".\"simple053960b6738c37f489c8a629b1b7c5d5\" (id timeuuid, shardid bigint, value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, index_1, value),id) );", result.next().getQuery());
 		assertEquals("CREATE TABLE \"functional\".\"simple2849d92a26f695e548ccda0db2a09b00\" (id timeuuid, shardid bigint, value varchar,index_1 varchar,index_2 varchar, PRIMARY KEY ((shardid, index_2),id) );", result.next().getQuery());
 
 		//That should be it

@@ -19,13 +19,15 @@ public class BoundedLazyCQLStatementIterator extends BaseCQLStatementIterator {
 	private long size = 0;
 	private CQLStatement CQLTemplate = null;
 	private Iterator<Long> shardIdIterator;
+	private String objectName;
 
-	public BoundedLazyCQLStatementIterator(List<Long> shardIds, CQLStatement CQLTemplate, long limit){
+	public BoundedLazyCQLStatementIterator(List<Long> shardIds, CQLStatement CQLTemplate, long limit, String objectName){
 		this.size = (long)shardIds.size();
 		this.limit = limit;
 		this.numberRemaining = this.limit;
 		this.CQLTemplate = CQLTemplate;
 		this.shardIdIterator = shardIds.iterator();
+		this.setObjectName(objectName);
 	}
 
 	@Override
@@ -43,12 +45,11 @@ public class BoundedLazyCQLStatementIterator extends BaseCQLStatementIterator {
 
 	@Override
 	public CQLStatement next() {
-		CQLStatement ret = CQLStatement.make(String.format(CQLTemplate.getQuery(),numberRemaining));
+		CQLStatement ret = CQLStatement.make(String.format(CQLTemplate.getQuery(), numberRemaining), this.getObjectName());
 		List values = Lists.newArrayList(CQLTemplate.getValues());
 		//shardid is the first value and limit should be the last value
 		values.add(0,this.shardIdIterator.next());
 		ret.setValues(values.toArray());
-		ret.setCacheable(CQLTemplate.isCacheable());
 		return ret;
 	}
 
@@ -65,4 +66,11 @@ public class BoundedLazyCQLStatementIterator extends BaseCQLStatementIterator {
 		//To change body of implemented methods use File | Settings | File Templates.
 	}
 
+	public String getObjectName() {
+		return objectName;
+	}
+
+	public void setObjectName(String objectName) {
+		this.objectName = objectName;
+	}
 }
