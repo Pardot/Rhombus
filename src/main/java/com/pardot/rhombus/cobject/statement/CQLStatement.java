@@ -1,33 +1,36 @@
 package com.pardot.rhombus.cobject.statement;
+import com.google.common.base.Objects;
 
-/**
- * Pardot, An ExactTarget Company
- * User: robrighter
- * Date: 6/10/13
- */
+import java.util.Arrays;
+
+
 public class CQLStatement implements Comparable<CQLStatement>{
 	private String query;
+	private String objectName;
 	private Object[] values;
 	private boolean isCacheable = false;
 
-	public static CQLStatement make(String query){
-		return new CQLStatement(query);
+	public static CQLStatement make(String query, String objectName){
+		return new CQLStatement(query, objectName);
 	}
 
-	public static CQLStatement make(String query, Object[] values){
-		return new CQLStatement(query,values);
+	public static CQLStatement make(String query, String objectName, Object[] values){
+		return new CQLStatement(query, objectName, values);
 	}
 
 	private CQLStatement(){
+
 	}
 
-	private CQLStatement(String query, Object[] values){
+	private CQLStatement(String query, String objectName, Object[] values){
 		this.query = query;
+		this.objectName = objectName;
 		this.values = values;
 	}
 
-	private CQLStatement(String query){
+	private CQLStatement(String query, String objectName){
 		this.query = query;
+		this.objectName = objectName;
 		this.values = null;
 	}
 
@@ -64,29 +67,21 @@ public class CQLStatement implements Comparable<CQLStatement>{
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if(!(obj instanceof CQLStatement)){
+	public boolean equals(Object otherObject) {
+		if(otherObject == null) {
 			return false;
 		}
-		CQLStatement o = (CQLStatement)obj;
-		if(!this.getQuery().equals(o.getQuery())){
+		if(getClass() != otherObject.getClass()) {
 			return false;
 		}
-		if(!(this.isPreparable() == o.isPreparable())){
-			return false;
-		}
-		if((this.getValues() == null) || (o.getValues() == null)){
-			return (this.getValues() == o.getValues());
-		}
-		if(this.getValues().length != o.getValues().length){
-			return false;
-		}
-		for(int i = 0; i<this.getValues().length; i++){
-			if(!this.getValues()[i].equals(o.getValues()[i])){
-				return false;
-			}
-		}
-		return true;
+		CQLStatement otherStatement = (CQLStatement)otherObject;
+		return (
+				Objects.equal(this.getQuery(), otherStatement.getQuery())
+				&& Arrays.equals(this.getValues(), otherStatement.getValues())
+				//&& Objects.equal(this.getObjectName(), otherStatement.getObjectName())
+				&& this.isPreparable() == otherStatement.isPreparable()
+				&& this.isCacheable() == otherStatement.isCacheable()
+				);
 	}
 
 	@Override
@@ -114,5 +109,13 @@ public class CQLStatement implements Comparable<CQLStatement>{
 
 	public void setCacheable(boolean cacheable) {
 		isCacheable = cacheable;
+	}
+
+	public String getObjectName() {
+		return objectName;
+	}
+
+	public void setObjectName(String objectName) {
+		this.objectName = objectName;
 	}
 }

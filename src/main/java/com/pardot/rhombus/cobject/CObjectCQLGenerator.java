@@ -34,28 +34,31 @@ public class CObjectCQLGenerator {
 
 	private static Logger logger = LoggerFactory.getLogger(CObjectCQLGenerator.class);
 
+	protected static final String KEYSPACE_DEFINITIONS_TABLE_NAME = "__keyspace_definitions";
+	protected static final String INDEX_UPDATES_TABLE_NAME = "__index_updates";
+
 	protected static final String TEMPLATE_CREATE_STATIC = "CREATE TABLE \"%s\".\"%s\" (id %s PRIMARY KEY, %s);";
 	protected static final String TEMPLATE_CREATE_WIDE = "CREATE TABLE \"%s\".\"%s\" (id %s, shardid bigint, %s, PRIMARY KEY ((shardid, %s),id) );";
-	protected static final String TEMPLATE_CREATE_KEYSPACE_LIST = "CREATE TABLE \"%s\".\"__keyspace_definitions\" (id uuid, name varchar, def varchar, PRIMARY KEY ((name), id));";
+	protected static final String TEMPLATE_CREATE_KEYSPACE_LIST = "CREATE TABLE \"%s\".\"" + KEYSPACE_DEFINITIONS_TABLE_NAME + "\" (id uuid, name varchar, def varchar, PRIMARY KEY ((name), id));";
 	protected static final String TEMPLATE_CREATE_WIDE_INDEX = "CREATE TABLE \"%s\".\"%s\" (shardid bigint, tablename varchar, indexvalues varchar, targetrowkey varchar, PRIMARY KEY ((tablename, indexvalues),shardid) );";
-	protected static final String TEMPLATE_CREATE_INDEX_UPDATES = "CREATE TABLE \"%s\".\"__index_updates\" (id timeuuid, statictablename varchar, instanceid timeuuid, indexvalues varchar, PRIMARY KEY ((statictablename,instanceid),id))";
-	protected static final String TEMPLATE_TRUNCATE_INDEX_UPDATES = "TRUNCATE \"%s\".\"__index_updates\";";
+	protected static final String TEMPLATE_CREATE_INDEX_UPDATES = "CREATE TABLE \"%s\".\"" + INDEX_UPDATES_TABLE_NAME + "\" (id timeuuid, statictablename varchar, instanceid timeuuid, indexvalues varchar, PRIMARY KEY ((statictablename,instanceid),id))";
+	protected static final String TEMPLATE_TRUNCATE_INDEX_UPDATES = "TRUNCATE \"%s\".\"" + INDEX_UPDATES_TABLE_NAME + "\";";
 	protected static final String TEMPLATE_DROP = "DROP TABLE \"%s\".\"%s\";";
 	protected static final String TEMPLATE_TRUNCATE = "TRUNCATE \"%s\".\"%s\";";
 	protected static final String TEMPLATE_INSERT_STATIC = "INSERT INTO \"%s\".\"%s\" (%s) VALUES (%s)%s;";//"USING TIMESTAMP %s%s;";//Add back when timestamps become preparable
 	protected static final String TEMPLATE_INSERT_WIDE = "INSERT INTO \"%s\".\"%s\" (%s) VALUES (%s)%s;";//"USING TIMESTAMP %s%s;";//Add back when timestamps become preparable
-	protected static final String TEMPLATE_INSERT_KEYSPACE = "INSERT INTO \"%s\".\"__keyspace_definitions\" (id, name, def) values (?, ?, ?);";
+	protected static final String TEMPLATE_INSERT_KEYSPACE = "INSERT INTO \"%s\".\"" + KEYSPACE_DEFINITIONS_TABLE_NAME + "\" (id, name, def) values (?, ?, ?);";
 	protected static final String TEMPLATE_INSERT_WIDE_INDEX = "INSERT INTO \"%s\".\"%s\" (tablename, indexvalues, shardid, targetrowkey) VALUES (?, ?, ?, ?);";//"USING TIMESTAMP %s;";//Add back when timestamps become preparable
-	protected static final String TEMPLATE_INSERT_INDEX_UPDATES = "INSERT INTO \"%s\".\"__index_updates\" (id, statictablename, instanceid, indexvalues) values (?, ?, ?, ?);";
+	protected static final String TEMPLATE_INSERT_INDEX_UPDATES = "INSERT INTO \"%s\".\"" + INDEX_UPDATES_TABLE_NAME + "\" (id, statictablename, instanceid, indexvalues) values (?, ?, ?, ?);";
 	protected static final String TEMPLATE_SELECT_STATIC = "SELECT * FROM \"%s\".\"%s\" WHERE %s;";
 	protected static final String TEMPLATE_SELECT_WIDE = "SELECT %s FROM \"%s\".\"%s\" WHERE shardid = %s AND %s ORDER BY id %s %s ALLOW FILTERING;";
-	protected static final String TEMPLATE_SELECT_KEYSPACE = "SELECT def FROM \"%s\".\"__keyspace_definitions\" WHERE name = ? ORDER BY id DESC LIMIT 1;";
+	protected static final String TEMPLATE_SELECT_KEYSPACE = "SELECT def FROM \"%s\".\"" + KEYSPACE_DEFINITIONS_TABLE_NAME + "\" WHERE name = ? ORDER BY id DESC LIMIT 1;";
 	protected static final String TEMPLATE_SELECT_WIDE_INDEX = "SELECT shardid FROM \"%s\".\"%s\" WHERE tablename = ? AND indexvalues = ?%s ORDER BY shardid %s ALLOW FILTERING;";
 	protected static final String TEMPLATE_DELETE = "DELETE FROM \"%s\".\"%s\" WHERE %s;";//"DELETE FROM %s USING TIMESTAMP %s WHERE %s;"; //Add back when timestamps become preparable
-	protected static final String TEMPLATE_DELETE_OBSOLETE_UPDATE_INDEX_COLUMN = "DELETE FROM \"%s\".\"__index_updates\" WHERE  statictablename = ? and instanceid = ? and id = ?";
-	protected static final String TEMPLATE_SELECT_FIRST_ELIGIBLE_INDEX_UPDATE = "SELECT statictablename,instanceid FROM \"%s\".\"__index_updates\" WHERE id < ? limit 1 allow filtering;";
-	protected static final String TEMPLATE_SELECT_NEXT_ELIGIBLE_INDEX_UPDATE = "SELECT statictablename,instanceid FROM \"%s\".\"__index_updates\" where token(statictablename,instanceid) > token(?,?) and id < ? limit 1 allow filtering;";
-	protected static final String TEMPLATE_SELECT_ROW_INDEX_UPDATE = "SELECT * FROM \"%s\".\"__index_updates\" where statictablename = ? and instanceid = ? order by id DESC;";
+	protected static final String TEMPLATE_DELETE_OBSOLETE_UPDATE_INDEX_COLUMN = "DELETE FROM \"%s\".\"" + INDEX_UPDATES_TABLE_NAME + "\" WHERE  statictablename = ? and instanceid = ? and id = ?";
+	protected static final String TEMPLATE_SELECT_FIRST_ELIGIBLE_INDEX_UPDATE = "SELECT statictablename,instanceid FROM \"%s\".\"" + INDEX_UPDATES_TABLE_NAME + "\" WHERE id < ? limit 1 allow filtering;";
+	protected static final String TEMPLATE_SELECT_NEXT_ELIGIBLE_INDEX_UPDATE = "SELECT statictablename,instanceid FROM \"%s\".\"" + INDEX_UPDATES_TABLE_NAME + "\" where token(statictablename,instanceid) > token(?,?) and id < ? limit 1 allow filtering;";
+	protected static final String TEMPLATE_SELECT_ROW_INDEX_UPDATE = "SELECT * FROM \"%s\".\"" + INDEX_UPDATES_TABLE_NAME + "\" where statictablename = ? and instanceid = ? order by id DESC;";
 	protected static final String TEMPLATE_SET_COMPACTION_LEVELED = "ALTER TABLE \"%s\".\"%s\" WITH compaction = { 'class' :  'LeveledCompactionStrategy',  'sstable_size_in_mb' : %d }";
 	protected static final String TEMPLATE_SET_COMPACTION_TIERED = "ALTER TABLE \"%s\".\"%s\" WITH compaction = { 'class' :  'SizeTieredCompactionStrategy',  'min_threshold' : %d }";
 	protected static final String TEMPLATE_TABLE_SCAN = "SELECT * FROM \"%s\".\"%s\";";
@@ -111,7 +114,7 @@ public class CObjectCQLGenerator {
 	 * @return Iterator of CQL statements that need to be executed for this task.
 	 */
 	public CQLStatement makeCQLforCreateKeyspaceDefinitionsTable(){
-		return CQLStatement.make(String.format(TEMPLATE_CREATE_KEYSPACE_LIST, keyspace));
+		return CQLStatement.make(String.format(TEMPLATE_CREATE_KEYSPACE_LIST, keyspace), KEYSPACE_DEFINITIONS_TABLE_NAME);
 	}
 
 	/**
@@ -210,7 +213,7 @@ public class CObjectCQLGenerator {
 
 	protected static CQLStatementIterator makeCQLforGet(String keyspace, CDefinition def, Object key){
 		Object[] values = {key};
-		CQLStatement statement = CQLStatement.make(String.format(TEMPLATE_SELECT_STATIC, keyspace, def.getName(), "id = ?"), values);
+		CQLStatement statement = CQLStatement.make(String.format(TEMPLATE_SELECT_STATIC, keyspace, def.getName(), "id = ?"), def.getName(), values);
 		return new BoundedCQLStatementIterator(Lists.newArrayList(statement));
 	}
 
@@ -290,13 +293,13 @@ public class CObjectCQLGenerator {
 				TEMPLATE_SELECT_WIDE,
 				countOnly ? "count(*)":"*",
 				keyspace,
-				makeTableName(def,i),
+				makeTableName(def, i),
 				"?",
 				whereQuery,
 				ordering,
 				limitCQL);
 
-		CQLStatement templateCQLStatement = CQLStatement.make(CQLTemplate, values.toArray());
+		CQLStatement templateCQLStatement = CQLStatement.make(CQLTemplate, makeTableName(def, i), values.toArray());
 		templateCQLStatement.setCacheable(true);
 
 		Long startTime = (start == null) ? null : UUIDs.unixTimestamp(start);
@@ -307,7 +310,7 @@ public class CObjectCQLGenerator {
 			//the query is either bounded or unsharded, so we do not need to check the shardindex
 			try {
 				Range<Long> shardIdRange = i.getShardingStrategy().getShardKeyRange(startTime,endTime);
-				returnIterator = new UnboundableCQLStatementIterator(shardIdRange,limit,ordering,templateCQLStatement);
+				returnIterator = new UnboundableCQLStatementIterator(shardIdRange, limit, ordering, templateCQLStatement, def.getName());
 			}
 			catch(ShardStrategyException e){
 				throw new CQLGenerationException(e.getMessage());
@@ -317,7 +320,8 @@ public class CObjectCQLGenerator {
 			returnIterator = new BoundedLazyCQLStatementIterator(
 					shardList.getShardIdList(def,indexValues,ordering,start,end),
 					templateCQLStatement,
-					limit
+					limit,
+					def.getName()
 			);
 		}
 
@@ -357,6 +361,7 @@ public class CObjectCQLGenerator {
 	public CQLStatement makeCQLforDeleteObsoleteUpdateIndexColumn(IndexUpdateRowKey rowKey, UUID id){
 		return CQLStatement.make(
 				String.format(TEMPLATE_DELETE_OBSOLETE_UPDATE_INDEX_COLUMN, this.keyspace),
+				INDEX_UPDATES_TABLE_NAME,
 				Arrays.asList(rowKey.getObjectName(), rowKey.getInstanceId(), id).toArray());
 	}
 
@@ -365,12 +370,12 @@ public class CObjectCQLGenerator {
 	 * @return String of single CQL statement required to create the Shard Index Table
 	 */
 	public CQLStatement makeCQLforShardIndexTableCreate(){
-		return CQLStatement.make(String.format(TEMPLATE_CREATE_WIDE_INDEX, this.keyspace, CObjectShardList.SHARD_INDEX_TABLE_NAME));
+		return CQLStatement.make(String.format(TEMPLATE_CREATE_WIDE_INDEX, this.keyspace, CObjectShardList.SHARD_INDEX_TABLE_NAME), CObjectShardList.SHARD_INDEX_TABLE_NAME);
 	}
 
 	private CQLStatement makeCQLforAddFieldToTable(String tableName, CField newField){
 		String query = String.format(TEMPLATE_ADD_FIELD, this.keyspace, tableName, newField.getName(), newField.getType());
-		return CQLStatement.make(query);
+		return CQLStatement.make(query, tableName);
 	}
 
 	public CQLStatementIterator makeCQLforAddFieldToObject(CDefinition def, String newFieldName, List<CIndex> existingIndexes){
@@ -393,7 +398,8 @@ public class CObjectCQLGenerator {
 	 * @return String of single CQL statement required to create the Shard Index Table
 	 */
 	public CQLStatement makeCQLforShardIndexTableDrop(){
-		return CQLStatement.make(String.format(TEMPLATE_DROP, this.keyspace, CObjectShardList.SHARD_INDEX_TABLE_NAME));
+		return CQLStatement.make(String.format(TEMPLATE_DROP, this.keyspace, CObjectShardList.SHARD_INDEX_TABLE_NAME),
+				CObjectShardList.SHARD_INDEX_TABLE_NAME);
 	}
 
 	/**
@@ -401,7 +407,8 @@ public class CObjectCQLGenerator {
 	 * @return String of single CQL statement required to create the Shard Index Table
 	 */
 	public CQLStatement makeCQLforShardIndexTableTruncate(){
-		return CQLStatement.make(String.format(TEMPLATE_TRUNCATE, this.keyspace, CObjectShardList.SHARD_INDEX_TABLE_NAME));
+		return CQLStatement.make(String.format(TEMPLATE_TRUNCATE, this.keyspace, CObjectShardList.SHARD_INDEX_TABLE_NAME),
+				CObjectShardList.SHARD_INDEX_TABLE_NAME);
 	}
 
 	/**
@@ -409,7 +416,8 @@ public class CObjectCQLGenerator {
 	 * @return CQLStatement of single CQL statement required to get the first update token
 	 */
 	public CQLStatement makeGetFirstEligibleIndexUpdate(){
-		return CQLStatement.make(String.format(TEMPLATE_SELECT_FIRST_ELIGIBLE_INDEX_UPDATE, keyspace), Arrays.asList(getTimeUUIDAtEndOfConsistencyHorizion()).toArray());
+		return CQLStatement.make(String.format(TEMPLATE_SELECT_FIRST_ELIGIBLE_INDEX_UPDATE, keyspace),
+			INDEX_UPDATES_TABLE_NAME, Arrays.asList(getTimeUUIDAtEndOfConsistencyHorizion()).toArray());
 	}
 
 	/**
@@ -418,7 +426,9 @@ public class CObjectCQLGenerator {
 	 * @return CQLStatement of the single CQL statement required to get the next update token
 	 */
 	public CQLStatement makeGetNextEligibleIndexUpdate(IndexUpdateRowKey lastInstanceKey){
-		return CQLStatement.make(String.format(TEMPLATE_SELECT_NEXT_ELIGIBLE_INDEX_UPDATE, keyspace), Arrays.asList(lastInstanceKey.getObjectName(),lastInstanceKey.getInstanceId(),getTimeUUIDAtEndOfConsistencyHorizion()).toArray());
+		return CQLStatement.make(String.format(TEMPLATE_SELECT_NEXT_ELIGIBLE_INDEX_UPDATE, keyspace),
+				INDEX_UPDATES_TABLE_NAME,
+				Arrays.asList(lastInstanceKey.getObjectName(),lastInstanceKey.getInstanceId(),getTimeUUIDAtEndOfConsistencyHorizion()).toArray());
 	}
 
 	/**
@@ -427,7 +437,9 @@ public class CObjectCQLGenerator {
 	 * @return CQLStatement of the single CQL statement required to get the Row corresponding to the token
 	 */
 	public static CQLStatement makeGetRowIndexUpdate(String keyspace, IndexUpdateRowKey instanceKey){
-		return CQLStatement.make(String.format(TEMPLATE_SELECT_ROW_INDEX_UPDATE, keyspace), Arrays.asList(instanceKey.getObjectName(),instanceKey.getInstanceId()).toArray());
+		return CQLStatement.make(String.format(TEMPLATE_SELECT_ROW_INDEX_UPDATE, keyspace),
+				INDEX_UPDATES_TABLE_NAME,
+				Arrays.asList(instanceKey.getObjectName(),instanceKey.getInstanceId()).toArray());
 	}
 
 	/**
@@ -462,7 +474,7 @@ public class CObjectCQLGenerator {
 			whereCQL,
 			ordering
 		);
-		return CQLStatement.make(query, values.toArray());
+		return CQLStatement.make(query, CObjectShardList.SHARD_INDEX_TABLE_NAME, values.toArray());
 	}
 
     private CQLStatementIterator makeCQLforLeveledCompaction(CKeyspaceDefinition keyspaceDefinition, Integer sstableSize){
@@ -519,7 +531,7 @@ public class CObjectCQLGenerator {
      * @return String of single CQL statement required to set
      */
     public static CQLStatement makeCQLforLeveledCompaction(String keyspace, String table, Integer sstableSize){
-        return CQLStatement.make(String.format(TEMPLATE_SET_COMPACTION_LEVELED, keyspace, table, sstableSize));
+        return CQLStatement.make(String.format(TEMPLATE_SET_COMPACTION_LEVELED, keyspace, table, sstableSize), table);
     }
 
     /**
@@ -528,15 +540,15 @@ public class CObjectCQLGenerator {
      * @return String of single CQL statement required to set
      */
     public static CQLStatement makeCQLforTieredCompaction(String keyspace, String table, Integer minThreshold){
-        return CQLStatement.make(String.format(TEMPLATE_SET_COMPACTION_TIERED, keyspace, table, minThreshold));
+        return CQLStatement.make(String.format(TEMPLATE_SET_COMPACTION_TIERED, keyspace, table, minThreshold), table);
     }
 
 	public CQLStatement makeCQLforIndexUpdateTableCreate(){
-		return CQLStatement.make(String.format(TEMPLATE_CREATE_INDEX_UPDATES, this.keyspace));
+		return CQLStatement.make(String.format(TEMPLATE_CREATE_INDEX_UPDATES, this.keyspace), INDEX_UPDATES_TABLE_NAME);
 	}
 
 	public CQLStatement makeCQLforIndexUpdateTableTruncate(){
-		return CQLStatement.make(String.format(TEMPLATE_TRUNCATE_INDEX_UPDATES, this.keyspace));
+		return CQLStatement.make(String.format(TEMPLATE_TRUNCATE_INDEX_UPDATES, this.keyspace), INDEX_UPDATES_TABLE_NAME);
 	}
 
 	public static CQLStatementIterator makeCQLforUpdate(String keyspace, CDefinition def, UUID key, Map<String,Object> oldValues, Map<String, Object> newValues) throws CQLGenerationException {
@@ -699,7 +711,7 @@ public class CObjectCQLGenerator {
 				(ttl == null) ? "" : (" USING TTL "+ttl)//(" AND TTL "+ttl) //Revert this back to AND when timestamps are preparable
 		);
 
-		return CQLStatement.make(query, values.toArray());
+		return CQLStatement.make(query, tableName, values.toArray());
 	}
 
 	public UUID getTimeUUIDAtEndOfConsistencyHorizion(){
@@ -718,7 +730,9 @@ public class CObjectCQLGenerator {
 		catch (Exception e){
 			throw new CQLGenerationException(e.getMessage());
 		}
-		return CQLStatement.make(String.format(TEMPLATE_INSERT_INDEX_UPDATES,keyspace), Arrays.asList(id, tableName, instanceId, indexValuesAsJson).toArray() );
+		return CQLStatement.make(String.format(TEMPLATE_INSERT_INDEX_UPDATES,keyspace),
+				tableName,
+				Arrays.asList(id, tableName, instanceId, indexValuesAsJson).toArray() );
 	}
 
 	protected static CQLStatement makeInsertStatementWide(String keyspace, String tableName, List<String> fields, List<Object> values, Object uuid, long shardid, Long timestamp, Integer ttl){
@@ -737,23 +751,28 @@ public class CObjectCQLGenerator {
 			(ttl == null) ? "" : (" USING TTL "+ttl)//(" AND TTL "+ttl) //Revert this back to AND when timestamps are preparable
 		);
 
-		return CQLStatement.make(query, values.toArray());
+		return CQLStatement.make(query, tableName, values.toArray());
 	}
 
 	protected static CQLStatement makeInsertStatementWideIndex(String keyspace, String tableName, String targetTableName, long shardId, List indexValues, Long timestamp) throws CQLGenerationException {
 		String indexValuesString = makeIndexValuesString(indexValues);
 		Object[] values = {targetTableName, indexValuesString, Long.valueOf(shardId), shardId+":"+indexValuesString};
-		return CQLStatement.make(String.format(
-				TEMPLATE_INSERT_WIDE_INDEX,
-                keyspace,
-				tableName
-				//timestamp.toString() //Add back timestamp when timestamps become preparable
-			),values);
+		return CQLStatement.make(
+				String.format(
+					TEMPLATE_INSERT_WIDE_INDEX,
+					keyspace,
+					tableName
+					//timestamp.toString() //Add back timestamp when timestamps become preparable
+				),
+				tableName,
+				values);
 	}
 
 	public static CQLStatementIterator makeCQLforInsertKeyspaceDefinition(@NotNull String keyspace, @NotNull String name, @NotNull String keyspaceDefinition, @NotNull UUID id) throws CQLGenerationException{
 		ArrayList<CQLStatement> ret = Lists.newArrayList();
-		ret.add(CQLStatement.make(String.format(TEMPLATE_INSERT_KEYSPACE, keyspace), Arrays.asList(id, name, keyspaceDefinition).toArray()));
+		ret.add(CQLStatement.make(String.format(TEMPLATE_INSERT_KEYSPACE, keyspace),
+				KEYSPACE_DEFINITIONS_TABLE_NAME,
+				Arrays.asList(id, name, keyspaceDefinition).toArray()));
 		return new BoundedCQLStatementIterator(ret);
 	}
 
@@ -826,13 +845,13 @@ public class CObjectCQLGenerator {
 	}
 
 	protected static CQLStatement makeCQLforTableScan(String keyspace, CDefinition def){
-		return CQLStatement.make(String.format(TEMPLATE_TABLE_SCAN, keyspace, def.getName()));
+		return CQLStatement.make(String.format(TEMPLATE_TABLE_SCAN, keyspace, def.getName()), def.getName());
 	}
 
 	public static CQLStatement makeCQLforGetKeyspaceDefinitions(String keyspace, String name){
 		String statement = String.format(TEMPLATE_SELECT_KEYSPACE, keyspace, name);
 		Object[] values = {name};
-		return CQLStatement.make(statement, values);
+		return CQLStatement.make(statement, KEYSPACE_DEFINITIONS_TABLE_NAME, values);
 	}
 
 	protected static CQLStatementIterator makeCQLforDelete(String keyspace, CDefinition def, UUID key, Map<String,Object> data, Long timestamp){
@@ -860,8 +879,9 @@ public class CObjectCQLGenerator {
 				keyspace,
 				makeTableName(def, null),
 				//timestamp, //Add back when timestamps become preparable
-				"id = ?")
-			, values);
+				"id = ?"),
+			makeTableName(def, null),
+			values);
 	}
 
 
@@ -876,7 +896,7 @@ public class CObjectCQLGenerator {
 			makeTableName(def,index),
 			//timestamp, //Add back when timestamps become preparable
 			whereCQL);
-		return CQLStatement.make(query,values.toArray());
+		return CQLStatement.make(query, makeTableName(def,index), values.toArray());
 	}
 
 	public static Statement makeCQLforDeleteUUIDFromIndex_WorkaroundForUnpreparableTimestamp(String keyspace, CDefinition def, CIndex index, UUID uuid, Map<String,Object> indexValues, Long timestamp){
@@ -892,11 +912,11 @@ public class CObjectCQLGenerator {
 	}
 
 	protected static CQLStatement makeTableDrop(String keyspace, String tableName){
-		return CQLStatement.make(String.format(TEMPLATE_DROP, keyspace, tableName));
+		return CQLStatement.make(String.format(TEMPLATE_DROP, keyspace, tableName), tableName);
 	}
 
 	protected static CQLStatement makeTableTruncate(String keyspace, String tableName){
-		return CQLStatement.make(String.format(TEMPLATE_TRUNCATE, keyspace, tableName));
+		return CQLStatement.make(String.format(TEMPLATE_TRUNCATE, keyspace, tableName), tableName);
 	}
 
 	public CQLStatement makeStaticTableCreate(CDefinition def){
@@ -906,7 +926,7 @@ public class CObjectCQLGenerator {
 			def.getName(),
 			def.getPrimaryKeyType(),
 			makeFieldList(def.getFields().values(),true));
-		return CQLStatement.make(query);
+		return CQLStatement.make(query, def.getName());
 	}
 
 	public CQLStatement makeWideTableCreate(CDefinition def, CIndex index){
@@ -917,7 +937,7 @@ public class CObjectCQLGenerator {
 			def.getPrimaryKeyType(),
 			makeFieldList(def.getFields().values(), true),
 			makeCommaList(index.getCompositeKeyList()));
-		return CQLStatement.make(query);
+		return CQLStatement.make(query, makeTableName(def, index));
 	}
 
 	public static String makeIndexValuesString(Collection values) throws CQLGenerationException{
@@ -983,7 +1003,7 @@ public class CObjectCQLGenerator {
 				query += " AND ";
 			}
 		}
-		return CQLStatement.make(query, values.toArray());
+		return CQLStatement.make(query, def.getName(), values.toArray());
 	}
 
 	protected static String makeCommaList(List strings, boolean onlyQuestionMarks){

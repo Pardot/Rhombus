@@ -82,7 +82,7 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 
 		//Select from the newly created table
 		ObjectMapper om = cm.getObjectMapper(definition2);
-		ResultSet rs = om.getCqlExecutor().executeSync(CQLStatement.make("SELECT * FROM testtype3cb23c7ffc4256283064bd5eae1886b4"));
+		ResultSet rs = om.getCqlExecutor().executeSync(CQLStatement.make("SELECT * FROM testtype3cb23c7ffc4256283064bd5eae1886b4", "testtype"));
 		assertEquals(0, rs.all().size());
 	}
 
