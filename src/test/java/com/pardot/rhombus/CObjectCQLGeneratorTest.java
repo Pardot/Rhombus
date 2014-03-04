@@ -312,7 +312,6 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 					TABLE_NAME,
 					arrayFromValues(Long.valueOf(160),"777","222222","5", start, stop)
 			);
-			expected.setCacheable(true);
 			//"Should generate proper CQL for wide table get by index values"
 			CQLStatement actualStatement = actual.next();
 			assertEquals(expected, actualStatement);
@@ -330,7 +329,6 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 					TABLE_NAME,
 					arrayFromValues(Long.valueOf(133),"777","222222","5",start,stop)
 			);
-			expected.setCacheable(true);
 			//Should generate proper CQL for wide table get by index values"
 			actualStatement = actual.next();
 			assertEquals(expected, actualStatement);
@@ -340,7 +338,6 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 					TABLE_NAME,
 					Arrays.asList(Long.valueOf(134),"777","222222","5",start,stop).toArray()
 			);
-			expected.setCacheable(true);
 			//Should generate proper CQL for wide table get by index values
 			assertEquals(expected,actual.next());
 
@@ -349,7 +346,6 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 					TABLE_NAME,
 					Arrays.asList(Long.valueOf(135),"777","222222","5",start,stop).toArray()
 			);
-			expected.setCacheable(true);
 			assertTrue("Should have next when hinted less than the limit",actual.hasNext(5));
 			//"Should generate proper Limit adjustment when given the amount hint"
 			assertEquals(expected,actual.next());
@@ -365,7 +361,6 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 					TABLE_NAME,
 					arrayFromValues(Long.valueOf(145),"777","222222","5",start,stop)
 			);
-			expected.setCacheable(true);
 			//"Descending: Should generate proper CQL for wide table get by index values"
 			assertEquals(expected,actual.next());
 			expected = CQLStatement.make(
@@ -373,14 +368,12 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 					TABLE_NAME,
 					Arrays.asList(Long.valueOf(144),"777","222222","5",start,stop).toArray()
 			);
-			expected.setCacheable(true);
 			assertEquals("Descending: Should generate proper CQL for wide table get by index values",expected,actual.next());
 			expected = CQLStatement.make(
 					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id DESC LIMIT 5 ALLOW FILTERING;",
 					TABLE_NAME,
 					Arrays.asList(Long.valueOf(143),"777","222222","5",start,stop).toArray()
 			);
-			expected.setCacheable(true);
 			assertTrue("Descending: Should have next when hinted less than the limit",actual.hasNext(5));
 			assertEquals("Descending: Should generate proper Limit adjustment when given the amount hint",expected,actual.next());
 			assertTrue("Should have no next when hinted more than or equal to the limit",!actual.hasNext(10));

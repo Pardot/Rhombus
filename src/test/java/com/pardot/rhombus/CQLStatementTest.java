@@ -120,11 +120,6 @@ public class CQLStatementTest extends TestCase {
 		assertEquals(expected, statement1.toString());
 	}
 
-	public void testGetSetIsCacheable() {
-		CQLStatement statement = CQLStatement.make(query, objectName);
-		statement.setCacheable(true);
-		assertTrue(statement.isCacheable());
-	}
 
 	public void testGetSetObjectName() {
 		CQLStatement statement = CQLStatement.make(query, objectName);

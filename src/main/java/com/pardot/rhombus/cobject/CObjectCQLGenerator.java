@@ -300,7 +300,6 @@ public class CObjectCQLGenerator {
 				limitCQL);
 
 		CQLStatement templateCQLStatement = CQLStatement.make(CQLTemplate, makeTableName(def, i), values.toArray());
-		templateCQLStatement.setCacheable(true);
 
 		Long startTime = (start == null) ? null : UUIDs.unixTimestamp(start);
 		Long endTime = (end == null) ? null : UUIDs.unixTimestamp(end);

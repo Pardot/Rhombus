@@ -8,7 +8,6 @@ public class CQLStatement implements Comparable<CQLStatement>{
 	private String query;
 	private String objectName;
 	private Object[] values;
-	private boolean isCacheable = false;
 
 	public static CQLStatement make(String query, String objectName){
 		return new CQLStatement(query, objectName);
@@ -80,7 +79,6 @@ public class CQLStatement implements Comparable<CQLStatement>{
 				&& Arrays.equals(this.getValues(), otherStatement.getValues())
 				//&& Objects.equal(this.getObjectName(), otherStatement.getObjectName())
 				&& this.isPreparable() == otherStatement.isPreparable()
-				&& this.isCacheable() == otherStatement.isCacheable()
 				);
 	}
 
@@ -101,14 +99,6 @@ public class CQLStatement implements Comparable<CQLStatement>{
 		ret+="\nPreparable: "+this.isPreparable();
 
 		return ret;
-	}
-
-	public boolean isCacheable() {
-		return isCacheable;
-	}
-
-	public void setCacheable(boolean cacheable) {
-		isCacheable = cacheable;
 	}
 
 	public String getObjectName() {

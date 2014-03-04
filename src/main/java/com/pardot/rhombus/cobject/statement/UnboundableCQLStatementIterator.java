@@ -58,7 +58,6 @@ public class UnboundableCQLStatementIterator extends BaseCQLStatementIterator {
 		//shardid is the first value and limit should be the last value
 		values.add(0,this.keyIterator.next());
 		CQLStatement ret = CQLStatement.make(String.format(CQLTemplate.getQuery(),numberRemaining), this.getObjectName(), values.toArray());
-		ret.setCacheable(CQLTemplate.isCacheable());
 		return ret;
 	}
 
