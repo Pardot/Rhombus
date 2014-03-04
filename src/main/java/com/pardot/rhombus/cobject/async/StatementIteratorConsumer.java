@@ -97,7 +97,6 @@ public class StatementIteratorConsumer {
 			methodName = cql.substring(0, firstSpace);
 		}
 		String timerName = "asyncExec." + methodName + "." + statement.getObjectName();
-		logger.warn(timerName);
 		final Timer asyncExecTimer = Metrics.defaultRegistry().newTimer(StatementIteratorConsumer.class, timerName);
 		final TimerContext asyncExecTimerContext = asyncExecTimer.time();
 		final long startTime = System.nanoTime();
