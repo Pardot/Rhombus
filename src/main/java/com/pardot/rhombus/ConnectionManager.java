@@ -328,7 +328,7 @@ public class ConnectionManager {
 	 * @param keyspaceDefinition The definition to build the keyspace from
 	 * @param forceRebuild Force destruction and rebuild of keyspace
 	 */
-	public void buildKeyspace(CKeyspaceDefinition keyspaceDefinition, Boolean forceRebuild) throws Exception {
+	public ObjectMapper buildKeyspace(CKeyspaceDefinition keyspaceDefinition, Boolean forceRebuild) throws Exception {
 		if(keyspaceDefinition == null) {
 			keyspaceDefinition = defaultKeyspace;
 		}
@@ -347,6 +347,7 @@ public class ConnectionManager {
 
 		// Add the object mapper to our cache
 		objectMappers.put(keyspaceDefinition.getName(), mapper);
+		return mapper;
 	}
 
 	/**
