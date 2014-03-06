@@ -22,7 +22,7 @@ public class ObjectMapperClientFilteringITCase extends RhombusFunctionalTest {
 
 	@Test
 	public void testClientFilter() throws Exception {
-		logger.debug("Starting testObjectMapper");
+		logger.debug("Starting testClientFilter");
 
 		//Build the connection manager
 		ConnectionManager cm = getConnectionManager();
@@ -50,6 +50,8 @@ public class ObjectMapperClientFilteringITCase extends RhombusFunctionalTest {
 		testObject.put("filtered", 1);
 		testObject.put("data1", "filtered");
 		UUID filteredKey = (UUID)om.insert("testtype", testObject);
+
+		Thread.sleep(1000l);
 
 		// Make sure we get both back when we query using a standard index
 		Criteria foreignIdCriteria = new Criteria();

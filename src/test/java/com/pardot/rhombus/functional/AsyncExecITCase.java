@@ -21,7 +21,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
-import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.*;
 
 public class AsyncExecITCase extends RhombusFunctionalTest{
 
@@ -67,7 +68,7 @@ public class AsyncExecITCase extends RhombusFunctionalTest{
 						for(Map<String, Object> object : values) {
 							Long createdAt = (Long)(object.get("created_at"));
 							SortedMap<String, Object> rhombusMap = JsonUtil.rhombusMapFromJsonMap(object, objectAuditDef);
-							om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object, objectAuditDef), createdAt);
+							om.insert("object_audit", rhombusMap, createdAt);
 						}
 					} catch (Exception e) {
 						logger.error("Error inserting", e);

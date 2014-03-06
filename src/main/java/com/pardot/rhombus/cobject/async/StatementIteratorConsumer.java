@@ -1,8 +1,6 @@
 package com.pardot.rhombus.cobject.async;
 
 import com.datastax.driver.core.*;
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Splitter;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.pardot.rhombus.RhombusException;
@@ -100,7 +98,14 @@ public class StatementIteratorConsumer {
 		final Timer asyncExecTimer = Metrics.defaultRegistry().newTimer(StatementIteratorConsumer.class, timerName);
 		final TimerContext asyncExecTimerContext = asyncExecTimer.time();
 		final long startTime = System.nanoTime();
-		ResultSetFuture future = this.cqlExecutor.executeAsync(statement);
+		ResultSetFuture future = null;
+		try {
+			future = this.cqlExecutor.executeAsync(statement);
+		} catch (RuntimeException re) {
+			logger.error("RuntimeException while executing statement {}\n {}", statement.getQuery(), re);
+			shutdownLatch.countDown();
+			return;
+		}
 		futures.add(future);
 		Futures.addCallback(future, new FutureCallback<ResultSet>() {
 			@Override
@@ -111,6 +116,7 @@ public class StatementIteratorConsumer {
 				logger.debug("Async exec time {}us", (System.nanoTime() - startTime) / 1000);
 				shutdownLatch.countDown();
 			}
+
 			@Override
 			public void onFailure(final Throwable t) {
 				asyncExecTimerContext.stop();
@@ -119,7 +125,7 @@ public class StatementIteratorConsumer {
 				shutdownLatch.countDown();
 			}
 		}
-		, executorService
+				, executorService
 		);
 	}
 }
