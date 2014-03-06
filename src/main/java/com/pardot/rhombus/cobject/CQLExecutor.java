@@ -65,11 +65,11 @@ public class CQLExecutor {
 			return preparedStatementCache.get(cql.getQuery());
 		} else {
 			Long currentTime = System.currentTimeMillis();
-			logger.warn("Preparing statement {}", cql.getQuery());
+			logger.info("Preparing statement {}", cql.getQuery());
 			TimerContext prepareTimer = Metrics.defaultRegistry().newTimer(CQLExecutor.class, "statement.prepared").time();
 			PreparedStatement ret = session.prepare(cql.getQuery());
 			prepareTimer.stop();
-			logger.warn("Completed Preparing statement {} in {}ms", cql.getQuery(), System.currentTimeMillis()-currentTime);
+			logger.info("Completed Preparing statement {} in {}ms", cql.getQuery(), System.currentTimeMillis()-currentTime);
 			ret.setConsistencyLevel(consistencyLevel);
 			preparedStatementCache.put(cql.getQuery(), ret);
 			return ret;

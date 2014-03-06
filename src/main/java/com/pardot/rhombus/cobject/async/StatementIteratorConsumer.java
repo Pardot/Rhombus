@@ -91,7 +91,7 @@ public class StatementIteratorConsumer {
 		String methodName = "NULL";
 		String cql = statement.getQuery();
 		int firstSpace = cql.indexOf(" ");
-		if (firstSpace > 0) {
+		if(firstSpace > 0) {
 			methodName = cql.substring(0, firstSpace);
 		}
 		String timerName = "asyncExec." + methodName + "." + statement.getObjectName();
