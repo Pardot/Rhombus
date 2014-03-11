@@ -77,6 +77,7 @@ public class RunMigration extends RcliWithExistingKeyspace {
 		}
 		catch (Exception e){
 			System.out.println("Error encountered while attempting to run migration");
+			e.printStackTrace();
 			return false;
 		}
 	}
