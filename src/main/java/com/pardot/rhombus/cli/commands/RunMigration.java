@@ -9,6 +9,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,6 +20,8 @@ import java.util.List;
  * Date: 10/9/13
  */
 public class RunMigration extends RcliWithExistingKeyspace {
+
+	private static Logger logger = LoggerFactory.getLogger(RunMigration.class);
 
 	public Options getCommandOptions(){
 		Options ret = super.getCommandOptions();
@@ -77,7 +81,7 @@ public class RunMigration extends RcliWithExistingKeyspace {
 		}
 		catch (Exception e){
 			System.out.println("Error encountered while attempting to run migration");
-			e.printStackTrace();
+			logger.error("Error executing migration", e);
 			return false;
 		}
 	}
