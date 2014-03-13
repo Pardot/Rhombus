@@ -22,10 +22,11 @@
         <commons-io.version>2.1</commons-io.version>
         <javax-validation.version>1.1.0.Final</javax-validation.version>
         <findbugs.version>2.0.1</findbugs.version>
-        <java-driver.version>2.0.0-rc3</java-driver.version>
+        <java-driver.version>2.0.0</java-driver.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cassandra.version>2.0.4</cassandra.version>
-        <cassandra-dependency.version>2.0.4</cassandra-dependency.version>
+        <cassandra.version>2.0.5</cassandra.version>
+        <cassandra-dependency.version>2.0.5</cassandra-dependency.version>
+        <cassandra-maven-plugin.version>2.0.0-1</cassandra-maven-plugin.version>
     </properties>
 
     <licenses>
@@ -205,6 +206,7 @@
                 <configuration>
                     <excludes>
                         <exclude>**/SSTableWriterITCase.java</exclude>
+                        <exclude>**/MultiDatacenterPrepareITCase.java</exclude>
                     </excludes>
                     <skipTests>false</skipTests>
                 </configuration>
@@ -212,12 +214,12 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>cassandra-maven-plugin</artifactId>
-                <version>1.2.1-1</version>
+                <version>${cassandra-maven-plugin.version}</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.cassandra</groupId>
                         <artifactId>cassandra-all</artifactId>
-                        <version>2.0.1</version>
+                        <version>${cassandra-dependency.version}</version>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -226,7 +228,7 @@
                     <storagePort>7000</storagePort>
                     <yaml><![CDATA[start_native_transport: true
 native_transport_port: 9042
-endpoint_snitch: GossipingPropertyFileSnitch]]>
+endpoint_snitch: PropertyFileSnitch]]>
                     </yaml>
                 </configuration>
                 <executions>
@@ -242,6 +244,10 @@ endpoint_snitch: GossipingPropertyFileSnitch]]>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>2.6</version>
+                <configuration>
+                    <outputDirectory />
+                    <encoding>UTF-8</encoding>
+                </configuration>
                 <executions>
                     <execution>
                         <id>copy-resources</id>
@@ -283,15 +289,6 @@ endpoint_snitch: GossipingPropertyFileSnitch]]>
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.5</version>
-                <configuration>
-                    <outputDirectory />
-                    <encoding>UTF-8</encoding>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -346,20 +343,21 @@ endpoint_snitch: GossipingPropertyFileSnitch]]>
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>cassandra-maven-plugin</artifactId>
-                        <version>1.2.1-1</version>
+                        <version>${cassandra-maven-plugin.version}</version>
                         <configuration>
                             <rpcPort>${cassandra.rpcPort}</rpcPort>
                             <jmxPort>${cassandra.jmxPort}</jmxPort>
                             <storagePort>${cassandra.storagePort}</storagePort>
                             <yaml><![CDATA[start_native_transport: true
-native_transport_port: ${cassandra.nativeTransportPort}]]>
+native_transport_port: ${cassandra.nativeTransportPort}
+endpoint_snitch: PropertyFileSnitch]]>
                             </yaml>
                         </configuration>
                         <dependencies>
                             <dependency>
                                 <groupId>org.apache.cassandra</groupId>
                                 <artifactId>cassandra-all</artifactId>
-                                <version>2.0.1</version>
+                                <version>${cassandra-dependency.version}</version>
                             </dependency>
                         </dependencies>
                     </plugin>
