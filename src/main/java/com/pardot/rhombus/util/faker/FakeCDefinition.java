@@ -19,7 +19,5 @@ public class FakeCDefinition {
 		this.countPerIndexShard = countPerIndexShard;
 	}
 
-	public
-
 
 }

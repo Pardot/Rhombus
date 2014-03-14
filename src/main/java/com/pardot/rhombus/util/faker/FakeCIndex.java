@@ -1,11 +1,14 @@
 package com.pardot.rhombus.util.faker;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.CDefinition;
 import com.pardot.rhombus.cobject.CIndex;
 import com.pardot.rhombus.cobject.shardingstrategy.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * User: Rob Righter
@@ -14,12 +17,13 @@ import java.util.List;
 public class FakeCIndex {
 
 	private CIndex index;
-	private List<FakeIdRange> idRangeList = null;
+	private FakeIdRange uniqueRange = null;
+	private List<FakeIdRange> coveredRanges = null;
 
 	public FakeCIndex(CIndex index)
 	{
 		this.index = index;
-		idRangeList = Lists.newArrayList();
+		coveredRanges = Lists.newArrayList();
 	}
 
 	public boolean isCovering(CIndex otherIndex)
@@ -29,24 +33,21 @@ public class FakeCIndex {
 
 	public void compileIdRange(CDefinition def, Object startId, Long totalObjects, Long objectsPerShard)
 	{
-		FakeIdRange first = new FakeIdRange(def.getPrimaryKeyCDataType(),startId,totalObjects,objectsPerShard,index.getShardingStrategy());
-		idRangeList.add(first);
-
+		uniqueRange = new FakeIdRange(def.getPrimaryKeyCDataType(),startId,totalObjects,objectsPerShard,index.getShardingStrategy());
 	}
 
-	public FakeIdRange getIdRange() {
-		return idRange;
+	public FakeIdRange getUniqueRange() {
+		return uniqueRange;
 	}
 
-
-
-	public Long getStartOfNextShard(Long current)
-	{
-		return 1L;
+	public void addCoveredRange(FakeIdRange range) {
+		coveredRanges.add(range);
 	}
 
-	public Long getSuggestedStartForNextIndex(){
-		return getStartOfNextShard(idRange.getEndTimeStamp()+1);
+	public Map<String, Object> makeObject(FakeIdRange.IdInRange idInRange){
+		Map<String,Object> ret = Maps.newHashMap();
+
+		return ret;
 	}
 
 

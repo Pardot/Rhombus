@@ -4,6 +4,7 @@ import com.datastax.driver.core.utils.UUIDs;
 
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -100,6 +101,13 @@ public class UuidUtil {
 		name.put(3, lsb.get(5));
 
 		return name.getInt();
+	}
+
+	static final long NUMBER_OF_100NS_INTERVALS_SINCE_UUID_EPOCH = 0x01b21dd213814000L;
+
+	public static Date getDateFromUUID(UUID uuid) {
+		Long time =  (uuid.timestamp() - NUMBER_OF_100NS_INTERVALS_SINCE_UUID_EPOCH) / 10000;
+		return new Date(time);
 	}
 
 

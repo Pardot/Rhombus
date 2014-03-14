@@ -1,5 +1,6 @@
 package com.pardot.rhombus.util.faker;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.Range;
@@ -8,11 +9,11 @@ import com.pardot.rhombus.RhombusException;
 import com.pardot.rhombus.cobject.CField;
 import com.pardot.rhombus.cobject.CObjectOrdering;
 import com.pardot.rhombus.cobject.shardingstrategy.*;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.omg.CosNaming._NamingContextExtStub;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * User: Rob Righter
@@ -20,18 +21,22 @@ import java.util.UUID;
  */
 public class FakeIdRange {
 
+	public static long PARDOT_EPOCH = 946740000000L;
+
 	private Range<Long> counterRange;
 	private long spacing;
 	private TimebasedShardingStrategy shardingStrategy;
 	private CField.CDataType idType;
-	private Object offset;
+	private Long objectsPerShard;
+	private Long startingShardNumber;
 
-	public FakeIdRange(CField.CDataType idType, Object startId, Long totalObjects, Long objectsPerShard, TimebasedShardingStrategy shardingStrategy){
+	public FakeIdRange(CField.CDataType idType, Object startAfterId, Long totalObjects, Long objectsPerShard, TimebasedShardingStrategy shardingStrategy){
 		this.shardingStrategy = shardingStrategy;
+		this.startingShardNumber=shardingStrategy.getShardKey(startAfterId)+1;
+		this.objectsPerShard = objectsPerShard;
 		this.spacing = getSpacingForShardingStrategy(objectsPerShard);
 		this.idType = idType;
-		this.offset = startId;
-		this.counterRange = Range.open(1L,totalObjects);
+		this.counterRange = Range.closed(1L, totalObjects);
 	}
 
 	public Iterator<IdInRange> getIterator(CObjectOrdering ordering) {
@@ -47,7 +52,29 @@ public class FakeIdRange {
 	public Iterator<IdInRange> getIterator(CObjectOrdering ordering, Object startId, Object endId) throws RhombusException {
 		Long startCounter = isIdInRange(startId) ? getCounterAtId(startId) : counterRange.lowerEndpoint();
 		Long endCounter = isIdInRange(endId) ? getCounterAtId(endId) : counterRange.upperEndpoint();
-		return getIterator(ordering, Range.open(startCounter,endCounter));
+		return getIterator(ordering, Range.closed(startCounter, endCounter));
+	}
+
+	public Object getSuggestedIdForStartofNextIndex(TimebasedShardingStrategy shardingStrategyOfNextIndex) throws RhombusException {
+		Object paddedId = getIdAtCounter(counterRange.upperEndpoint()+10L,shardingStrategy);
+		Long spacingOfNextIndex = getSpacingForShardingStrategy(this.objectsPerShard, shardingStrategyOfNextIndex);
+
+		if(idType.equals(CField.CDataType.TIMEUUID)){
+			UUID offsetUUID = (UUID)paddedId;
+			return makeTimeUUIDFromLowestTimeUnit(offsetUUID.timestamp() + (2*spacingOfNextIndex));
+		}
+
+		if(idType.equals(CField.CDataType.VARCHAR)){
+			Long offsetLong = Long.valueOf(paddedId.toString());
+			return (offsetLong + (2*spacingOfNextIndex))+"";
+		}
+
+		if(idType.equals(CField.CDataType.BIGINT)){
+			Long offsetLong = (Long)paddedId;
+			return offsetLong + (2*spacingOfNextIndex);
+		}
+
+		throw new RhombusException("Index Id type not compatible with faking it");
 	}
 
 	public Boolean isIdInRange(Object id) throws RhombusException{
@@ -63,85 +90,146 @@ public class FakeIdRange {
 		return true;
 	}
 
-	private Long getCounterAtId(Object id) throws RhombusException {
+	public static long getMillis(UUID uuid) {
+		return uuid.timestamp() / 10000;
+	}
+
+	public Long getCounterAtId(Object id) throws RhombusException {
 		if(idType.equals(CField.CDataType.TIMEUUID)){
-			UUID offsetUUID = (UUID)offset;
 			UUID idUUID = (UUID)id;
-			return (idUUID.timestamp() - offsetUUID.timestamp())/spacing;
+			Long idMillis = getMillis(idUUID);
+			Long indexOfShard = shardingStrategy.getShardKey(idMillis);
+			Long shardMillis = PARDOT_EPOCH + (indexOfShard*getTimeUnitsPerShard(shardingStrategy));
+			Long itemInShard = (idMillis - shardMillis)/spacing;
+			return indexOfShard+itemInShard;
 		}
 
 		if(idType.equals(CField.CDataType.VARCHAR)){
-			return Long.valueOf(id.toString().substring(offset.toString().length()))/spacing;
+			return Long.valueOf(id.toString());
 		}
 
 		if(idType.equals(CField.CDataType.BIGINT)){
-			Long idLong = (Long)id;
-			Long offsetLong = (Long)offset;
-			return (idLong - offsetLong)/spacing;
+			return (Long)id;
 		}
 
 		throw new RhombusException("Index Id type not compatible with faking it");
 	}
 
-	public Object getIdAtCounter(Long counter)  throws RhombusException {
+	public Object getIdAtCounter(Long counter, TimebasedShardingStrategy shardingStrategy)  throws RhombusException {
+		//get current shard number
+		Long indexOfShard = startingShardNumber + (counter/objectsPerShard);
+
+		//get location in that shard
+		Long itemInShard = counter%objectsPerShard;
+
+		//get the id unit offset at the beginning of that shard
+
+		//turn it into an id
+
 		if(idType.equals(CField.CDataType.TIMEUUID)){
-			UUID offsetUUID = (UUID)offset;
-			return makeTimeUUIDFromNanos(offsetUUID.timestamp() + (counter * spacing));
+			Long timestamp = PARDOT_EPOCH + (indexOfShard*getTimeUnitsPerShard(shardingStrategy));
+			if(shardingStrategy.getClass().equals(ShardingStrategyMonthly.class)){
+				//months are weird so we need to special case
+				int years = (int)(indexOfShard/12);
+				int months = (int)((indexOfShard%12))+1;
+				DateTime dt = new DateTime(years+2000, months, 1, 0, 0 ,DateTimeZone.UTC);
+				timestamp = dt.getMillis();
+			}
+			timestamp+=(spacing*itemInShard);
+			return UUIDs.startOf(timestamp);
 		}
 
 		if(idType.equals(CField.CDataType.VARCHAR)){
-			return offset.toString()+(counter*spacing)+"";
+			return counter+"";
 		}
 
 		if(idType.equals(CField.CDataType.BIGINT)){
-			return ((Long)offset)+(counter*spacing*1L);
+			return Long.valueOf(counter);
 		}
 
 		throw new RhombusException("Index Id type not compatible with faking it");
 
 	}
 
-	public UUID makeTimeUUIDFromNanos(Long nanos){
-		return null;
+	public static UUID makeTimeUUIDFromLowestTimeUnit(Long timestamp){
+		return UUIDs.startOf(timestamp);
+//		// UUID v1 timestamp must be in 100-nanoseconds interval since 00:00:00.000 15 Oct 1582.
+//		Calendar c = Calendar.getInstance(TimeZone.getTimeZone("GMT-0"));
+//		c.set(Calendar.YEAR, 1582);
+//		c.set(Calendar.MONTH, Calendar.OCTOBER);
+//		c.set(Calendar.DAY_OF_MONTH, 15);
+//		c.set(Calendar.HOUR_OF_DAY, 0);
+//		c.set(Calendar.MINUTE, 0);
+//		c.set(Calendar.SECOND, 0);
+//		c.set(Calendar.MILLISECOND, 0);
+//		timestamp = timestamp - c.getTimeInMillis()*10000;
+//
+//		UUIDs.startOf(timestamp);
+//		long clock = 42;
+//		long node = 0x0000010000000000L;
+//
+//		long CLOCK_SEQ_AND_NODE = 0;
+//		CLOCK_SEQ_AND_NODE |= (clock & 0x0000000000003FFFL) << 48;
+//		CLOCK_SEQ_AND_NODE |= 0x8000000000000000L;
+//		CLOCK_SEQ_AND_NODE |= node;
+//
+//		long msb = 0L;
+//		msb |= (0x00000000ffffffffL & timestamp) << 32;
+//		msb |= (0x0000ffff00000000L & timestamp) >>> 16;
+//		msb |= (0x0fff000000000000L & timestamp) >>> 48;
+//		msb |= 0x0000000000001000L; // sets the version to 1.
+//		return new UUID(msb, CLOCK_SEQ_AND_NODE);
 	}
 
 	public Long getSpacingForShardingStrategy(Long objectsPerShard)
 	{
-		if(shardingStrategy.equals(ShardingStrategyNone.class)){
+		return getSpacingForShardingStrategy(objectsPerShard, this.shardingStrategy);
+	}
+
+
+	public Long getTimeUnitsPerShard(TimebasedShardingStrategy shardingStrategy){
+		if(shardingStrategy.getClass().equals(ShardingStrategyNone.class)){
 			return 1L;
 		}
 
-		Long nanosecondsPerShard = 1L;
-		if(shardingStrategy.equals(ShardingStrategyHourly.class)){
-			nanosecondsPerShard = (1000000L) * (1000L) * // 1 second
+		Long timeUnitsPerSecond = 1000L; //milliseconds
+
+		Long timeUnitsPerShard = 1L;
+		if(shardingStrategy.getClass().equals(ShardingStrategyHourly.class)){
+			timeUnitsPerShard = timeUnitsPerSecond * // 1 second
 					(60L) * // 1 minute
 					(60L); // 1 hour
 		}
 
-		if(shardingStrategy.equals(ShardingStrategyDaily.class)){
-			nanosecondsPerShard = (1000000L) * (1000L) * // 1 second
+		if(shardingStrategy.getClass().equals(ShardingStrategyDaily.class)){
+			timeUnitsPerShard = timeUnitsPerSecond * // 1 second
 					(60L) *  // 1 minute
 					(60L) * // 1 hour
 					(24L); // 1 Day
 		}
 
-		if(shardingStrategy.equals(ShardingStrategyWeekly.class)){
-			nanosecondsPerShard = (1000000L) * (1000L) * // 1 second
+		if(shardingStrategy.getClass().equals(ShardingStrategyWeekly.class)){
+			timeUnitsPerShard = timeUnitsPerSecond * // 1 second
 					(60L) *   // 1 minute
 					(60L) *  // 1 hour
 					(24L) * // 1 Day
 					(7L);  // 1 Week
 		}
 
-		if(shardingStrategy.equals(ShardingStrategyMonthly.class)){
-			nanosecondsPerShard = (1000000L) * (1000L) * // 1 second
+		if(shardingStrategy.getClass().equals(ShardingStrategyMonthly.class)){
+			timeUnitsPerShard = timeUnitsPerSecond * // 1 second
 					(60L) *   // 1 minute
 					(60L) *  // 1 hour
 					(24L) * // 1 Day
 					(28L); // 1 Monthish
 		}
 
-		return nanosecondsPerShard/objectsPerShard;
+		return timeUnitsPerShard;
+	}
+
+	public Long getSpacingForShardingStrategy(Long objectsPerShard, TimebasedShardingStrategy shardingStrategy)
+	{
+		return getTimeUnitsPerShard(shardingStrategy)/objectsPerShard;
 	}
 
 	public class IdInRange {
@@ -185,7 +273,7 @@ public class FakeIdRange {
 		public IdInRange next() {
 			try{
 				Long counter = rangeIterator.next();
-				return new IdInRange(getIdAtCounter(counter),counter);
+				return new IdInRange(getIdAtCounter(counter,shardingStrategy),counter);
 			}
 			catch (RhombusException re){
 				//this should never happen
