@@ -149,6 +149,10 @@ public class FakeIdRange {
 		throw new RhombusException("Index Id type not compatible with faking it");
 	}
 
+	public IdInRange getIdInRangeAtCounter(Long counter)  throws RhombusException {
+		return new IdInRange(this.getIdAtCounter(counter,shardingStrategy),counter);
+	}
+
 	public Object getIdAtCounter(Long counter, TimebasedShardingStrategy shardingStrategy)  throws RhombusException {
 		//get current shard number
 		Long indexOfShard = startingShardNumber + (counter/objectsPerShard);
