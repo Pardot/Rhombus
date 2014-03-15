@@ -9,6 +9,7 @@ import com.pardot.rhombus.RhombusException;
 import com.pardot.rhombus.cobject.CField;
 import com.pardot.rhombus.cobject.CObjectOrdering;
 import com.pardot.rhombus.cobject.shardingstrategy.*;
+import com.pardot.rhombus.util.UuidUtil;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.omg.CosNaming._NamingContextExtStub;
@@ -32,7 +33,7 @@ public class FakeIdRange {
 
 	public FakeIdRange(CField.CDataType idType, Object startAfterId, Long totalObjects, Long objectsPerShard, TimebasedShardingStrategy shardingStrategy){
 		this.shardingStrategy = shardingStrategy;
-		this.startingShardNumber=shardingStrategy.getShardKey(startAfterId)+1;
+		this.startingShardNumber=shardingStrategy.getShardKey(startAfterId);
 		this.objectsPerShard = objectsPerShard;
 		this.spacing = getSpacingForShardingStrategy(objectsPerShard);
 		this.idType = idType;
@@ -94,14 +95,30 @@ public class FakeIdRange {
 		return uuid.timestamp() / 10000;
 	}
 
+	public Long getMillisAtShardKey(Long shardKey, TimebasedShardingStrategy shardingStrategy){
+		Long shardMillis = PARDOT_EPOCH + (shardKey*getTimeUnitsPerShard(shardingStrategy));
+		if(shardingStrategy.getClass().equals(ShardingStrategyMonthly.class)){
+			//months are weird so we need to special case
+			int years = (int)(shardKey/12);
+			int months = (int)(shardKey-(years*12));
+			months = months+1;
+			System.out.println("Month is: " + months);
+			DateTime dt = new DateTime(years+2000, months, 1, 0, 0 ,DateTimeZone.UTC);
+			shardMillis = dt.getMillis();
+		}
+		return shardMillis;
+	}
+
 	public Long getCounterAtId(Object id) throws RhombusException {
 		if(idType.equals(CField.CDataType.TIMEUUID)){
 			UUID idUUID = (UUID)id;
-			Long idMillis = getMillis(idUUID);
-			Long indexOfShard = shardingStrategy.getShardKey(idMillis);
-			Long shardMillis = PARDOT_EPOCH + (indexOfShard*getTimeUnitsPerShard(shardingStrategy));
+			Long idMillis = UuidUtil.convertUUIDToJavaMillis(idUUID);
+			System.out.println("Get Counter At Id: "+UuidUtil.getDateFromUUID(idUUID));
+			Long indexOfShard = shardingStrategy.getShardKey(idMillis.longValue());
+			System.out.println(indexOfShard);
+			Long shardMillis = getMillisAtShardKey(indexOfShard, shardingStrategy);
 			Long itemInShard = (idMillis - shardMillis)/spacing;
-			return indexOfShard+itemInShard;
+			return ((indexOfShard-startingShardNumber)*objectsPerShard)+itemInShard;
 		}
 
 		if(idType.equals(CField.CDataType.VARCHAR)){
@@ -127,14 +144,7 @@ public class FakeIdRange {
 		//turn it into an id
 
 		if(idType.equals(CField.CDataType.TIMEUUID)){
-			Long timestamp = PARDOT_EPOCH + (indexOfShard*getTimeUnitsPerShard(shardingStrategy));
-			if(shardingStrategy.getClass().equals(ShardingStrategyMonthly.class)){
-				//months are weird so we need to special case
-				int years = (int)(indexOfShard/12);
-				int months = (int)((indexOfShard%12))+1;
-				DateTime dt = new DateTime(years+2000, months, 1, 0, 0 ,DateTimeZone.UTC);
-				timestamp = dt.getMillis();
-			}
+			Long timestamp = getMillisAtShardKey(indexOfShard, shardingStrategy);
 			timestamp+=(spacing*itemInShard);
 			return UUIDs.startOf(timestamp);
 		}
@@ -229,7 +239,7 @@ public class FakeIdRange {
 
 	public Long getSpacingForShardingStrategy(Long objectsPerShard, TimebasedShardingStrategy shardingStrategy)
 	{
-		return getTimeUnitsPerShard(shardingStrategy)/objectsPerShard;
+		return getTimeUnitsPerShard(shardingStrategy)/(objectsPerShard);
 	}
 
 	public class IdInRange {

@@ -1,6 +1,8 @@
 package com.pardot.rhombus.util;
 
 import com.datastax.driver.core.utils.UUIDs;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -105,9 +107,12 @@ public class UuidUtil {
 
 	static final long NUMBER_OF_100NS_INTERVALS_SINCE_UUID_EPOCH = 0x01b21dd213814000L;
 
-	public static Date getDateFromUUID(UUID uuid) {
-		Long time =  (uuid.timestamp() - NUMBER_OF_100NS_INTERVALS_SINCE_UUID_EPOCH) / 10000;
-		return new Date(time);
+	public static DateTime getDateFromUUID(UUID uuid) {
+		return new DateTime(convertUUIDToJavaMillis(uuid), DateTimeZone.UTC);
+	}
+
+	public static Long convertUUIDToJavaMillis(UUID uuid){
+		return (uuid.timestamp() - NUMBER_OF_100NS_INTERVALS_SINCE_UUID_EPOCH) / 10000;
 	}
 
 
