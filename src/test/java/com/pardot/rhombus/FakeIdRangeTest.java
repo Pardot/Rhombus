@@ -45,12 +45,12 @@ public class FakeIdRangeTest {
 	public void getMillisAtShardKeyTest() throws RhombusException{
 		Long millistamp = System.currentTimeMillis();
 		UUID startingUUID = UUIDs.startOf(millistamp);
-		System.out.println("UUID of start is "+startingUUID+" (DATE= "+UuidUtil.getDateFromUUID(startingUUID)+" )");
+		//System.out.println("UUID of start is "+startingUUID+" (DATE= "+UuidUtil.getDateFromUUID(startingUUID)+" )");
 		TimebasedShardingStrategy shardingStrategy = new ShardingStrategyMonthly();
-		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,1000L,9L, shardingStrategy);
-		long counter = 2L;
+		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,95L,10L, shardingStrategy);
+		long counter = 90L;
 		UUID id = (UUID)subject.getIdAtCounter(counter,shardingStrategy);
-		System.out.println("UUID of the id is "+id+" (DATE= "+UuidUtil.getDateFromUUID(id)+" )");
+		//System.out.println("UUID of the id is "+id+" (DATE= "+UuidUtil.getDateFromUUID(id)+" ) Millis:"+UuidUtil.convertUUIDToJavaMillis(id));
 		long actual = subject.getCounterAtId(id);
 		assertEquals(counter,actual);
 	}
@@ -65,8 +65,8 @@ public class FakeIdRangeTest {
 
 
 		TimebasedShardingStrategy shardingStrategy = new ShardingStrategyMonthly();
-		int numberPerShard = 10;
-		long totalNumberOfObjects = 2000;
+		int numberPerShard = 3;
+		long totalNumberOfObjects = 950L;
 		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,totalNumberOfObjects,(long)numberPerShard, shardingStrategy);
 		Iterator<FakeIdRange.IdInRange> it = subject.getIterator(CObjectOrdering.ASCENDING);
 
@@ -74,12 +74,9 @@ public class FakeIdRangeTest {
 		int lastmonth = -1;
 		int countSinceChange = 0;
 		while(it.hasNext()){
-			System.out.println("STARTING ONE-----------------------------------------------------|");
 			counter++;
 			FakeIdRange.IdInRange id = it.next();
 			DateTime dt = UuidUtil.getDateFromUUID((UUID)id.getId());
-			System.out.println("THIS TEST MONTH IS: " + dt.getMonthOfYear());
-			System.out.println("THE COUNT IS "+countSinceChange);
 			if(lastmonth == -1){
 				//initialization case
 				countSinceChange = 1;
@@ -98,7 +95,6 @@ public class FakeIdRangeTest {
 			System.out.println("Id Counter="+id.getCounterValue());
 			System.out.println("Lookup Counter="+subject.getCounterAtId(id.getId()));
 			assertEquals(subject.getCounterAtId(id.getId()), id.getCounterValue());
-			System.out.println(counter + ": " + UuidUtil.getDateFromUUID((UUID)id.getId()).toString());
 		}
 
 		assertEquals(totalNumberOfObjects,counter);

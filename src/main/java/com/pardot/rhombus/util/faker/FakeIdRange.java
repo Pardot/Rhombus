@@ -101,8 +101,11 @@ public class FakeIdRange {
 			//months are weird so we need to special case
 			int years = (int)(shardKey/12);
 			int months = (int)(shardKey-(years*12));
-			months = months+1;
-			System.out.println("Month is: " + months);
+			if(months == 0){
+				//revert to 12 of the previous year
+				months = 12;
+				years--;
+			}
 			DateTime dt = new DateTime(years+2000, months, 1, 0, 0 ,DateTimeZone.UTC);
 			shardMillis = dt.getMillis();
 		}
@@ -113,9 +116,7 @@ public class FakeIdRange {
 		if(idType.equals(CField.CDataType.TIMEUUID)){
 			UUID idUUID = (UUID)id;
 			Long idMillis = UuidUtil.convertUUIDToJavaMillis(idUUID);
-			System.out.println("Get Counter At Id: "+UuidUtil.getDateFromUUID(idUUID));
 			Long indexOfShard = shardingStrategy.getShardKey(idMillis.longValue());
-			System.out.println(indexOfShard);
 			Long shardMillis = getMillisAtShardKey(indexOfShard, shardingStrategy);
 			Long itemInShard = (idMillis - shardMillis)/spacing;
 			return ((indexOfShard-startingShardNumber)*objectsPerShard)+itemInShard;
@@ -283,6 +284,7 @@ public class FakeIdRange {
 		public IdInRange next() {
 			try{
 				Long counter = rangeIterator.next();
+				Object ret = getIdAtCounter(counter,shardingStrategy);
 				return new IdInRange(getIdAtCounter(counter,shardingStrategy),counter);
 			}
 			catch (RhombusException re){
