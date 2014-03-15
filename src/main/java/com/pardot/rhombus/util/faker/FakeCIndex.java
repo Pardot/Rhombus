@@ -33,7 +33,7 @@ public class FakeCIndex {
 
 	public void compileIdRange(CDefinition def, Object startId, Long totalObjects, Long objectsPerShard)
 	{
-		uniqueRange = new FakeIdRange(def.getPrimaryKeyCDataType(),startId,totalObjects,objectsPerShard,index.getShardingStrategy());
+		uniqueRange = new FakeIdRange(def.getPrimaryKeyCDataType(),startId,totalObjects,objectsPerShard,index.getShardingStrategy(), index.getKey());
 	}
 
 	public FakeIdRange getUniqueRange() {

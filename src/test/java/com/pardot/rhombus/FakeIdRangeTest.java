@@ -48,7 +48,7 @@ public class FakeIdRangeTest {
 		UUID startingUUID = UUIDs.startOf(millistamp);
 		//System.out.println("UUID of start is "+startingUUID+" (DATE= "+UuidUtil.getDateFromUUID(startingUUID)+" )");
 		TimebasedShardingStrategy shardingStrategy = new ShardingStrategyMonthly();
-		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,95L,10L, shardingStrategy);
+		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,95L,10L, shardingStrategy, "testing");
 		long counter = 90L;
 		UUID id = (UUID)subject.getIdAtCounter(counter,shardingStrategy);
 		//System.out.println("UUID of the id is "+id+" (DATE= "+UuidUtil.getDateFromUUID(id)+" ) Millis:"+UuidUtil.convertUUIDToJavaMillis(id));
@@ -62,7 +62,7 @@ public class FakeIdRangeTest {
 		UUID startingUUID = UUIDs.startOf(millistamp);
 		//System.out.println("UUID of start is "+startingUUID+" (DATE= "+UuidUtil.getDateFromUUID(startingUUID)+" )");
 		TimebasedShardingStrategy shardingStrategy = new ShardingStrategyWeekly();
-		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,950L,3L, shardingStrategy);
+		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,950L,3L, shardingStrategy, "testing");
 		long counter = 8L;
 		UUID id = (UUID)subject.getIdAtCounter(counter,shardingStrategy);
 		//System.out.println("UUID of the id is "+id+" (DATE= "+UuidUtil.getDateFromUUID(id)+" ) Millis:"+UuidUtil.convertUUIDToJavaMillis(id));
@@ -76,7 +76,7 @@ public class FakeIdRangeTest {
 		UUID startingUUID = UUIDs.startOf(millistamp);
 		//System.out.println("UUID of start is "+startingUUID+" (DATE= "+UuidUtil.getDateFromUUID(startingUUID)+" )");
 		TimebasedShardingStrategy shardingStrategy = new ShardingStrategyDaily();
-		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,950L,3L, shardingStrategy);
+		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,950L,3L, shardingStrategy, "testing");
 		long counter = 8L;
 		UUID id = (UUID)subject.getIdAtCounter(counter,shardingStrategy);
 		//System.out.println("UUID of the id is "+id+" (DATE= "+UuidUtil.getDateFromUUID(id)+" ) Millis:"+UuidUtil.convertUUIDToJavaMillis(id));
@@ -90,7 +90,7 @@ public class FakeIdRangeTest {
 		UUID startingUUID = UUIDs.startOf(millistamp);
 		//System.out.println("UUID of start is "+startingUUID+" (DATE= "+UuidUtil.getDateFromUUID(startingUUID)+" )");
 		TimebasedShardingStrategy shardingStrategy = new ShardingStrategyNone();
-		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,950L,3L, shardingStrategy);
+		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,950L,3L, shardingStrategy, "testing");
 		long counter = 8L;
 		UUID id = (UUID)subject.getIdAtCounter(counter,shardingStrategy);
 		//System.out.println("UUID of the id is "+id+" (DATE= "+UuidUtil.getDateFromUUID(id)+" ) Millis:"+UuidUtil.convertUUIDToJavaMillis(id));
@@ -110,7 +110,7 @@ public class FakeIdRangeTest {
 		TimebasedShardingStrategy shardingStrategy = new ShardingStrategyMonthly();
 		int numberPerShard = 3;
 		long totalNumberOfObjects = 950L;
-		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,totalNumberOfObjects,(long)numberPerShard, shardingStrategy);
+		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,totalNumberOfObjects,(long)numberPerShard, shardingStrategy, "testing");
 		Iterator<FakeIdRange.IdInRange> it = subject.getIterator(CObjectOrdering.ASCENDING);
 
 		long counter = 0;
@@ -151,7 +151,7 @@ public class FakeIdRangeTest {
 		TimebasedShardingStrategy shardingStrategy = new ShardingStrategyWeekly();
 		int numberPerShard = 3;
 		long totalNumberOfObjects = 950L;
-		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,totalNumberOfObjects,(long)numberPerShard, shardingStrategy);
+		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,totalNumberOfObjects,(long)numberPerShard, shardingStrategy, "testing");
 		Iterator<FakeIdRange.IdInRange> it = subject.getIterator(CObjectOrdering.ASCENDING);
 
 		long counter = 0;
@@ -195,7 +195,7 @@ public class FakeIdRangeTest {
 		TimebasedShardingStrategy shardingStrategy = new ShardingStrategyDaily();
 		int numberPerShard = 3;
 		long totalNumberOfObjects = 950L;
-		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,totalNumberOfObjects,(long)numberPerShard, shardingStrategy);
+		FakeIdRange subject = new FakeIdRange(CField.CDataType.TIMEUUID,startingUUID,totalNumberOfObjects,(long)numberPerShard, shardingStrategy, "testing");
 		Iterator<FakeIdRange.IdInRange> it = subject.getIterator(CObjectOrdering.ASCENDING);
 
 		int counter = 0;

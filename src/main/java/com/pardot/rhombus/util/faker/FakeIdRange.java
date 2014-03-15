@@ -30,8 +30,9 @@ public class FakeIdRange {
 	private CField.CDataType idType;
 	private Long objectsPerShard;
 	private Long startingShardNumber;
+	private String indexIdentifier;
 
-	public FakeIdRange(CField.CDataType idType, Object startAfterId, Long totalObjects, Long objectsPerShard, TimebasedShardingStrategy shardingStrategy){
+	public FakeIdRange(CField.CDataType idType, Object startAfterId, Long totalObjects, Long objectsPerShard, TimebasedShardingStrategy shardingStrategy, String indexIdentifier){
 		if(shardingStrategy.getClass().equals(ShardingStrategyNone.class)){
 			//set none to be daily with all the objects in 1 shard
 			this.shardingStrategy = new ShardingStrategyDaily();
@@ -44,6 +45,15 @@ public class FakeIdRange {
 		this.spacing = getSpacingForShardingStrategy(objectsPerShard);
 		this.idType = idType;
 		this.counterRange = Range.closed(1L, totalObjects);
+		this.indexIdentifier = indexIdentifier;
+	}
+
+	public String getIndexIdentifier() {
+		return indexIdentifier;
+	}
+
+	public void setIndexIdentifier(String indexIdentifier) {
+		this.indexIdentifier = indexIdentifier;
 	}
 
 	public Iterator<IdInRange> getIterator(CObjectOrdering ordering) {
@@ -275,6 +285,8 @@ public class FakeIdRange {
 		public Long getCounterValue() {
 			return counterValue;
 		}
+
+		public String getIndexIdentifier() { return indexIdentifier; }
 
 		public void setCounterValue(Long counterValue) {
 			this.counterValue = counterValue;
