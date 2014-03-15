@@ -32,6 +32,12 @@ public class FakeIdRange {
 	private Long startingShardNumber;
 
 	public FakeIdRange(CField.CDataType idType, Object startAfterId, Long totalObjects, Long objectsPerShard, TimebasedShardingStrategy shardingStrategy){
+		if(shardingStrategy.getClass().equals(ShardingStrategyNone.class)){
+			//set none to be daily with all the objects in 1 shard
+			this.shardingStrategy = new ShardingStrategyDaily();
+			objectsPerShard = totalObjects;
+			this.objectsPerShard = totalObjects;
+		}
 		this.shardingStrategy = shardingStrategy;
 		this.startingShardNumber=shardingStrategy.getShardKey(startAfterId);
 		this.objectsPerShard = objectsPerShard;
@@ -200,7 +206,8 @@ public class FakeIdRange {
 
 	public Long getTimeUnitsPerShard(TimebasedShardingStrategy shardingStrategy){
 		if(shardingStrategy.getClass().equals(ShardingStrategyNone.class)){
-			return 1L;
+			//switch all Nones to daily
+			shardingStrategy = new ShardingStrategyDaily();
 		}
 
 		Long timeUnitsPerSecond = 1000L; //milliseconds
@@ -240,6 +247,11 @@ public class FakeIdRange {
 
 	public Long getSpacingForShardingStrategy(Long objectsPerShard, TimebasedShardingStrategy shardingStrategy)
 	{
+		if(shardingStrategy.getClass().equals(ShardingStrategyNone.class)){
+			//convert to daily for all sharding strategy none's
+			shardingStrategy = new ShardingStrategyDaily();
+		}
+
 		return getTimeUnitsPerShard(shardingStrategy)/(objectsPerShard);
 	}
 
