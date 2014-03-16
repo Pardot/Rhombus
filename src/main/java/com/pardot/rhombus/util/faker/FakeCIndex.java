@@ -27,11 +27,10 @@ public class FakeCIndex {
 	private FakeIdRange uniqueRange = null;
 	private List<FakeCIndex> indexesThatIAmASubsetOf = null;
 	private Range<Long> counterRange;
-	private List<String> nonIndexValues;
+	private List<String> nonIndexValuesOnAnyIndex;
 	private CDefinition def;
 
 	public FakeCIndex(CIndex index,
-	                  List<String> nonIndexValues,
 	                  CDefinition def,
 	                  Object startId,
 	                  Long totalWideRows,
@@ -39,10 +38,25 @@ public class FakeCIndex {
 	                  Long objectsPerShard ){
 		this.index = index;
 		this.indexesThatIAmASubsetOf = Lists.newArrayList();
-		this.nonIndexValues = nonIndexValues;
 		this.uniqueRange = new FakeIdRange(def.getPrimaryKeyCDataType(),startId,totalObjectsPerWideRange,objectsPerShard,index.getShardingStrategy(), index.getKey());
 		this.counterRange = Range.closed(1L, totalWideRows);
 		this.def = def;
+
+		this.nonIndexValuesOnAnyIndex = Lists.newArrayList();
+		List<String> masterIndexValuesList = Lists.newArrayList();
+		for(CIndex i : def.getIndexes().values()){
+			masterIndexValuesList.addAll(i.getCompositeKeyList());
+		}
+
+		for(CField f : def.getFields().values()){
+			if(!masterIndexValuesList.contains(f.getName())){
+				this.nonIndexValuesOnAnyIndex.add(f.getName());
+			}
+		}
+
+
+
+
 
 	}
 
@@ -71,7 +85,7 @@ public class FakeCIndex {
 		}
 
 		//set the non-index values
-		for(String nonIndexValue : this.nonIndexValues){
+		for(String nonIndexValue : this.nonIndexValuesOnAnyIndex){
 			CField f = def.getField(nonIndexValue);
 			ret.put(nonIndexValue,getFieldValueAtCounter(idInRange.getCounterValue(),f));
 		}
@@ -176,7 +190,7 @@ public class FakeCIndex {
 				this.rowIt = fRange.getIterator(ordering,startId,endId);
 			}
 			else{
-				this.rowIt = fRange.getIterator(ordering,startId,endId);
+				this.rowIt = fRange.getIterator(ordering);
 			}
 		}
 
