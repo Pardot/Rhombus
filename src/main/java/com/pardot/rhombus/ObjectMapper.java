@@ -439,7 +439,7 @@ public class ObjectMapper implements CObjectShardList {
 	 * @return number of items matching the criteria
 	 * @throws CQLGenerationException
 	 */
-	public long count(String objectType, Criteria criteria) throws CQLGenerationException {
+	public long count(String objectType, Criteria criteria) throws CQLGenerationException, RhombusException {
 		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
 		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforList(objectType, criteria, true);
 		return mapCount(statementIterator, def, criteria.getLimit());
@@ -557,8 +557,9 @@ public class ObjectMapper implements CObjectShardList {
 		return true;
 	}
 
-	private Long mapCount(CQLStatementIterator statementIterator, CDefinition definition, Long limit){
+	private Long mapCount(CQLStatementIterator statementIterator, CDefinition definition, Long limit) throws RhombusException {
 		Long resultCount = 0L;
+        int statementNumber = 0;
 		while (statementIterator.hasNext()){
 			CQLStatement cql = statementIterator.next();
             Map<String, Object> clientFilters = statementIterator.getClientFilters();
@@ -576,10 +577,14 @@ public class ObjectMapper implements CObjectShardList {
                         }
                     }
                 }
+                statementNumber++;
                 if((limit > 0 && resultCount >= limit)) {
                     logger.debug("Breaking from mapping count query results");
                     resultCount = limit;
                     break;
+                }
+                if(statementNumber > reasonableStatementLimit) {
+                    throw new RhombusException("Query attempted to execute more than " + reasonableStatementLimit + " statements.");
                 }
 			}
 		}
