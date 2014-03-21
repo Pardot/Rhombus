@@ -442,7 +442,7 @@ public class ObjectMapper implements CObjectShardList {
 	public long count(String objectType, Criteria criteria) throws CQLGenerationException {
 		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
 		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforList(objectType, criteria, true);
-		return mapCount(statementIterator);
+		return mapCount(statementIterator, def, criteria.getLimit());
 	}
 
 	public void visitObjects(String objectType, CObjectVisitor visitor){
@@ -557,16 +557,33 @@ public class ObjectMapper implements CObjectShardList {
 		return true;
 	}
 
-	private Long mapCount(CQLStatementIterator statementIterator){
-		Long result = 0L;
+	private Long mapCount(CQLStatementIterator statementIterator, CDefinition definition, Long limit){
+		Long resultCount = 0L;
 		while (statementIterator.hasNext()){
 			CQLStatement cql = statementIterator.next();
+            Map<String, Object> clientFilters = statementIterator.getClientFilters();
 			ResultSet resultSet = cqlExecutor.executeSync(cql);
 			if(!resultSet.isExhausted()){
-				result += resultSet.one().getLong(0);
+                if (clientFilters == null) {
+                    // If we don't have client filters, this was just a count query, so increment by the result value
+                    resultCount += resultSet.one().getLong(0);
+                } else {
+                    // Otherwise we do have client filters so we need to map the results and apply the filters
+                    for (Row row : resultSet) {
+                        Map<String, Object> result = mapResult(row, definition);
+                        if (this.resultMatchesFilters(result, clientFilters)) {
+                            resultCount++;
+                        }
+                    }
+                }
+                if((limit > 0 && resultCount >= limit)) {
+                    logger.debug("Breaking from mapping count query results");
+                    resultCount = limit;
+                    break;
+                }
 			}
 		}
-		return result;
+		return resultCount;
 	}
 
 

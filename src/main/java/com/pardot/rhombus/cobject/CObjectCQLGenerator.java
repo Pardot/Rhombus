@@ -262,11 +262,14 @@ public class CObjectCQLGenerator {
 				if(i.getCompositeKeyList().contains(key)) {
 					newIndexValues.put(key, indexValues.get(key));
 				} else {
+                    // Index keys will always exactly match the criteria index values if allowFiltering is false, so this only happens if allowFiltering is true
 					clientFilters.put(key, indexValues.get(key));
 				}
 			}
 			indexValues = newIndexValues;
 		}
+
+        boolean hasClientFilters = clientFilters != null && !clientFilters.isEmpty();
 
 		// Now validate the remaining index values
 		if(!i.validateIndexKeys(indexValues)){
@@ -285,13 +288,18 @@ public class CObjectCQLGenerator {
 			values.add(end);
 		}
 		String limitCQL = "";
-		if(limit > 0){
+        // If we have client side filters, don't apply the limit here since the limit needs to be applied on the results that match the filters
+		if(limit > 0 && !hasClientFilters){
 			limitCQL = "LIMIT %d";
 		}
 
+        // TODO: if we feel like it's worth the trouble, for count queries with client side filters, only select the fields needed to satisfy the filters
+        // note that doing so will also require modifying ObjectMapper.mapResult() so it only maps fields that exist in the row
 		String CQLTemplate = String.format(
 				TEMPLATE_SELECT_WIDE,
-				countOnly ? "count(*)":"*",
+                // If this was a count query and filtering was allowed and client filters weren't defined, just do a count query because we don't need to apply filters
+                // Otherwise if this was a count query, but allowFiltering was true and we have client-side filters to apply, do a full row query so we can apply the filters
+				countOnly && !(allowFiltering && hasClientFilters) ? "count(*)":"*",
 				keyspace,
 				makeTableName(def, i),
 				"?",

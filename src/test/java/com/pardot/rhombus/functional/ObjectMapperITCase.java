@@ -417,6 +417,244 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
         assertEquals(nDataItems, count);
     }
 
+    @Test
+    public void testLargeCountAllowFilteringWithNoFilters() throws Exception {
+        logger.debug("Starting testLargeCountAllowFilteringWithNoFilters");
+
+        //Build the connection manager
+        ConnectionManager cm = getConnectionManager();
+
+        //Build our keyspace definition object
+        CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "MultiInsertKeyspace.js");
+        assertNotNull(definition);
+
+        //Rebuild the keyspace and get the object mapper
+        cm.buildKeyspace(definition, true);
+        logger.debug("Built keyspace: {}", definition.getName());
+        cm.setDefaultKeyspace(definition);
+        ObjectMapper om = cm.getObjectMapper();
+        om.setLogCql(true);
+
+        //Set up test data
+        int nDataItems = 200;
+
+        List<Map<String, Object>> values2 =  Lists.newArrayList();
+
+        // insert additional data, we are testing for counts > 50
+        for (int i=0; i < nDataItems; i++) {
+            Map<String, Object> value = Maps.newHashMap();
+            value.put("account_id","00000003-0000-0030-0040-000000030000");
+            value.put("user_id","00000003-0000-0030-0040-000000030000");
+            value.put("field2", "Value"+(i+8));
+            values2.add(value);
+        }
+
+        List<Map<String, Object>> updatedValues2 = Lists.newArrayList();
+        for(Map<String, Object> baseValue : values2) {
+            updatedValues2.add(JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2")));
+        }
+
+        Map<String, List<Map<String, Object>>> multiInsertMap = Maps.newHashMap();
+        multiInsertMap.put("object2", updatedValues2);
+
+        //Insert data
+        om.insertBatchMixed(multiInsertMap);
+
+        //Count the number of inserts we made
+        SortedMap<String, Object> indexValues = Maps.newTreeMap();
+        indexValues.put("account_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        indexValues.put("user_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        Criteria criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(true);
+
+        //now test the count function
+        long count = om.count("object2", criteria);
+        assertEquals(nDataItems, count);
+    }
+
+    @Test
+    public void testLargeCountWithLimit() throws Exception {
+        logger.debug("Starting testLargeCountWithLimit");
+
+        //Build the connection manager
+        ConnectionManager cm = getConnectionManager();
+
+        //Build our keyspace definition object
+        CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "MultiInsertKeyspace.js");
+        assertNotNull(definition);
+
+        //Rebuild the keyspace and get the object mapper
+        cm.buildKeyspace(definition, true);
+        logger.debug("Built keyspace: {}", definition.getName());
+        cm.setDefaultKeyspace(definition);
+        ObjectMapper om = cm.getObjectMapper();
+        om.setLogCql(true);
+
+        //Set up test data
+        int nDataItems = 200;
+
+        List<Map<String, Object>> values2 =  Lists.newArrayList();
+
+        // insert additional data, we are testing for counts > 50
+        for (int i=0; i < nDataItems; i++) {
+            Map<String, Object> value = Maps.newHashMap();
+            value.put("account_id","00000003-0000-0030-0040-000000030000");
+            value.put("user_id","00000003-0000-0030-0040-000000030000");
+            value.put("field2", "Value"+(i+8));
+            values2.add(value);
+        }
+
+        List<Map<String, Object>> updatedValues2 = Lists.newArrayList();
+        for(Map<String, Object> baseValue : values2) {
+            updatedValues2.add(JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2")));
+        }
+
+        Map<String, List<Map<String, Object>>> multiInsertMap = Maps.newHashMap();
+        multiInsertMap.put("object2", updatedValues2);
+
+        //Insert data
+        om.insertBatchMixed(multiInsertMap);
+
+        //Count the number of inserts we made
+        SortedMap<String, Object> indexValues = Maps.newTreeMap();
+        indexValues.put("account_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        indexValues.put("user_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        Criteria criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(true);
+        criteria.setLimit(20L);
+
+        //now test the count function
+        long count = om.count("object2", criteria);
+        assertEquals(20, count);
+    }
+
+    @Test
+    public void testLargeCountWithFiltering() throws Exception {
+        logger.debug("Starting testLargeCountWithFilteringt");
+
+        //Build the connection manager
+        ConnectionManager cm = getConnectionManager();
+
+        //Build our keyspace definition object
+        CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "MultiInsertKeyspace.js");
+        assertNotNull(definition);
+
+        //Rebuild the keyspace and get the object mapper
+        cm.buildKeyspace(definition, true);
+        logger.debug("Built keyspace: {}", definition.getName());
+        cm.setDefaultKeyspace(definition);
+        ObjectMapper om = cm.getObjectMapper();
+        om.setLogCql(true);
+
+        //Set up test data
+        int nDataItems = 200;
+
+        List<Map<String, Object>> values2 =  Lists.newArrayList();
+
+        // insert additional data, we are testing for counts > 50
+        for (int i=0; i < nDataItems; i++) {
+            Map<String, Object> value = Maps.newHashMap();
+            value.put("account_id","00000003-0000-0030-0040-000000030000");
+            value.put("user_id","00000003-0000-0030-0040-000000030000");
+            // Set a specific value for data we want to filter
+            if (i % 3 == 0) {
+                value.put("field2", "taco");
+            } else {
+                value.put("field2", "Value"+(i+8));
+            }
+            values2.add(value);
+        }
+
+        List<Map<String, Object>> updatedValues2 = Lists.newArrayList();
+        for(Map<String, Object> baseValue : values2) {
+            updatedValues2.add(JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2")));
+        }
+
+        Map<String, List<Map<String, Object>>> multiInsertMap = Maps.newHashMap();
+        multiInsertMap.put("object2", updatedValues2);
+
+        //Insert data
+        om.insertBatchMixed(multiInsertMap);
+
+        //Count the number of inserts we made
+        SortedMap<String, Object> indexValues = Maps.newTreeMap();
+        indexValues.put("account_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        indexValues.put("user_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        indexValues.put("field2", "taco");
+        Criteria criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(true);
+
+        //now test the count function
+        long count = om.count("object2", criteria);
+        assertEquals((nDataItems/3) + 1, count);
+    }
+
+    @Test
+    public void testLargeCountWithLimitAndFiltering() throws Exception {
+        logger.debug("Starting testLargeCountWithLimitAndFiltering");
+
+        //Build the connection manager
+        ConnectionManager cm = getConnectionManager();
+
+        //Build our keyspace definition object
+        CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "MultiInsertKeyspace.js");
+        assertNotNull(definition);
+
+        //Rebuild the keyspace and get the object mapper
+        cm.buildKeyspace(definition, true);
+        logger.debug("Built keyspace: {}", definition.getName());
+        cm.setDefaultKeyspace(definition);
+        ObjectMapper om = cm.getObjectMapper();
+        om.setLogCql(true);
+
+        //Set up test data
+        int nDataItems = 200;
+
+        List<Map<String, Object>> values2 =  Lists.newArrayList();
+
+        // insert additional data, we are testing for counts > 50
+        for (int i=0; i < nDataItems; i++) {
+            Map<String, Object> value = Maps.newHashMap();
+            value.put("account_id","00000003-0000-0030-0040-000000030000");
+            value.put("user_id","00000003-0000-0030-0040-000000030000");
+            // Set a specific value for data we want to filter
+            if (i % 3 == 0) {
+                value.put("field2", "taco");
+            } else {
+                value.put("field2", "Value"+(i+8));
+            }
+            values2.add(value);
+        }
+
+        List<Map<String, Object>> updatedValues2 = Lists.newArrayList();
+        for(Map<String, Object> baseValue : values2) {
+            updatedValues2.add(JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2")));
+        }
+
+        Map<String, List<Map<String, Object>>> multiInsertMap = Maps.newHashMap();
+        multiInsertMap.put("object2", updatedValues2);
+
+        //Insert data
+        om.insertBatchMixed(multiInsertMap);
+
+        //Count the number of inserts we made
+        SortedMap<String, Object> indexValues = Maps.newTreeMap();
+        indexValues.put("account_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        indexValues.put("user_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        indexValues.put("field2", "taco");
+        Criteria criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(true);
+        criteria.setLimit((long)(nDataItems/3) - 10L);
+
+        //now test the count function
+        long count = om.count("object2", criteria);
+        assertEquals((nDataItems/3) - 10, count);
+    }
+
 	@Test
 	public void testMultiInsert() throws Exception {
 		logger.debug("Starting testMultiInsert");
