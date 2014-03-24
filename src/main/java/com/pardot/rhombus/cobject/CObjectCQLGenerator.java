@@ -36,6 +36,7 @@ public class CObjectCQLGenerator {
 
 	protected static final String KEYSPACE_DEFINITIONS_TABLE_NAME = "__keyspace_definitions";
 	protected static final String INDEX_UPDATES_TABLE_NAME = "__index_updates";
+    protected static final Integer MAX_CQL_STATEMENT_LIMIT = 1000;
 
 	protected static final String TEMPLATE_CREATE_STATIC = "CREATE TABLE \"%s\".\"%s\" (id %s PRIMARY KEY, %s);";
 	protected static final String TEMPLATE_CREATE_WIDE = "CREATE TABLE \"%s\".\"%s\" (id %s, shardid bigint, %s, PRIMARY KEY ((shardid, %s),id) );";
@@ -287,11 +288,13 @@ public class CObjectCQLGenerator {
 			whereQuery += " AND id <" + (inclusive ? "= " : " ") + "?";
 			values.add(end);
 		}
-		String limitCQL = "";
-        // If we have client side filters, don't apply the limit here since the limit needs to be applied on the results that match the filters
-		if(limit > 0 && !hasClientFilters){
+		String limitCQL;
+        // If we have client side filters, apply a hard max limit here since the client specified criteria limit needs to be applied on the results that match the filters
+		if(limit > 0 && !hasClientFilters && limit < CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT){
 			limitCQL = "LIMIT %d";
-		}
+		} else {
+            limitCQL = "LIMIT " + CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT;
+        }
 
         // TODO: if we feel like it's worth the trouble, for count queries with client side filters, only select the fields needed to satisfy the filters
         // note that doing so will also require modifying ObjectMapper.mapResult() so it only maps fields that exist in the row
