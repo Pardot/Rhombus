@@ -36,6 +36,7 @@ public class CObjectCQLGenerator {
 
 	protected static final String KEYSPACE_DEFINITIONS_TABLE_NAME = "__keyspace_definitions";
 	protected static final String INDEX_UPDATES_TABLE_NAME = "__index_updates";
+    protected static final Integer MAX_CQL_STATEMENT_LIMIT = 1000;
 
 	protected static final String TEMPLATE_CREATE_STATIC = "CREATE TABLE \"%s\".\"%s\" (id %s PRIMARY KEY, %s);";
 	protected static final String TEMPLATE_CREATE_WIDE = "CREATE TABLE \"%s\".\"%s\" (id %s, shardid bigint, %s, PRIMARY KEY ((shardid, %s),id) );";
@@ -262,11 +263,14 @@ public class CObjectCQLGenerator {
 				if(i.getCompositeKeyList().contains(key)) {
 					newIndexValues.put(key, indexValues.get(key));
 				} else {
+                    // Index keys will always exactly match the criteria index values if allowFiltering is false, so this only happens if allowFiltering is true
 					clientFilters.put(key, indexValues.get(key));
 				}
 			}
 			indexValues = newIndexValues;
 		}
+
+        boolean hasClientFilters = clientFilters != null && !clientFilters.isEmpty();
 
 		// Now validate the remaining index values
 		if(!i.validateIndexKeys(indexValues)){
@@ -284,14 +288,21 @@ public class CObjectCQLGenerator {
 			whereQuery += " AND id <" + (inclusive ? "= " : " ") + "?";
 			values.add(end);
 		}
-		String limitCQL = "";
-		if(limit > 0){
+		String limitCQL;
+        // If we have client side filters, apply a hard max limit here since the client specified criteria limit needs to be applied on the results that match the filters
+		if(limit > 0 && !hasClientFilters && limit < CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT){
 			limitCQL = "LIMIT %d";
-		}
+		} else {
+            limitCQL = "LIMIT " + CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT;
+        }
 
+        // TODO: if we feel like it's worth the trouble, for count queries with client side filters, only select the fields needed to satisfy the filters
+        // note that doing so will also require modifying ObjectMapper.mapResult() so it only maps fields that exist in the row
 		String CQLTemplate = String.format(
 				TEMPLATE_SELECT_WIDE,
-				countOnly ? "count(*)":"*",
+                // If this was a count query and filtering was allowed and client filters weren't defined, just do a count query because we don't need to apply filters
+                // Otherwise if this was a count query, but allowFiltering was true and we have client-side filters to apply, do a full row query so we can apply the filters
+				countOnly && !(allowFiltering && hasClientFilters) ? "count(*)":"*",
 				keyspace,
 				makeTableName(def, i),
 				"?",
