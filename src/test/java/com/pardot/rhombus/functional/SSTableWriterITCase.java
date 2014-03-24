@@ -118,7 +118,7 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
         FileUtils.deleteRecursive(new File(keyspaceName));
     }
 
-    @Test(expected=NullPointerException.class)
+    @Test
     public void testInsertingSomeNullValuesInSchema_simple() throws Exception {
         logger.debug("Starting testInsertingAllNonNullValuesInSchema");
         System.setProperty("cassandra.config", "cassandra-config/cassandra.yaml");
@@ -206,6 +206,8 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
 
         String staticTableName = staticTableNames.get(0);
         for (Map<String, Object> expected : values) {
+            // Expect to get the null "value" back
+            expected.put("value", null);
             Map<String, Object> actual = om.getByKey(staticTableName, expected.get("id"));
             assertEquals(expected, actual);
         }

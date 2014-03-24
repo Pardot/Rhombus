@@ -13,7 +13,7 @@
     </parent>
 
     <properties>
-        <guava.version>14.0.1</guava.version>
+        <guava.version>16.0.1</guava.version>
         <jackson.version>2.1.4</jackson.version>
         <hibernate.version>4.1.9.Final</hibernate.version>
         <joda.version>2.2</joda.version>
@@ -24,8 +24,8 @@
         <findbugs.version>2.0.1</findbugs.version>
         <java-driver.version>2.0.0</java-driver.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cassandra.version>2.0.5</cassandra.version>
-        <cassandra-dependency.version>2.0.5</cassandra-dependency.version>
+        <cassandra.version>2.0.6</cassandra.version>
+        <cassandra-dependency.version>2.0.6</cassandra-dependency.version>
         <cassandra-maven-plugin.version>2.0.0-1</cassandra-maven-plugin.version>
     </properties>
 
