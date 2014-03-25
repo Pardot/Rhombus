@@ -749,7 +749,9 @@ public class ObjectMapper implements CObjectShardList {
      * @throws InvalidRequestException
      */
     public void insertIntoSSTable(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, IOException, InvalidRequestException {
+        Map<String, CDefinition> definitions = this.keyspaceDefinition.getDefinitions();
         for (String tableName : objects.keySet()) {
+            CDefinition definition = definitions.get(tableName);
             // Pull an existing CQLSSTableWriter for this object type if we already have one, if not make a new one
             if (!this.SSTableWriters.containsKey(tableName)) {
                 throw new RuntimeException("Tried to write to uninitialized SSTableWriter for static table " + tableName);
@@ -760,6 +762,12 @@ public class ObjectMapper implements CObjectShardList {
             for (Map<String, Object> insert : objects.get(tableName)) {
                 staticWriter.addRow(insert);
                 for (CIndex index : indexWriters.keySet()) {
+                    if(definition.isAllowNullPrimaryKeyInserts()){
+                        //check if we have the necessary primary fields to insert on this index. If not just continue;
+                        if(!index.validateIndexKeys(index.getIndexKeyAndValues(insert))){
+                            continue;
+                        }
+                    }
                     // Add the shard id to index writes
                     insert.put("shardid", index.getShardingStrategy().getShardKey(insert.get("id")));
                     indexWriters.get(index).addRow(insert);
