@@ -145,10 +145,15 @@ public class CObjectCQLGenerator {
     @NotNull
     public CQLStatement makeCQLforInsertNoValuesforStaticTable(String objType) throws CQLGenerationException {
         CDefinition definition = this.definitions.get(objType);
-        Map<String, CField> fields = definition.getFields();
-        List<String> fieldNames = new ArrayList<String>(definition.getFields().keySet());
+        Map<String, CField> fields = Maps.newHashMap(definition.getFields());
+        Object id = null;
+        if (fields.containsKey("id")) {
+            id = fields.get("id");
+            fields.remove("id");
+        }
+        List<String> fieldNames = new ArrayList<String>(fields.keySet());
         List<String> valuePlaceholders = new ArrayList<String>(fields.keySet());
-        return makeInsertStatementStatic(this.keyspace, definition.getName(), fieldNames, valuePlaceholders, null, null, null);
+        return makeInsertStatementStatic(this.keyspace, definition.getName(), fieldNames, valuePlaceholders, id, null, null);
     }
 
     /**
@@ -159,11 +164,16 @@ public class CObjectCQLGenerator {
      */
     @NotNull
     public CQLStatement makeCQLforInsertNoValuesforWideTable(CDefinition definition, String tableName, Long shardId) throws CQLGenerationException {
-        Map<String, CField> fields = definition.getFields();
-        List<String> fieldNames = new ArrayList<String>(definition.getFields().keySet());
+        Map<String, CField> fields = Maps.newHashMap(definition.getFields());
+        Object id = null;
+        if (fields.containsKey("id")) {
+            id = fields.get("id");
+            fields.remove("id");
+        }
+        List<String> fieldNames = new ArrayList<String>(fields.keySet());
         List<Object> valuePlaceholders = new ArrayList<Object>(fields.keySet());
         shardId = (shardId == null) ? 1L : shardId;
-        return makeInsertStatementWide(this.keyspace, tableName, fieldNames, valuePlaceholders, null, shardId, null, null);
+        return makeInsertStatementWide(this.keyspace, tableName, fieldNames, valuePlaceholders, id, shardId, null, null);
     }
 
 	/**
