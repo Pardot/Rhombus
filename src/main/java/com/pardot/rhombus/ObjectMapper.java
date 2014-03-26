@@ -13,7 +13,7 @@ import com.pardot.rhombus.cobject.*;
 import com.pardot.rhombus.cobject.async.StatementIteratorConsumer;
 import com.pardot.rhombus.cobject.migrations.CKeyspaceDefinitionMigrator;
 import com.pardot.rhombus.cobject.migrations.CObjectMigrationException;
-import com.pardot.rhombus.cobject.shardingstrategy.TimebasedShardingStrategy;
+import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
 import com.pardot.rhombus.cobject.statement.BoundedCQLStatementIterator;
 import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
@@ -725,6 +725,8 @@ public class ObjectMapper implements CObjectShardList {
             throw new IOException("Failed to create SSTable keyspace output directory at " + keyspacePath);
         }
 
+        this.SSTableWriters.put(CObjectShardList.SHARD_INDEX_TABLE_NAME, Pair.create(this.buildSSTableWriterForShardIndexTable(sorted), (Map<CIndex, CQLSSTableWriter>) null));
+
         for (String defName : definitions.keySet()) {
             // Build the CQLSSTableWriter for the static table
             CQLSSTableWriter staticWriter = buildSSTableWriterForStaticTable(definitions.get(defName), sorted);
@@ -769,13 +771,55 @@ public class ObjectMapper implements CObjectShardList {
                         }
                     }
                     // Add the shard id to index writes
-                    insert.put("shardid", index.getShardingStrategy().getShardKey(insert.get("id")));
+                    long shardId = index.getShardingStrategy().getShardKey(insert.get("id"));
+                    insert.put("shardid", shardId);
                     indexWriters.get(index).addRow(insert);
                     // Pull the shardid back out to avoid the overhead of cloning the values and keep our abstraction from leaking
                     insert.remove("shardid");
+
+                    // If this index uses shards, we need to record the write into the shard index table
+                    if((!(index.getShardingStrategy() instanceof ShardingStrategyNone))){
+                        String indexValuesString = CObjectCQLGenerator.makeIndexValuesString(index.getIndexValues(insert));
+                        Map<String, Object> shardIndexInsert = Maps.newHashMap();
+                        shardIndexInsert.put("tablename", CObjectCQLGenerator.makeTableName(definition, index));
+                        shardIndexInsert.put("indexvalues", indexValuesString);
+                        shardIndexInsert.put("shardid", shardId);
+                        shardIndexInsert.put("targetrowkey", shardId+":"+indexValuesString);
+                        this.SSTableWriters.get(CObjectShardList.SHARD_INDEX_TABLE_NAME).left.addRow(shardIndexInsert);
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * Builds an SSTableWriter for a static table
+     * @param sorted Defines if the SSTableWriters created by this should be set as sorted, which improves performance if
+     *               rows are inserted in SSTable sort order, but throws exceptions if they are inserted in the wrong order.
+     * @return A CQLSSTableWriter for this static table
+     * @throws CQLGenerationException
+     * @throws IOException
+     */
+    private CQLSSTableWriter buildSSTableWriterForShardIndexTable(boolean sorted) throws CQLGenerationException, IOException {
+        // Generate CQL create syntax
+        String createCQL = this.cqlGenerator.makeCQLforShardIndexTableCreate().getQuery();
+
+        // Generate CQL insert syntax
+        String tableName = CObjectShardList.SHARD_INDEX_TABLE_NAME;
+        String insertCQL = this.cqlGenerator.makeCQLforInsertNoValuesforShardIndex(tableName).getQuery();
+
+        String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + tableName;
+        if (!new File(SSTablePath).mkdir()) {
+            throw new IOException("Failed to create new directory for SSTable writing at path: " + SSTablePath);
+        }
+
+        CQLSSTableWriter.Builder builder =
+                CQLSSTableWriter.builder()
+                        .inDirectory(SSTablePath)
+                        .forTable(createCQL)
+                        .using(insertCQL);
+        if (sorted) { builder = builder.sorted(); }
+        return builder.build();
     }
 
     /**
@@ -860,14 +904,18 @@ public class ObjectMapper implements CObjectShardList {
             // Close all SSTableWriters
             this.SSTableWriters.get(tableName).left.close();
             this.clearSSTableDirectoryIfEmpty(tableName);
-            for (CQLSSTableWriter indexWriter : this.SSTableWriters.get(tableName).right.values()) {
-                indexWriter.close();
-            }
-            // Clear out empty SSTable directories that haven't been written to
-            CDefinition def = definitions.get(tableName);
-            List<CIndex> indexes = def.getIndexesAsList();
-            for (CIndex index : indexes) {
-                this.clearSSTableDirectoryIfEmpty(CObjectCQLGenerator.makeTableName(def, index));
+
+            Map<CIndex, CQLSSTableWriter> indexWriters = this.SSTableWriters.get(tableName).right;
+            if (indexWriters != null) {
+                for (CQLSSTableWriter indexWriter : indexWriters.values()) {
+                    indexWriter.close();
+                }
+                // Clear out empty SSTable directories that haven't been written to
+                CDefinition def = definitions.get(tableName);
+                List<CIndex> indexes = def.getIndexesAsList();
+                for (CIndex index : indexes) {
+                    this.clearSSTableDirectoryIfEmpty(CObjectCQLGenerator.makeTableName(def, index));
+                }
             }
         }
     }

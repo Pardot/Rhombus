@@ -9,14 +9,12 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
-import com.google.common.collect.Sets;
 import com.pardot.rhombus.Criteria;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardStrategyException;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
 import com.pardot.rhombus.cobject.statement.*;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,10 +143,15 @@ public class CObjectCQLGenerator {
     @NotNull
     public CQLStatement makeCQLforInsertNoValuesforStaticTable(String objType) throws CQLGenerationException {
         CDefinition definition = this.definitions.get(objType);
-        Map<String, CField> fields = definition.getFields();
-        List<String> fieldNames = new ArrayList<String>(definition.getFields().keySet());
+        Map<String, CField> fields = Maps.newHashMap(definition.getFields());
+        Object id = null;
+        if (fields.containsKey("id")) {
+            id = fields.get("id");
+            fields.remove("id");
+        }
+        List<String> fieldNames = new ArrayList<String>(fields.keySet());
         List<String> valuePlaceholders = new ArrayList<String>(fields.keySet());
-        return makeInsertStatementStatic(this.keyspace, definition.getName(), fieldNames, valuePlaceholders, null, null, null);
+        return makeInsertStatementStatic(this.keyspace, definition.getName(), fieldNames, valuePlaceholders, id, null, null);
     }
 
     /**
@@ -159,11 +162,33 @@ public class CObjectCQLGenerator {
      */
     @NotNull
     public CQLStatement makeCQLforInsertNoValuesforWideTable(CDefinition definition, String tableName, Long shardId) throws CQLGenerationException {
-        Map<String, CField> fields = definition.getFields();
-        List<String> fieldNames = new ArrayList<String>(definition.getFields().keySet());
+        Map<String, CField> fields = Maps.newHashMap(definition.getFields());
+        Object id = null;
+        if (fields.containsKey("id")) {
+            id = fields.get("id");
+            fields.remove("id");
+        }
+        List<String> fieldNames = new ArrayList<String>(fields.keySet());
         List<Object> valuePlaceholders = new ArrayList<Object>(fields.keySet());
         shardId = (shardId == null) ? 1L : shardId;
-        return makeInsertStatementWide(this.keyspace, tableName, fieldNames, valuePlaceholders, null, shardId, null, null);
+        return makeInsertStatementWide(this.keyspace, tableName, fieldNames, valuePlaceholders, id, shardId, null, null);
+    }
+
+    /**
+     * @param tableName - The name of the wide table to insert into
+     * @return CQL insert statement
+     * @throws CQLGenerationException
+     */
+    @NotNull
+    public CQLStatement makeCQLforInsertNoValuesforShardIndex(String tableName) throws CQLGenerationException {
+        return CQLStatement.make(
+                String.format(
+                        TEMPLATE_INSERT_WIDE_INDEX,
+                        keyspace,
+                        tableName
+                ),
+                tableName,
+                null);
     }
 
 	/**
