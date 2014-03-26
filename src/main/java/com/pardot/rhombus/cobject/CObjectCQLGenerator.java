@@ -9,14 +9,12 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
-import com.google.common.collect.Sets;
 import com.pardot.rhombus.Criteria;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardStrategyException;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
 import com.pardot.rhombus.cobject.statement.*;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,6 +172,23 @@ public class CObjectCQLGenerator {
         List<Object> valuePlaceholders = new ArrayList<Object>(fields.keySet());
         shardId = (shardId == null) ? 1L : shardId;
         return makeInsertStatementWide(this.keyspace, tableName, fieldNames, valuePlaceholders, id, shardId, null, null);
+    }
+
+    /**
+     * @param tableName - The name of the wide table to insert into
+     * @return CQL insert statement
+     * @throws CQLGenerationException
+     */
+    @NotNull
+    public CQLStatement makeCQLforInsertNoValuesforShardIndex(String tableName) throws CQLGenerationException {
+        return CQLStatement.make(
+                String.format(
+                        TEMPLATE_INSERT_WIDE_INDEX,
+                        keyspace,
+                        tableName
+                ),
+                tableName,
+                null);
     }
 
 	/**

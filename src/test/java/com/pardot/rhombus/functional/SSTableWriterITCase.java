@@ -119,6 +119,46 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
             assertEquals(expected, actual);
         }
 
+        Map<String, Map<String, Object>> indexedExpected = Maps.uniqueIndex(values, new Function<Map<String, Object>,String>() {
+            public String apply(Map<String, Object> input) {
+                return input.get("id").toString();
+            }});
+        // Confirm get by index_1 query
+        SortedMap<String, Object> indexValues = Maps.newTreeMap();
+        indexValues.put("index_1", "index1");
+        Criteria criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setLimit(50L);
+        List<Map<String, Object>> results = om.list(testUniqueTableName, criteria);
+        Map<String, Map<String, Object>> indexedResults;
+        indexedResults = Maps.uniqueIndex(results, new Function<Map<String, Object>, String>() {
+            public String apply(Map<String, Object> input) {
+                return input.get("id").toString();
+            }
+        });
+        Map<String, Map<String, Object>> indexedExpected1 = Maps.newHashMap(indexedExpected);
+        // Index_1 test data doesn't include value 4
+        indexedExpected1.remove("864f1400-2a7e-11b2-8080-808080808080");
+        assertEquals(indexedExpected1, indexedResults);
+
+        // Confirm get by index_2 query
+        indexValues = Maps.newTreeMap();
+        indexValues.put("index_2", "index2");
+        criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setLimit(50L);
+        results = om.list(testUniqueTableName, criteria);
+
+        indexedResults = Maps.uniqueIndex(results, new Function<Map<String, Object>,String>() {
+            public String apply(Map<String, Object> input) {
+                return input.get("id").toString();
+            }});
+
+        Map<String, Map<String, Object>> indexedExpected2 = Maps.newHashMap(indexedExpected);
+        // Index_2 test data doesn't include value 3
+        indexedExpected2.remove("80593300-2a7e-11b2-8080-808080808080");
+        assertEquals(indexedExpected2, indexedResults);
+
         // Clean up the SSTable directories after ourselves
         FileUtils.deleteRecursive(new File(keyspaceName));
     }
@@ -217,6 +257,46 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
             assertEquals(expected, actual);
         }
 
+        Map<String, Map<String, Object>> indexedExpected = Maps.uniqueIndex(values, new Function<Map<String, Object>,String>() {
+            public String apply(Map<String, Object> input) {
+                return input.get("id").toString();
+            }});
+        // Confirm get by index_1 query
+        SortedMap<String, Object> indexValues = Maps.newTreeMap();
+        indexValues.put("index_1", "index1");
+        Criteria criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setLimit(50L);
+        List<Map<String, Object>> results = om.list(testUniqueTableName, criteria);
+        Map<String, Map<String, Object>> indexedResults;
+        indexedResults = Maps.uniqueIndex(results, new Function<Map<String, Object>, String>() {
+            public String apply(Map<String, Object> input) {
+                return input.get("id").toString();
+            }
+        });
+        Map<String, Map<String, Object>> indexedExpected1 = Maps.newHashMap(indexedExpected);
+        // Index_1 test data doesn't include value 4
+        indexedExpected1.remove("864f1400-2a7e-11b2-8080-808080808080");
+        assertEquals(indexedExpected1, indexedResults);
+
+        // Confirm get by index_2 query
+        indexValues = Maps.newTreeMap();
+        indexValues.put("index_2", "index2");
+        criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setLimit(50L);
+        results = om.list(testUniqueTableName, criteria);
+
+        indexedResults = Maps.uniqueIndex(results, new Function<Map<String, Object>,String>() {
+            public String apply(Map<String, Object> input) {
+                return input.get("id").toString();
+            }});
+
+        Map<String, Map<String, Object>> indexedExpected2 = Maps.newHashMap(indexedExpected);
+        // Index_2 test data doesn't include value 3
+        indexedExpected2.remove("80593300-2a7e-11b2-8080-808080808080");
+        assertEquals(indexedExpected2, indexedResults);
+
         // Clean up the SSTable directories after ourselves
         FileUtils.deleteRecursive(new File(keyspaceName));
     }
@@ -306,12 +386,46 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
         }
 
         String staticTableName = staticTableNames.get(0);
+        // Confirm get by id query
         for (Map<String, Object> expected : values) {
             // Expect to get the null "value" back
             expected.put("index_1", null);
             Map<String, Object> actual = om.getByKey(staticTableName, expected.get("id"));
             assertEquals(expected, actual);
         }
+
+        // Index expected data by the value, which we will use as a faux index for testing
+        Map<String, Map<String, Object>> indexedExpected = Maps.uniqueIndex(values, new Function<Map<String, Object>,String>() {
+            public String apply(Map<String, Object> input) {
+                return input.get("value").toString();
+            }});
+        // Confirm get by index_1 query
+        SortedMap<String, Object> indexValues = Maps.newTreeMap();
+        indexValues.put("index_1", "index1");
+        Criteria criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setLimit(50L);
+        List<Map<String, Object>> results = om.list(testUniqueTableName, criteria);
+        assertEquals("Index 1 values were null for this test, query on index 1 should return 0 results", 0, results.size());
+
+        // Confirm get by index_2 query
+        indexValues = Maps.newTreeMap();
+        indexValues.put("index_2", "index2");
+        criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setLimit(50L);
+        results = om.list(testUniqueTableName, criteria);
+
+        // Index results by the value, which we will use as a faux index for testing
+        Map<String, Map<String, Object>> indexedResults = Maps.uniqueIndex(results, new Function<Map<String, Object>,String>() {
+            public String apply(Map<String, Object> input) {
+                return input.get("value").toString();
+            }});
+
+        Map<String, Map<String, Object>> indexedExpected1 = Maps.newHashMap(indexedExpected);
+        // Index_2 test data doesn't include value 3
+        indexedExpected1.remove("value3");
+        assertEquals(indexedExpected1, indexedResults);
 
         // Clean up the SSTable directories after ourselves
         FileUtils.deleteRecursive(new File(keyspaceName));
