@@ -779,11 +779,9 @@ public class ObjectMapper implements CObjectShardList {
 
                     // If this index uses shards, we need to record the write into the shard index table
                     if((!(index.getShardingStrategy() instanceof ShardingStrategyNone))){
-                        List<Object> indexValues = index.getIndexValues(insert);
-                        String indexValuesString = CObjectCQLGenerator.makeIndexValuesString(indexValues);
-                        String indexTableName = CObjectCQLGenerator.makeTableName(definition, index);
+                        String indexValuesString = CObjectCQLGenerator.makeIndexValuesString(index.getIndexValues(insert));
                         Map<String, Object> shardIndexInsert = Maps.newHashMap();
-                        shardIndexInsert.put("tablename", indexTableName);
+                        shardIndexInsert.put("tablename", CObjectCQLGenerator.makeTableName(definition, index));
                         shardIndexInsert.put("indexvalues", indexValuesString);
                         shardIndexInsert.put("shardid", shardId);
                         shardIndexInsert.put("targetrowkey", shardId+":"+indexValuesString);
