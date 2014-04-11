@@ -1,9 +1,7 @@
 package com.pardot.rhombus.util;
 
-import com.datastax.driver.core.utils.UUIDs;
-
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
+import java.nio.ByteOrder;
 import java.util.UUID;
 
 /**
@@ -27,43 +25,64 @@ import java.util.UUID;
  "a" / "b" / "c" / "d" / "e" / "f" /
  "A" / "B" / "C" / "D" / "E" / "F"
 
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                          time_low                             |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |       time_mid                |         time_hi_and_version   |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |clk_seq_hi_res |  clk_seq_low  |         node (0-1)            |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                         node (2-5)                            |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+ time-low "-" time-mid "-" time-high-and-version "-" clock-seq-and-reserved + clock-seq-low "-" node
+
  */
 public class UuidUtil {
 
 	/**
 	 * Generate a type 3 namespace uuid from an integer namespace and name
+     * Our primary objective is to store and retrieve our name and namespace, and we don't care about collisions,
+     * so we'll just shove the name and namespace values straight in rather than hashing them
+     *
+     * We will allow 4 bytes for the namespace and 8 bytes for the name. To avoid conflicts with reserved
+     * version/variant bits, we will put the namespace data in the time_low field, 6 least significant bytes of the name data
+     * in the node field, and the remaining 2 most significant name bytes in time_mid
+     *
 	 * @param namespace Integer representing the namespace
-	 * @param name Integer representing the name
+	 * @param name Long representing the name
 	 * @return Type 3 UUID built from the namespace and name
 	 */
-	public static UUID namespaceUUID(Integer namespace, Integer name) {
-		//Put our namespace and name into a bytebuffer
-		ByteBuffer nameBuffer = ByteBuffer.allocate(8);
-		nameBuffer.putInt(namespace);
-		nameBuffer.putInt(name);
-
+	public static UUID namespaceUUID(Integer namespace, Long name) {
 		//Create our msb and lsb return buffers
 		ByteBuffer msb = ByteBuffer.allocate(8);
+        msb.order(ByteOrder.BIG_ENDIAN);
 		ByteBuffer lsb = ByteBuffer.allocate(8);
+        msb.order(ByteOrder.BIG_ENDIAN);
 
-		//Set octets 0-3 of time_low to octets 0-3 of namespace+name
-		msb.put(0, nameBuffer.get(0));
-		msb.put(1, nameBuffer.get(1));
-		msb.put(2, nameBuffer.get(2));
-		msb.put(3, nameBuffer.get(3));
+        // Insert the 4 byte namespace into the time_low field
+        msb.putInt(0, namespace);
 
-		//Set the four most significant bits of the time_hi_and_version field to the 4 bit version number
-		//(00110000 = 48)
-		msb.put(7, (byte) 48);
+        // Slice off the most significant two bytes of name
+        char nameHigh = (char)(name >>> 48);
+        // Push the 2 MSB bytes of name into the time_mid field
+        msb.putChar(4, nameHigh);
 
-		//Set octets 0-3 of the node field to octets 4-7 of namespace+name
-		lsb.put(2, nameBuffer.get(4));
-		lsb.put(3, nameBuffer.get(5));
-		lsb.put(4, nameBuffer.get(6));
-		lsb.put(5, nameBuffer.get(7));
+        //Set the four most significant bits of the time_hi_and_version field to the 4 bit version number
+        //(00110000 = 48)
+        msb.put(7, (byte) 48);
 
-		//Set the two most significant bits to 01 (01000000 = 64)
-		lsb.put(1, (byte)64);
+        // Grab the least significant six bytes of name
+        char nameMid = (char)(name >>> 32);
+        int nameLow = (int)(long)name;
+        // Shove them into the node field
+        lsb.putChar(2, nameMid);
+        lsb.putInt(4, nameLow);
+
+        //Set the two most significant bits to 01 (01000000 = 64)
+        lsb.put(0, (byte)64);
 
 		return new UUID(msb.getLong(), lsb.getLong());
 	}
@@ -74,15 +93,7 @@ public class UuidUtil {
 	 * @return Namespace retrieved from the UUID
 	 */
 	public static Integer namespaceFromUUID(UUID uuid) {
-		ByteBuffer msb = ByteBuffer.allocate(8);
-		msb.putLong(uuid.getMostSignificantBits());
-		ByteBuffer namespace = ByteBuffer.allocate(4);
-		namespace.put(0, msb.get(0));
-		namespace.put(1, msb.get(1));
-		namespace.put(2, msb.get(2));
-		namespace.put(3, msb.get(3));
-
-		return namespace.getInt();
+        return (int)(uuid.getMostSignificantBits() >>> 32);
 	}
 
 	/**
@@ -90,16 +101,10 @@ public class UuidUtil {
 	 * @param uuid UUID generated using
 	 * @return Name retrieved from the UUID
 	 */
-	public static Integer nameFromUUID(UUID uuid) {
-		ByteBuffer lsb = ByteBuffer.allocate(8);
-		lsb.putLong(uuid.getLeastSignificantBits());
-		ByteBuffer name = ByteBuffer.allocate(4);
-		name.put(0, lsb.get(2));
-		name.put(1, lsb.get(3));
-		name.put(2, lsb.get(4));
-		name.put(3, lsb.get(5));
-
-		return name.getInt();
+	public static Long nameFromUUID(UUID uuid) {
+        char msb = (char)((uuid.getMostSignificantBits() >>> 16) & 0xffff);
+        long out = uuid.getLeastSignificantBits() & 0xffffffffffffL;
+        return out | ((long)msb << 48);
 	}
 
 

@@ -16,11 +16,50 @@ public class UuidUtilTest {
 	@Test
 	public void testUuidUtil() {
 		int namespace = 47;
-		int name = 722338;
+		long name = 722338;
 		UUID namespaceUuid = UuidUtil.namespaceUUID(namespace, name);
 
-		assertEquals(UuidUtil.namespaceFromUUID(namespaceUuid).intValue(), namespace);
-		assertEquals(UuidUtil.nameFromUUID(namespaceUuid).intValue(), name);
-
+        assertEquals(namespace, UuidUtil.namespaceFromUUID(namespaceUuid).intValue());
+        assertEquals(name, UuidUtil.nameFromUUID(namespaceUuid).longValue());
 	}
+
+    @Test
+    public void testMaxValues() {
+        int namespace = 0xffffffff;
+        long name = 0xffffffffffffffffL;
+        UUID namespaceUuid = UuidUtil.namespaceUUID(namespace, name);
+
+        assertEquals(namespace, UuidUtil.namespaceFromUUID(namespaceUuid).intValue());
+        assertEquals(name, UuidUtil.nameFromUUID(namespaceUuid).longValue());
+    }
+
+    @Test
+    public void testMinValues() {
+        int namespace = 1;
+        long name = 1;
+        UUID namespaceUuid = UuidUtil.namespaceUUID(namespace, name);
+
+        assertEquals(namespace, UuidUtil.namespaceFromUUID(namespaceUuid).intValue());
+        assertEquals(name, UuidUtil.nameFromUUID(namespaceUuid).longValue());
+    }
+
+    @Test
+    public void testNonUniformValues() {
+        int namespace = 0x12345678;
+        long name = 0x1234567890ABCDEFL;
+        UUID namespaceUuid = UuidUtil.namespaceUUID(namespace, name);
+
+        assertEquals(namespace, UuidUtil.namespaceFromUUID(namespaceUuid).intValue());
+        assertEquals(name, UuidUtil.nameFromUUID(namespaceUuid).longValue());
+    }
+
+    @Test
+    public void testNonUniformValuesInTheOtherDirection() {
+        int namespace = 0x87654321;
+        long name = 0xFEDCBA0987654321L;
+        UUID namespaceUuid = UuidUtil.namespaceUUID(namespace, name);
+
+        assertEquals(namespace, UuidUtil.namespaceFromUUID(namespaceUuid).intValue());
+        assertEquals(name, UuidUtil.nameFromUUID(namespaceUuid).longValue());
+    }
 }
