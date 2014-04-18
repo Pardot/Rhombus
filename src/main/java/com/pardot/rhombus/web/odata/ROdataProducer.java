@@ -19,13 +19,13 @@ import java.util.*;
  * ReadOnly ODataProducer for Rhombus
  * Created by robrighter on 4/18/14.
  */
-public class ROdataProducer implements ODataProducer {
+public class RODataProducer implements ODataProducer {
 
 	protected ObjectMapper objectMapper;
 	protected EdmDataServices metadata;
 	protected NotFoundException.Factory notFoundFactory;
 
-	public ROdataProducer(ObjectMapper objectMapper){
+	public RODataProducer(ObjectMapper objectMapper){
 		this.objectMapper = objectMapper;
 		notFoundFactory = new NotFoundException.Factory();
 		this.metadata = this.makeOdataSchemaFromRhombusKeyspace(objectMapper.getKeyspaceDefinition());
