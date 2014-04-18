@@ -151,7 +151,7 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		cm.teardown();
 		cm = getConnectionManager();
 		ObjectMapper defObjectMapper = cm.getObjectMapper(definition);
-		assertEquals(definition, defObjectMapper.getKeyspaceDefinition_ONLY_FOR_TESTING());
+		assertEquals(definition, defObjectMapper.getKeyspaceDefinition());
 	}
 
 	@Test
@@ -184,7 +184,7 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		assertNotEquals(definition, definition2);
 
 		ObjectMapper om = cm.getObjectMapper(definition2);
-		CKeyspaceDefinition omDef = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
+		CKeyspaceDefinition omDef = om.getKeyspaceDefinition();
 		assertEquals(definition, omDef);
 	}
 
@@ -210,7 +210,7 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		cm = getConnectionManager();
 
 		ObjectMapper om = cm.getObjectMapper(definition.getName());
-		CKeyspaceDefinition rhombusStorageKeyspaceDefinition = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
+		CKeyspaceDefinition rhombusStorageKeyspaceDefinition = om.getKeyspaceDefinition();
 		assertEquals(definition, rhombusStorageKeyspaceDefinition);
 	}
 
@@ -258,13 +258,13 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 
 		//make sure that our keyspace definitions do not match
 		assertNotEquals(NewKeyspaceDefinition, cm.hydrateLatestKeyspaceDefinitionFromCassandra(NewKeyspaceDefinition.getName()));
-		assertNotEquals(NewKeyspaceDefinition, om.getKeyspaceDefinition_ONLY_FOR_TESTING());
+		assertNotEquals(NewKeyspaceDefinition, om.getKeyspaceDefinition());
 
 		//run the migration
 		cm.runMigration(NewKeyspaceDefinition, true);
 
 		//make sure that the object mapper has the new keyspace definition
-		CKeyspaceDefinition updatedKeyspaceDefinition = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
+		CKeyspaceDefinition updatedKeyspaceDefinition = om.getKeyspaceDefinition();
 		assertEquals(NewKeyspaceDefinition, updatedKeyspaceDefinition);
 
 		//make sure that the new keyspace definition has been stored in the rhombus metadata store

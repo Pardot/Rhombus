@@ -40,7 +40,7 @@ public class RhombusCliITCase extends RhombusFunctionalTest {
 		//now verify that the keyspace was created and is working
 		ConnectionManager cm = getConnectionManager();
 		ObjectMapper om = cm.getObjectMapper("clifunctional");
-		CKeyspaceDefinition keyspace = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
+		CKeyspaceDefinition keyspace = om.getKeyspaceDefinition();
 		assertEquals("clifunctional", keyspace.getName());
 		assertEquals(3, keyspace.getDefinitions().get("clitest").getFields().size());
 		assertEquals(2, keyspace.getDefinitions().get("clitest").getIndexes().size());
@@ -61,7 +61,7 @@ public class RhombusCliITCase extends RhombusFunctionalTest {
 		//now verify that the keyspace was created and is working
 		ConnectionManager cm = getConnectionManager();
 		ObjectMapper om = cm.getObjectMapper("clifunctional");
-		CKeyspaceDefinition keyspace = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
+		CKeyspaceDefinition keyspace = om.getKeyspaceDefinition();
 		assertEquals("clifunctional", keyspace.getName());
 		assertEquals(3, keyspace.getDefinitions().get("clitest").getFields().size());
 		assertEquals(2, keyspace.getDefinitions().get("clitest").getIndexes().size());
@@ -78,7 +78,7 @@ public class RhombusCliITCase extends RhombusFunctionalTest {
 		//now verify that the keyspace was migrated and is working
 		cm = getConnectionManager();
 		om = cm.getObjectMapper("clifunctional");
-		keyspace = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
+		keyspace = om.getKeyspaceDefinition();
 		assertEquals("clifunctional", keyspace.getName());
 		assertEquals(3, keyspace.getDefinitions().get("clitest").getFields().size());
 		assertEquals(3, keyspace.getDefinitions().get("clitest").getIndexes().size());
@@ -100,7 +100,7 @@ public class RhombusCliITCase extends RhombusFunctionalTest {
 		//now verify that the keyspace was created and is working
 		ConnectionManager cm = getConnectionManager();
 		ObjectMapper om = cm.getObjectMapper("clifunctional");
-		CKeyspaceDefinition keyspace = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
+		CKeyspaceDefinition keyspace = om.getKeyspaceDefinition();
 		assertEquals("clifunctional", keyspace.getName());
 		assertEquals(3, keyspace.getDefinitions().get("clitest").getFields().size());
 		assertEquals(2, keyspace.getDefinitions().get("clitest").getIndexes().size());

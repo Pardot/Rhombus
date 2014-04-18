@@ -27,6 +27,7 @@
         <cassandra.version>2.0.6</cassandra.version>
         <cassandra-dependency.version>2.0.6</cassandra-dependency.version>
         <cassandra-maven-plugin.version>2.0.0-1</cassandra-maven-plugin.version>
+        <odata.version>0.7.0</odata.version>
     </properties>
 
     <licenses>
@@ -128,6 +129,18 @@
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
             <version>${javax-validation.version}</version>
+        </dependency>
+
+        <!-- odata -->
+        <dependency>
+            <groupId>org.odata4j</groupId>
+            <artifactId>odata4j-core</artifactId>
+            <version>${odata.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.odata4j</groupId>
+            <artifactId>odata4j-jersey</artifactId>
+            <version>${odata.version}</version>
         </dependency>
 
         <!-- Cassandra java driver -->

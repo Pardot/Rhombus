@@ -45,7 +45,7 @@ public class AsyncSpeedITCase extends RhombusFunctionalTest {
 		cm.buildKeyspace(definition, true);
 		cm.setDefaultKeyspace(definition);
 		ObjectMapper om = cm.getObjectMapper();
-		CDefinition def1 = om.getKeyspaceDefinition_ONLY_FOR_TESTING().getDefinitions().get("testtype");
+		CDefinition def1 = om.getKeyspaceDefinition().getDefinitions().get("testtype");
 
 
 		//do an insert on an object
@@ -85,7 +85,7 @@ public class AsyncSpeedITCase extends RhombusFunctionalTest {
 		cm.buildKeyspace(definition, true);
 		cm.setDefaultKeyspace(definition);
 		om = cm.getObjectMapper();
-		def1 = om.getKeyspaceDefinition_ONLY_FOR_TESTING().getDefinitions().get("testtype");
+		def1 = om.getKeyspaceDefinition().getDefinitions().get("testtype");
 
 
 		//insert async

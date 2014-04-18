@@ -972,11 +972,7 @@ public class ObjectMapper implements CObjectShardList {
 		return cqlGenerator;
 	}
 
-	public CKeyspaceDefinition getKeyspaceDefinition_ONLY_FOR_TESTING(){
-		return keyspaceDefinition;
-	}
-
-	protected CKeyspaceDefinition getKeyspaceDefinition() {
+	public CKeyspaceDefinition getKeyspaceDefinition() {
 		return keyspaceDefinition;
 	}
 

@@ -47,7 +47,7 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		ObjectMapper om = cm.getObjectMapper();
 		om.truncateTables();
 
-		CDefinition def1 = om.getKeyspaceDefinition_ONLY_FOR_TESTING().getDefinitions().get("testtype");
+		CDefinition def1 = om.getKeyspaceDefinition().getDefinitions().get("testtype");
 		//do an insert on an object
 		Map<String, Object> testObject = Maps.newTreeMap();
 		testObject.put("foreignid", Long.valueOf(100));
