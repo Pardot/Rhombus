@@ -129,7 +129,7 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 
 		//now run the processor
 		UpdateProcessor up = new UpdateProcessor(om);
-		up.process();
+		up.process(9999L);
 
 		//verify that the object is no longer present in the invalid indexes
 
@@ -311,10 +311,9 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		ObjectMapper om = cm.getObjectMapper();
 		om.truncateTables();
 
-		CDefinition def1 = om.getKeyspaceDefinition_ONLY_FOR_TESTING().getDefinitions().get("testtype");
 		//do an insert on an object
 		Map<String, Object> testObject = Maps.newTreeMap();
-		testObject.put("foreignid", null);
+		testObject.put("foreignid", null); //null index value
 		testObject.put("type", Integer.valueOf(101));
 		testObject.put("instance", Long.valueOf(102));
 		testObject.put("filtered", Integer.valueOf(103));
@@ -324,97 +323,45 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 
 		UUID key = (UUID)om.insert("testtype", testObject);
 
-		testObject.put("foreignid", Long.valueOf(200));
-		testObject.put("type", Integer.valueOf(201));
-		testObject.put("instance", Long.valueOf(202));
-		testObject.put("filtered", Integer.valueOf(203));
+		//now update with a value for foreignid and make another index value (instance) be null
+		testObject = Maps.newTreeMap();
+		testObject.put("foreignid", 77L);
+		testObject.put("instance", null);
+		om.update("testtype",key,testObject);
 
-		//manually insert that object incorrectly into other indexes
-		List<CQLStatement> insertStatements = Lists.newArrayList();
-		for(CIndex i : def1.getIndexes().values()){
-			om.getCqlGenerator_ONLY_FOR_TESTING().addCQLStatmentsForIndexInsert(
-					keyspace,
-					true,
-					insertStatements,
-					def1,
-					testObject,
-					i,
-					key,
-					om.getCqlGenerator_ONLY_FOR_TESTING().makeFieldAndValueList(def1, testObject), null, null);
-		}
-		for(CQLStatement s: insertStatements){
-			om.getCqlExecutor().executeSync(s);
-		}
+		//now reverse it
+		testObject = Maps.newTreeMap();
+		testObject.put("foreignid", null);
+		testObject.put("instance", 77L);
+		om.update("testtype",key,testObject);
 
-		//manually record those incorrect values in the update table
-		CQLStatement cql = om.getCqlGenerator_ONLY_FOR_TESTING().makeInsertUpdateIndexStatement(
-				keyspace,
-				def1,
-				key, def1.makeIndexValues(testObject));
-		om.getCqlExecutor().executeSync(cql);
+		//now back again (the update processor needs to see multiple updates to hit a process case.
+		testObject = Maps.newTreeMap();
+		testObject.put("foreignid", 77L);
+		testObject.put("instance", null);
+		om.update("testtype",key,testObject);
 
-		//now manually record an update back to the original in the update table to simulate an eventual consistency issue
-		Map<String, Object> testObjectOriginal = Maps.newTreeMap();
-		testObjectOriginal.put("foreignid", Long.valueOf(100));
-		testObjectOriginal.put("type", Integer.valueOf(101));
-		testObjectOriginal.put("instance", Long.valueOf(102));
-		testObjectOriginal.put("filtered", Integer.valueOf(103));
-		testObjectOriginal.put("data1", "This is data 1");
-		testObjectOriginal.put("data2", "This is data 2");
-		testObjectOriginal.put("data3", "This is data 3");
-		cql = om.getCqlGenerator_ONLY_FOR_TESTING().makeInsertUpdateIndexStatement(
-				definition.getName(),
-				def1,
-				key, def1.makeIndexValues(testObjectOriginal));
-		om.getCqlExecutor().executeSync(cql);
+		//now back again (the update processor needs to see multiple updates to hit a process case.
+		testObject = Maps.newTreeMap();
+		testObject.put("foreignid", 77L);
+		testObject.put("instance", null);
+		om.update("testtype",key,testObject);
 
-		//verify that the object returns different values in the static table and on those (or some of those) indexes
-		Map<String, Object> staticTableObject = om.getByKey("testtype", key);
-		assertEquals(100L,staticTableObject.get("foreignid"));
-		assertEquals(101,staticTableObject.get("type"));
-		assertEquals(103,staticTableObject.get("filtered"));
-		assertEquals("This is data 1",staticTableObject.get("data1"));
-
-		Criteria criteria = new Criteria();
-		SortedMap<String,Object> values = Maps.newTreeMap();
-		values.put("foreignid", Long.valueOf(200L));
-		criteria.setIndexKeys(values);
-		criteria.setLimit(0L);
-		List<Map<String, Object>> indexObjects = om.list("testtype", criteria);
-		assertEquals(1, indexObjects.size());
-		assertEquals(staticTableObject.get("data1"),indexObjects.get(0).get("data1"));
-		assertEquals(200L,indexObjects.get(0).get("foreignid"));
-		assertEquals(201,indexObjects.get(0).get("type"));
-		assertEquals(203,indexObjects.get(0).get("filtered"));
-
-
-		//wait for consistency
-		Thread.sleep(3000);
+		Thread.sleep(3500);
 
 		//now run the processor
 		UpdateProcessor up = new UpdateProcessor(om);
-		up.process();
-
-		//verify that the object is no longer present in the invalid indexes
-
-		//Should be missing from the bad index
-		criteria = new Criteria();
-		values = Maps.newTreeMap();
-		values.put("foreignid", Long.valueOf(200));
-		criteria.setIndexKeys(values);
-		criteria.setLimit(0L);
-		indexObjects = om.list("testtype", criteria);
-		assertEquals(0, indexObjects.size());
+		up.process(9999L);
 
 		//But is should be present in the correct index
-		criteria = new Criteria();
-		values = Maps.newTreeMap();
-		values.put("foreignid", Long.valueOf(100));
+		Criteria criteria = new Criteria();
+		SortedMap<String,Object> values = Maps.newTreeMap();
+		values.put("foreignid", Long.valueOf(77));
 		criteria.setIndexKeys(values);
-		indexObjects = om.list("testtype", criteria);
+		List<Map<String,Object>> indexObjects = om.list("testtype", criteria);
 		assertEquals(1, indexObjects.size());
-		assertEquals(staticTableObject.get("data1"),indexObjects.get(0).get("data1"));
-		assertEquals(100L,indexObjects.get(0).get("foreignid"));
+		assertEquals(null,indexObjects.get(0).get("instance"));
+		assertEquals(77L,indexObjects.get(0).get("foreignid"));
 		assertEquals(101,indexObjects.get(0).get("type"));
 		assertEquals(103,indexObjects.get(0).get("filtered"));
 	}
