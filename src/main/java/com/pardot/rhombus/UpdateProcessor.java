@@ -145,7 +145,6 @@ public class UpdateProcessor {
 
 	}
 
-	//todo add unit test
 	protected boolean areAnyValuesNull(Map<String,Object> indexValues){
 		for(String key : indexValues.keySet()){
 			if(indexValues.get(key) == null){
@@ -155,7 +154,6 @@ public class UpdateProcessor {
 		return false;
 	}
 
-	//todo add unit test
 	protected List<CIndex> getListOfEffectedIndexes(CDefinition def, Map<String,Object> a, Map<String,Object> b){
 		List<CIndex> ret = Lists.newArrayList();
 		for(CIndex i: def.getIndexesAsList()){
@@ -168,7 +166,6 @@ public class UpdateProcessor {
 		return ret;
 	}
 
-	//todo add unit test
 	protected boolean areIndexValuesEqual(Map<String,Object> a, Map<String,Object> b){
 		if(a.keySet().size() != b.keySet().size()){
 			return false;
