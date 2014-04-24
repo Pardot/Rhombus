@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -32,4 +33,23 @@ public class CriteriaTest {
 		logger.debug(criteria.toString());
 		assertNotNull(criteria.toString());
 	}
+
+    @Test
+    public void testSetUuid()
+    {
+        String uuid ="d0ae51f2-c962-11e3-b108-e1447cd109cf";
+
+        UUID uuidE = UUID.fromString(uuid);
+        long uuidL = uuidE.timestamp();
+
+        Criteria criteria = new Criteria();
+        criteria.setEndTimestamp(uuidL);
+        UUID actual = criteria.getEndUuid();
+
+
+
+        //UUIDs.unixTimestamp(UUID.fromString(uuid))
+
+    }
+
 }

@@ -648,11 +648,205 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
         Criteria criteria = new Criteria();
         criteria.setIndexKeys(indexValues);
         criteria.setAllowFiltering(true);
-        criteria.setLimit((long)(nDataItems/3) - 10L);
+        criteria.setLimit((long) (nDataItems / 3) - 10L);
 
         //now test the count function
         long count = om.count("object2", criteria);
         assertEquals((nDataItems/3) - 10, count);
+    }
+      
+    @Test
+    public void testStartEndUuidsInCriteria() throws Exception {
+        logger.debug("Starting testLargeCountWithStartEndUuidsInCriteria");
+        //Build the connection manager
+        ConnectionManager cm = getConnectionManager();
+
+        //Build our keyspace definition object
+        CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "MultiInsertKeyspace.js");
+        assertNotNull(definition);
+
+        //Rebuild the keyspace and get the object mapper
+        cm.buildKeyspace(definition, true);
+        logger.debug("Built keyspace: {}", definition.getName());
+        cm.setDefaultKeyspace(definition);
+        ObjectMapper om = cm.getObjectMapper();
+        om.setLogCql(true);
+
+        //Set up test data
+        // we will insert 200 objects
+        int nDataItems = 200;
+
+        List<Map<String, Object>> values2 =  Lists.newArrayList();
+        String uuidPart ="d0ae51f2";
+        long uuidPartInt = Long.parseLong(uuidPart, 16);
+        List<String> uuidList = Lists.newArrayList();
+
+        for (int i=0; i < nDataItems; i++) {
+            String uuid = Long.toHexString(uuidPartInt)+"-c962-11e3-b108-e1447cd109cf";
+            Map<String, Object> value = Maps.newHashMap();
+            value.put("id", uuid);
+            value.put("account_id","00000003-0000-0030-0040-000000030000");
+            value.put("user_id","00000003-0000-0030-0040-000000030000");
+            // Set a specific value for data we want to filter
+            if (i % 3 == 0) {
+                value.put("field2", "taco");
+            } else {
+                value.put("field2", "Value"+(i+8));
+            }
+            values2.add(value);
+            uuidList.add(uuid);
+            uuidPartInt++;
+
+        }
+
+        List<Map<String, Object>> updatedValues2 = Lists.newArrayList();
+        for(Map<String, Object> baseValue : values2) {
+            updatedValues2.add(JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2")));
+        }
+
+        Map<String, List<Map<String, Object>>> multiInsertMap = Maps.newHashMap();
+        multiInsertMap.put("object2", updatedValues2);
+
+        //Insert data
+        om.insertBatchMixed(multiInsertMap);
+
+        //Count the number of inserts we made
+        SortedMap<String, Object> indexValues = Maps.newTreeMap();
+        indexValues.put("account_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+        indexValues.put("user_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+
+        // since we are setting up enduuid of 40th index
+        // we are expecting 41 objects
+        // as inclusive flag to true
+
+        Criteria criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(false);
+        criteria.setEndUuid(UUID.fromString(uuidList.get(40)));
+        criteria.setInclusive(true);
+        criteria.setLimit((long) (nDataItems / 3) - 10L);
+
+        //now test the count function
+        long count = om.count("object2", criteria);
+        assertEquals(41, count);
+
+        // since we are setting up enduuid we are expecting 40 objects
+        // as inclusive flag to false
+        criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(false);
+        criteria.setEndUuid(UUID.fromString(uuidList.get(40)));
+        criteria.setInclusive(false);
+        criteria.setLimit((long) (nDataItems / 3) - 10L);
+
+
+        count = om.count("object2", criteria);
+        assertEquals(40, count);
+
+        // we are setting up enduuid as id of first object,
+        // with inclusive set to false
+        // we are expecting 0 objects
+
+        criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(false);
+        criteria.setEndUuid(UUID.fromString(uuidList.get(0)));
+        criteria.setInclusive(false);
+        criteria.setLimit((long) (nDataItems / 3) - 10L);
+
+        count = om.count("object2", criteria);
+        assertEquals(0, count);
+
+
+        // we are setting up enduuid as id of first object,
+        // with inclusive set to true
+        // we are expecting 1 object
+
+        criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(false);
+        criteria.setEndUuid(UUID.fromString(uuidList.get(0)));
+        criteria.setInclusive(true);
+        criteria.setLimit(2L);
+
+        count = om.count("object2", criteria);
+        assertEquals(1, count);
+
+        // simulating two page retrievals, like in the php side iterator
+        // assuming the page size is 100
+        // limit is pageSize + 1 , 101
+        // we should get 100 objects back in the last iteration
+        // ordering ASC
+
+        long pageSize = 100;
+        int nextItem = 0;
+
+        criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(false);
+        criteria.setOrdering("ASC");
+        criteria.setLimit(pageSize + 1);
+
+        List<Map<String, Object>> dbObjects = om.list("object2", criteria);
+        assertEquals(pageSize + 1, dbObjects.size());
+        for(Map<String, Object> result : dbObjects)
+        {
+
+            String dbObjectId = (String) result.get("id").toString();
+            if (nextItem == pageSize){
+                break;
+            }
+            nextItem++;
+        }
+
+        String startUuid = dbObjects.get(nextItem).get("id").toString();
+        criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(false);
+        criteria.setOrdering("ASC");
+        criteria.setStartUuid(UUID.fromString(startUuid));
+        criteria.setLimit(pageSize + 1);
+
+        dbObjects = om.list("object2", criteria);
+        assertEquals(100, dbObjects.size());
+
+
+        // simulating two page retrievals, like in the php side iterator
+        // assuming the page size is 100
+        // limit is pageSize + 1 , 101
+        // we should get 100 objects back in the last iteration
+        // ordering DESC
+
+        nextItem = 0;
+
+        criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(false);
+        criteria.setLimit(pageSize + 1);
+
+
+        dbObjects = om.list("object2", criteria);
+        assertEquals(pageSize + 1, dbObjects.size());
+        for(Map<String, Object> result : dbObjects)
+        {
+
+            String dbObjectId = (String) result.get("id").toString();
+            if (nextItem == pageSize){
+                break;
+            }
+            nextItem++;
+        }
+
+        String endUuid = dbObjects.get(nextItem).get("id").toString();
+        criteria = new Criteria();
+        criteria.setIndexKeys(indexValues);
+        criteria.setAllowFiltering(false);
+        criteria.setEndUuid(UUID.fromString(endUuid));
+        criteria.setLimit(pageSize + 1);
+
+        dbObjects = om.list("object2", criteria);
+        assertEquals(100, dbObjects.size());
+
     }
 
 	@Test
