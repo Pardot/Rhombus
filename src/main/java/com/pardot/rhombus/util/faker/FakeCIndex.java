@@ -92,6 +92,10 @@ public class FakeCIndex {
 		return ret;
 	}
 
+	public Object getSuggestedIdForStartofNextIndex(TimebasedShardingStrategy shardingStrategyOfNextIndex) throws RhombusException {
+		return this.getUniqueRange().getSuggestedIdForStartofNextIndex(shardingStrategyOfNextIndex);
+	}
+
 	/**
 	 *
 	 * @return
@@ -176,7 +180,7 @@ public class FakeCIndex {
 
 
 		public FakeCIndexIterator(Iterator<Long> counterIt, FakeIdRange fRange, CObjectOrdering ordering, Object startId, Object endId) throws RhombusException{
-		    this.fRange = fRange;
+			this.fRange = fRange;
 			this.ordering = ordering;
 			this.startId = startId;
 			this.endId = endId;
