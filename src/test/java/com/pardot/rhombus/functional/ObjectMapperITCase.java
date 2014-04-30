@@ -767,7 +767,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
         criteria.setAllowFiltering(false);
         criteria.setEndUuid(UUID.fromString(uuidList.get(0)));
         criteria.setInclusive(true);
-        criteria.setLimit(2L);
+        criteria.setLimit(1L);
 
         count = om.count("object2", criteria);
         assertEquals(1, count);
@@ -808,7 +808,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
         criteria.setLimit(pageSize + 1);
 
         dbObjects = om.list("object2", criteria);
-        assertEquals(100, dbObjects.size());
+        assertEquals(pageSize, dbObjects.size());
 
 
         // simulating two page retrievals, like in the php side iterator
@@ -845,7 +845,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
         criteria.setLimit(pageSize + 1);
 
         dbObjects = om.list("object2", criteria);
-        assertEquals(100, dbObjects.size());
+        assertEquals(pageSize, dbObjects.size());
 
     }
 
