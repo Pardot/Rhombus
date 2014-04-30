@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.UUID;
 
 import static org.junit.Assert.*;
 
