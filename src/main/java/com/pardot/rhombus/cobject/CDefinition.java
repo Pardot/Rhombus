@@ -172,6 +172,16 @@ public class CDefinition {
 	}
 
 	@JsonIgnore
+	public CField.CDataType getPrimaryKeyCDataType(){
+		if(fields.containsKey("id")){
+			return fields.get("id").getType();
+		}
+		else{
+			return CField.CDataType.TIMEUUID;
+		}
+	}
+
+	@JsonIgnore
 	public Class getPrimaryKeyClass(){
 		if(fields.containsKey("id")){
 			CField idField = fields.get("id");

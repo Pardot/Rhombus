@@ -29,7 +29,7 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 	private static Logger logger = LoggerFactory.getLogger(ObjectMapperITCase.class);
 
 	@Test
-	public void testUpdateProcessor() throws Exception {
+	public void testUpdateProcessorWithNonNullData() throws Exception {
 		logger.debug("Starting testObjectMapper");
 
 		//Build the connection manager
@@ -129,7 +129,7 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 
 		//now run the processor
 		UpdateProcessor up = new UpdateProcessor(om);
-		up.process();
+		up.process(9999L);
 
 		//verify that the object is no longer present in the invalid indexes
 
@@ -290,6 +290,80 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		UpdateProcessor up = new UpdateProcessor(om);
 		assertEquals(1, up.getUpdatesThatHappenedWithinTimeframe(900000L, 1).size());
 		assertEquals(2, up.getUpdatesThatHappenedWithinTimeframe(900000L, 2).size());
+	}
+
+	@Test
+	public void testUpdateProcessorWithNullUpdateData() throws Exception {
+		logger.debug("Starting testObjectMapper");
+
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+
+		//Build our keyspace definition object
+		String json = TestHelpers.readFileToString(this.getClass(), "CKeyspaceTestData.js");
+		CKeyspaceDefinition definition = CKeyspaceDefinition.fromJsonString(json);
+		String keyspace = definition.getName();
+		assertNotNull(definition);
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, true);
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper();
+		om.truncateTables();
+
+		//do an insert on an object
+		Map<String, Object> testObject = Maps.newTreeMap();
+		testObject.put("foreignid", null); //null index value
+		testObject.put("type", Integer.valueOf(101));
+		testObject.put("instance", Long.valueOf(102));
+		testObject.put("filtered", Integer.valueOf(103));
+		testObject.put("data1", "This is data 1");
+		testObject.put("data2", "This is data 2");
+		testObject.put("data3", "This is data 3");
+
+		UUID key = (UUID)om.insert("testtype", testObject);
+
+		//now update with a value for foreignid and make another index value (instance) be null
+		testObject = Maps.newTreeMap();
+		testObject.put("foreignid", 77L);
+		testObject.put("instance", null);
+		om.update("testtype",key,testObject);
+
+		//now reverse it
+		testObject = Maps.newTreeMap();
+		testObject.put("foreignid", null);
+		testObject.put("instance", 77L);
+		om.update("testtype",key,testObject);
+
+		//now back again (the update processor needs to see multiple updates to hit a process case.
+		testObject = Maps.newTreeMap();
+		testObject.put("foreignid", 77L);
+		testObject.put("instance", null);
+		om.update("testtype",key,testObject);
+
+		//now back again (the update processor needs to see multiple updates to hit a process case.
+		testObject = Maps.newTreeMap();
+		testObject.put("foreignid", 77L);
+		testObject.put("instance", null);
+		om.update("testtype",key,testObject);
+
+		Thread.sleep(3500);
+
+		//now run the processor
+		UpdateProcessor up = new UpdateProcessor(om);
+		up.process(9999L);
+
+		//But is should be present in the correct index
+		Criteria criteria = new Criteria();
+		SortedMap<String,Object> values = Maps.newTreeMap();
+		values.put("foreignid", Long.valueOf(77));
+		criteria.setIndexKeys(values);
+		List<Map<String,Object>> indexObjects = om.list("testtype", criteria);
+		assertEquals(1, indexObjects.size());
+		assertEquals(null,indexObjects.get(0).get("instance"));
+		assertEquals(77L,indexObjects.get(0).get("foreignid"));
+		assertEquals(101,indexObjects.get(0).get("type"));
+		assertEquals(103,indexObjects.get(0).get("filtered"));
 	}
 
 }

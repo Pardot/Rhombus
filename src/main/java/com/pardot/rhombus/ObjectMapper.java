@@ -517,6 +517,8 @@ public class ObjectMapper implements CObjectShardList {
 		while(statementIterator.hasNext(resultNumber) ) {
 			CQLStatement cql = statementIterator.next();
 			ResultSet resultSet = cqlExecutor.executeSync(cql);
+			long nonMatching = 0;
+			long matching = 0;
 			for(Row row : resultSet) {
 				Map<String, Object> result = mapResult(row, definition);
 				boolean resultMatchesFilters = true;
@@ -524,10 +526,14 @@ public class ObjectMapper implements CObjectShardList {
 					resultMatchesFilters = this.resultMatchesFilters(result, clientFilters);
 				}
 				if(resultMatchesFilters) {
-					results.add(result);
+					results.add(result); 
 					resultNumber++;
+					matching++;
+				} else {
+					nonMatching++;
 				}
 			}
+			logger.debug("Matching results: {}, Non-matching results: {}", matching, nonMatching);
 			statementNumber++;
 			if((limit > 0 && resultNumber >= limit)) {
 				logger.debug("Breaking from mapping results");
