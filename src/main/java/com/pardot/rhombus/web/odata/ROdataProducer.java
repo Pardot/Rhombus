@@ -50,7 +50,7 @@ public class RODataProducer implements ODataProducer {
 			entitySets.add(EdmEntitySet.newBuilder().setName(def.getName()).setEntityType(type));
 		}
 		EdmEntityContainer.Builder container = EdmEntityContainer.newBuilder().setName(namespace + "Entities").setIsDefault(true).addEntitySets(entitySets);
-		EdmSchema.Builder modelSchema = EdmSchema.newBuilder().setNamespace(namespace + "Model").addEntityTypes(entityTypes);
+		EdmSchema.Builder modelSchema = EdmSchema.newBuilder().setNamespace(namespace).addEntityTypes(entityTypes);
 		EdmSchema.Builder containerSchema = EdmSchema.newBuilder().setNamespace(namespace + "Container").addEntityContainers(container);
 		return EdmDataServices.newBuilder().addSchemas(containerSchema, modelSchema).build();
 	}
