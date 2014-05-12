@@ -141,9 +141,8 @@ public class RODataProducer implements ODataProducer {
 		return this.metadata;
 	}
 
-	@Override
-	public EntitiesResponse getEntities(String entitySetName, QueryInfo queryInfo) {
-		logger.debug("getEntities {}", entitySetName);
+	protected List<OEntity> makeEntitiesList(String entitySetName, QueryInfo queryInfo) {
+		logger.debug("makeEntitiesList {}", entitySetName);
 		//todo: respect:queryInfo.top
 		//todo: respect:queryInfo.skip
 		//todo: respect:queryInfo.orderBy
@@ -151,13 +150,22 @@ public class RODataProducer implements ODataProducer {
 		//todo: queryInfo.select
 		Criteria criteria = new Criteria();
 		try {
+            if (queryInfo.orderBy != null) {
+                OrderByExpression orderByExpression = queryInfo.orderBy.get(0);
+                String orderBy = ((EntitySimpleProperty) orderByExpression.getExpression()).getPropertyName();
+
+                //criteria.setOrdering(orderBy);
+            }
 			if(queryInfo.top != null && queryInfo.top > 0) {
-				long limit = (long)queryInfo.top;
+                logger.debug("Limit is set to " + queryInfo.top.toString());
+
+                long limit = (long)queryInfo.top;
 				criteria.setLimit(limit);
 			} else {
 				criteria.setLimit(200l);
 			}
 			if(queryInfo.skip != null && queryInfo.skip > 0) {
+                logger.debug("Skip is set to " + queryInfo.skip.toString());
 				// This is a major problem, can we just use skipToken?
 			}
 			if(queryInfo.filter != null) {
@@ -184,7 +192,7 @@ public class RODataProducer implements ODataProducer {
 				for(Map<String, Object> result : results) {
 					entities.add(makeOEntityFromRombusMap(ees, result));
 				}
-				return Responses.entities(entities, ees, null, null);
+                return entities;
 			}
 		} catch(Exception e){
 			logger.error("Error creating entity set", e);
@@ -192,7 +200,22 @@ public class RODataProducer implements ODataProducer {
 		}
 	}
 
-	private void addIndexKeysFromFilter(BoolCommonExpression expression, SortedMap<String, Object> indexKeys) {
+    @Override
+    public EntitiesResponse getEntities(String entitySetName, QueryInfo queryInfo) {
+        logger.debug("getEntities {}", entitySetName);
+        try {
+            List<OEntity> entities = makeEntitiesList(entitySetName, queryInfo);
+
+            EdmEntitySet ees = getMetadata().getEdmEntitySet(entitySetName);
+
+            return Responses.entities(entities, ees, null, null);
+        } catch(Exception e){
+            logger.error("Error creating entity set", e);
+            throw new RuntimeException("Unable to perform database operation");
+        }
+    }
+
+    private void addIndexKeysFromFilter(BoolCommonExpression expression, SortedMap<String, Object> indexKeys) {
 		// Assume we will only get and expressions containing field = value
 		if (expression instanceof AndExpression) {
 			AndExpression e = (AndExpression) expression;
@@ -257,7 +280,10 @@ public class RODataProducer implements ODataProducer {
 	@Override
 	public CountResponse getEntitiesCount(String entitySetName, QueryInfo queryInfo) {
 		logger.debug("getEntitiesCount {}", entitySetName);
-		throw new NotImplementedException();
+
+        List<OEntity> entities = makeEntitiesList(entitySetName, queryInfo);
+
+        return Responses.count(entities.size());
 	}
 
 	@Override

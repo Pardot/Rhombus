@@ -11,12 +11,9 @@ import javax.ws.rs.core.Application;
  */
 public class RODataJerseyServer extends ODataJerseyServer {
 
-	public RODataJerseyServer(String appBaseUri) {
-		super(appBaseUri);
-		this.addJerseyRequestFilter(com.sun.jersey.api.container.filter.LoggingFilter.class);
-	}
-
 	public RODataJerseyServer(String appBaseUri, Class<? extends Application> odataApp, Class<? extends Application> rootApp) {
 		super(appBaseUri, odataApp, rootApp);
+        this.addJerseyRequestFilter(com.sun.jersey.api.container.filter.LoggingFilter.class);
+        this.addJerseyResponseFilter(com.sun.jersey.api.container.filter.LoggingFilter.class);
 	}
 }
