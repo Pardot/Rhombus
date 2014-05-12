@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.primitives.*;
 import com.pardot.rhombus.cobject.CDefinition;
 import com.pardot.rhombus.cobject.CField;
+import org.odata4j.core.Guid;
 
 import java.io.File;
 import java.io.IOException;
@@ -161,7 +162,9 @@ public class JsonUtil {
                         return jsonValue;
                     } else if(String.class.isAssignableFrom(jsonValue.getClass())){
                         return UUID.fromString((String)jsonValue);
-                    } else {
+                    }  else if(Guid.class.isAssignableFrom(jsonValue.getClass())) {
+						return UUID.fromString(((Guid)jsonValue).toString());
+					} else {
                         throw new IllegalArgumentException();
                     }
                 case VARINT:
