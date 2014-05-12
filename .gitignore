@@ -1,4 +1,5 @@
 target
+src/main/resources
 /.idea
 *.iml
 .DS_Store

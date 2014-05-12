@@ -142,6 +142,11 @@
             <artifactId>odata4j-jersey</artifactId>
             <version>${odata.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.odata4j</groupId>
+            <artifactId>odata4j-examples</artifactId>
+            <version>${odata.version}</version>
+        </dependency>
 
         <!-- Cassandra java driver -->
         <dependency>
