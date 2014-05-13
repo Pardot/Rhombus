@@ -102,27 +102,29 @@ public class RODataProducer implements ODataProducer {
 		}
 	}
 
-	public OEntity makeOEntityFromRombusMap(EdmEntitySet ees, Map<String,Object> rhombusMap){
+	public OEntity makeOEntityFromRombusMap(EdmEntitySet ees, Map<String,Object> rhombusMap, List<String> select){
 		List<OProperty<?>> properties = new ArrayList<OProperty<?>>();
 		Object id = rhombusMap.get("id");
 		Set<String> keys = rhombusMap.keySet();
 		Map<String, EdmProperty> propertyMap = getPropertyMap(ees);
-		for(String key : keys ){
+
+		for (String key : keys ){
 			Object value = rhombusMap.get(key);
-			if(!key.equals("id")){
-				try {
-					EdmProperty property = propertyMap.get(key);
-					if(property != null) {
-						if(value != null && value instanceof Date) {
-							value = new DateTime(value);
-						}
-						properties.add(OProperties.simple(key, (EdmSimpleType<Object>) property.getType(), value));
-					}
-				} catch (RuntimeException re) {
-					logger.error("Exception adding property", re);
-					throw re;
-				}
-			}
+
+            if (select.size() == 0 || select.contains(key)) {
+                try {
+                    EdmProperty property = propertyMap.get(key);
+                    if (property != null) {
+                        if (value != null && value instanceof Date) {
+                            value = new DateTime(value);
+                        }
+                        properties.add(OProperties.simple(key, (EdmSimpleType<Object>) property.getType(), value));
+                    }
+                } catch (RuntimeException re) {
+                    logger.error("Exception adding property", re);
+                    throw re;
+                }
+            }
 		}
 		return OEntities.create(ees, OEntityKey.create(id), properties, null);
 	}
@@ -149,11 +151,22 @@ public class RODataProducer implements ODataProducer {
 		//todo: respect:queryInfo.inlineCount <=maybe
 		//todo: queryInfo.select
 		Criteria criteria = new Criteria();
+        List<String> select = new ArrayList<String>();
+
 		try {
+            Object key = null;
+
+            if (queryInfo.select != null && queryInfo.select.size() > 0) {
+                for (EntitySimpleProperty p : queryInfo.select) {
+                    select.add(p.getPropertyName());
+                }
+            }
+
             if (queryInfo.orderBy != null) {
                 OrderByExpression orderByExpression = queryInfo.orderBy.get(0);
                 String orderBy = ((EntitySimpleProperty) orderByExpression.getExpression()).getPropertyName();
 
+                logger.debug("Order by set to " + orderBy);
                 //criteria.setOrdering(orderBy);
             }
 			if(queryInfo.top != null && queryInfo.top > 0) {
@@ -190,7 +203,7 @@ public class RODataProducer implements ODataProducer {
 				//we found it, now convert it to a returnable type
 				List<OEntity> entities = Lists.newArrayList();
 				for(Map<String, Object> result : results) {
-					entities.add(makeOEntityFromRombusMap(ees, result));
+					entities.add(makeOEntityFromRombusMap(ees, result, select));
 				}
                 return entities;
 			}
@@ -238,9 +251,17 @@ public class RODataProducer implements ODataProducer {
 	@Override
 	public EntityResponse getEntity(String entitySetName, OEntityKey entityKey, EntityQueryInfo queryInfo) {
 		logger.debug("getEntity {} with id {}", entitySetName, entityKey);
-		//todo: queryInfo.select
+
+        List<String> select = new ArrayList<String>();
 		Object key = null;
+
 		try{
+            if (queryInfo.select != null && queryInfo.select.size() > 0) {
+                for (EntitySimpleProperty p : queryInfo.select) {
+                    select.add(p.getPropertyName());
+                }
+            }
+
 			Class keyClass = objectMapper.getKeyspaceDefinition().getDefinitions().get(entitySetName).getPrimaryKeyClass();
 			if(keyClass.equals(UUID.class)){
 				key = UUID.fromString(entityKey.asSingleValue().toString());
@@ -269,7 +290,7 @@ public class RODataProducer implements ODataProducer {
 			else{
 				EdmEntitySet ees = getMetadata().getEdmEntitySet(entitySetName);
 				//we found it, now convert it to a returnable type
-				return Responses.entity(makeOEntityFromRombusMap(ees, result));
+				return Responses.entity(makeOEntityFromRombusMap(ees, result, select));
 			}
 		}
 		catch(RhombusException e){
