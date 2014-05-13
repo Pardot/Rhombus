@@ -143,8 +143,8 @@ public class RODataProducer implements ODataProducer {
 		return this.metadata;
 	}
 
-	protected List<OEntity> makeEntitiesList(String entitySetName, QueryInfo queryInfo) {
-		logger.debug("makeEntitiesList {}", entitySetName);
+	protected List<OEntity> makeEntities(String entitySetName, QueryInfo queryInfo) {
+		logger.debug("makeEntities {}", entitySetName);
 		//todo: respect:queryInfo.top
 		//todo: respect:queryInfo.skip
 		//todo: respect:queryInfo.orderBy
@@ -152,8 +152,12 @@ public class RODataProducer implements ODataProducer {
 		//todo: queryInfo.select
 		Criteria criteria = new Criteria();
         List<String> select = new ArrayList<String>();
+        String orderBy = null;
 
-		try {
+        SortedMap<String, Object> indexKeys = Maps.newTreeMap();
+
+
+        try {
             Object key = null;
 
             if (queryInfo.select != null && queryInfo.select.size() > 0) {
@@ -164,10 +168,10 @@ public class RODataProducer implements ODataProducer {
 
             if (queryInfo.orderBy != null) {
                 OrderByExpression orderByExpression = queryInfo.orderBy.get(0);
-                String orderBy = ((EntitySimpleProperty) orderByExpression.getExpression()).getPropertyName();
+                orderBy = ((EntitySimpleProperty) orderByExpression.getExpression()).getPropertyName();
 
                 logger.debug("Order by set to " + orderBy);
-                //criteria.setOrdering(orderBy);
+                criteria.setOrdering(orderBy);
             }
 			if(queryInfo.top != null && queryInfo.top > 0) {
                 logger.debug("Limit is set to " + queryInfo.top.toString());
@@ -183,7 +187,6 @@ public class RODataProducer implements ODataProducer {
 			}
 			if(queryInfo.filter != null) {
 				BoolCommonExpression filter = queryInfo.filter;
-				SortedMap<String, Object> indexKeys = Maps.newTreeMap();
 				addIndexKeysFromFilter(filter, indexKeys);
 				logger.debug("got index keys: {}", indexKeys);
 				CDefinition cDef = objectMapper.getKeyspaceDefinition().getDefinitions().get(entitySetName);
@@ -194,19 +197,35 @@ public class RODataProducer implements ODataProducer {
 			throw new RuntimeException(e);
 		}
 		try {
-			List<Map<String, Object>> results = objectMapper.list(entitySetName, criteria);
-			logger.debug("Found results: {}", results);
-			if(results == null){
-				throw notFoundFactory.createException(OErrors.error("404", "Cannot find object for key",""));
-			} else {
-				EdmEntitySet ees = getMetadata().getEdmEntitySet(entitySetName);
-				//we found it, now convert it to a returnable type
-				List<OEntity> entities = Lists.newArrayList();
-				for(Map<String, Object> result : results) {
-					entities.add(makeOEntityFromRombusMap(ees, result, select));
-				}
+            List<Map<String, Object>> results;
+
+            if (indexKeys.containsKey("id")) {
+                logger.debug("getByKey");
+
+                OEntityKey entityKey = OEntityKey.create(indexKeys.get("id"));
+
+                OEntity entity = makeEntity(entitySetName, entityKey, queryInfo);
+
+                List<OEntity> entities = Lists.newArrayList();
+                entities.add(entity);
                 return entities;
-			}
+            } else {
+                results = objectMapper.list(entitySetName, criteria);
+
+                logger.debug("Found results: {}", results);
+                if (results == null) {
+                    throw notFoundFactory.createException(OErrors.error("404", "Cannot find object for key", ""));
+                } else {
+                    EdmEntitySet ees = getMetadata().getEdmEntitySet(entitySetName);
+                    //we found it, now convert it to a returnable type
+                    List<OEntity> entities = Lists.newArrayList();
+                    for (Map<String, Object> result : results) {
+                        entities.add(makeOEntityFromRombusMap(ees, result, select));
+                    }
+
+                    return entities;
+                }
+            }
 		} catch(Exception e){
 			logger.error("Error creating entity set", e);
 			throw new RuntimeException("Unable to perform database operation");
@@ -217,7 +236,7 @@ public class RODataProducer implements ODataProducer {
     public EntitiesResponse getEntities(String entitySetName, QueryInfo queryInfo) {
         logger.debug("getEntities {}", entitySetName);
         try {
-            List<OEntity> entities = makeEntitiesList(entitySetName, queryInfo);
+            List<OEntity> entities = makeEntities(entitySetName, queryInfo);
 
             EdmEntitySet ees = getMetadata().getEdmEntitySet(entitySetName);
 
@@ -248,61 +267,69 @@ public class RODataProducer implements ODataProducer {
 		}
 	}
 
-	@Override
-	public EntityResponse getEntity(String entitySetName, OEntityKey entityKey, EntityQueryInfo queryInfo) {
-		logger.debug("getEntity {} with id {}", entitySetName, entityKey);
+    public OEntity makeEntity(String entitySetName, OEntityKey entityKey, QueryInfo queryInfo) {
+        logger.debug("getEntity {} with id {}", entitySetName, entityKey);
 
         List<String> select = new ArrayList<String>();
-		Object key = null;
+        Object key = null;
 
-		try{
+        try{
             if (queryInfo.select != null && queryInfo.select.size() > 0) {
                 for (EntitySimpleProperty p : queryInfo.select) {
                     select.add(p.getPropertyName());
                 }
             }
 
-			Class keyClass = objectMapper.getKeyspaceDefinition().getDefinitions().get(entitySetName).getPrimaryKeyClass();
-			if(keyClass.equals(UUID.class)){
-				key = UUID.fromString(entityKey.asSingleValue().toString());
-			}
-			else if(keyClass.isAssignableFrom(Integer.class)){
-				key = Integer.parseInt(entityKey.asSingleValue().toString());
-			}
-			else if(keyClass.isAssignableFrom(Long.class)){
-				key = Long.parseLong(entityKey.asSingleValue().toString());
-			}
-			else if(keyClass.isAssignableFrom(String.class)){
-				key = entityKey.asSingleValue().toString();
-			}
-			else {
-				key = entityKey.asSingleValue();
-			}
-		}
-		catch(Exception e){
-			throw new IllegalArgumentException("Invalid Primary Key Type");
-		}
-		try {
-			Map<String,Object> result = objectMapper.getByKey(entitySetName, key);
-			if(result == null){
-				throw notFoundFactory.createException(OErrors.error("404", "Cannot find object for key",""));
-			}
-			else{
-				EdmEntitySet ees = getMetadata().getEdmEntitySet(entitySetName);
-				//we found it, now convert it to a returnable type
-				return Responses.entity(makeOEntityFromRombusMap(ees, result, select));
-			}
-		}
-		catch(RhombusException e){
-			throw new RuntimeException("Unable to perform database operation");
-		}
+            Class keyClass = objectMapper.getKeyspaceDefinition().getDefinitions().get(entitySetName).getPrimaryKeyClass();
+            if(keyClass.equals(UUID.class)){
+                key = UUID.fromString(entityKey.asSingleValue().toString());
+            }
+            else if(keyClass.isAssignableFrom(Integer.class)){
+                key = Integer.parseInt(entityKey.asSingleValue().toString());
+            }
+            else if(keyClass.isAssignableFrom(Long.class)){
+                key = Long.parseLong(entityKey.asSingleValue().toString());
+            }
+            else if(keyClass.isAssignableFrom(String.class)){
+                key = entityKey.asSingleValue().toString();
+            }
+            else {
+                key = entityKey.asSingleValue();
+            }
+        }
+        catch(Exception e){
+            throw new IllegalArgumentException("Invalid Primary Key Type");
+        }
+        try {
+            Map<String,Object> result = objectMapper.getByKey(entitySetName, key);
+            if(result == null){
+                throw notFoundFactory.createException(OErrors.error("404", "Cannot find object for key",""));
+            }
+            else{
+                EdmEntitySet ees = getMetadata().getEdmEntitySet(entitySetName);
+                //we found it, now convert it to a returnable type
+                return makeOEntityFromRombusMap(ees, result, select);
+            }
+        }
+        catch(RhombusException e){
+            throw new RuntimeException("Unable to perform database operation");
+        }
+    }
+
+	@Override
+	public EntityResponse getEntity(String entitySetName, OEntityKey entityKey, EntityQueryInfo queryInfo) {
+		logger.debug("getEntity {} with id {}", entitySetName, entityKey);
+
+        OEntity entity = makeEntity(entitySetName, entityKey, queryInfo);
+
+        return Responses.entity(entity);
 	}
 
 	@Override
 	public CountResponse getEntitiesCount(String entitySetName, QueryInfo queryInfo) {
 		logger.debug("getEntitiesCount {}", entitySetName);
 
-        List<OEntity> entities = makeEntitiesList(entitySetName, queryInfo);
+        List<OEntity> entities = makeEntities(entitySetName, queryInfo);
 
         return Responses.count(entities.size());
 	}
