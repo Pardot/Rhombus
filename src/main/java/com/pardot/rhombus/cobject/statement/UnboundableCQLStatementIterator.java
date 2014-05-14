@@ -5,8 +5,6 @@ import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.pardot.rhombus.cobject.CObjectOrdering;
-import com.pardot.rhombus.cobject.statement.CQLStatement;
-import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
 
 import java.util.Iterator;
 import java.util.List;
@@ -20,7 +18,6 @@ import java.util.List;
 public class UnboundableCQLStatementIterator extends BaseCQLStatementIterator {
 
 
-	private long limit = 0;
 	private long numberRemaining = 0;
 	private long size = 0;
 	private CQLStatement CQLTemplate = null;
@@ -32,11 +29,13 @@ public class UnboundableCQLStatementIterator extends BaseCQLStatementIterator {
 		this.keyRange = shardKeyList;
 		ContiguousSet<Long> set = ContiguousSet.create(shardKeyList, DiscreteDomain.longs());
 		this.keyIterator = (ordering == CObjectOrdering.ASCENDING) ? set.iterator() : set.descendingIterator();
+		this.ordering = ordering;
 		this.size = (long)set.size();
 		this.limit = limit;
 		this.numberRemaining = this.limit;
 		this.CQLTemplate = CQLTemplate;
 		this.setObjectName(objectName);
+
 	}
 
 	@Override
@@ -55,10 +54,49 @@ public class UnboundableCQLStatementIterator extends BaseCQLStatementIterator {
 	@Override
 	public CQLStatement next() {
 		List values = Lists.newArrayList(CQLTemplate.getValues());
-		//shardid is the first value and limit should be the last value
-		values.add(0,this.keyIterator.next());
-		CQLStatement ret = CQLStatement.make(String.format(CQLTemplate.getQuery(),numberRemaining), this.getObjectName(), values.toArray());
+		String query = CQLTemplate.getQuery();
+		//shardid is the first value
+		if (currentShardId == 0){
+			nextShard();
+		}
+		values.add(0, currentShardId);
+
+		// the id in the where clause is the last value
+		if (nextUuid != null){
+
+			setStartEndUuidIndexes(CQLTemplate, values.toArray());
+
+			if (ordering == CObjectOrdering.ASCENDING){
+
+				if (startUUidIndex == 0){
+
+					query = insertStartUuidClause(CQLTemplate.getQuery());
+					values.add(endUuidIndex, nextUuid);
+
+				} else {
+					values.set(startUUidIndex, nextUuid);
+				}
+
+			} else {
+				values.set(endUuidIndex, nextUuid);
+			}
+
+		}
+
+		// numberRemaining is the limit
+		CQLStatement ret = CQLStatement.make(String.format(query, numberRemaining), this.getObjectName(), values.toArray());
 		return ret;
+	}
+
+	@Override
+	public void setLimit(int limit){
+		this.numberRemaining = limit;
+	}
+
+	@Override
+	public void nextShard(){
+
+		currentShardId = keyIterator.next();
 	}
 
 	public boolean isBounded(){

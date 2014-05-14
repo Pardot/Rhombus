@@ -1,8 +1,6 @@
 package com.pardot.rhombus.cobject.statement;
 
 import com.google.common.collect.Lists;
-import com.pardot.rhombus.cobject.statement.CQLStatement;
-import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
 
 import java.util.Iterator;
 import java.util.List;
@@ -48,11 +46,31 @@ public class BoundedLazyCQLStatementIterator extends BaseCQLStatementIterator {
 		CQLStatement ret = CQLStatement.make(String.format(CQLTemplate.getQuery(), numberRemaining), this.getObjectName());
 		List values = Lists.newArrayList(CQLTemplate.getValues());
 		//shardid is the first value and limit should be the last value
-		values.add(0,this.shardIdIterator.next());
+
+		if (currentShardId == 0){
+			nextShard();
+		}
+		values.add(0, currentShardId);
+
+		// the id in the where clause is the last value
+		if (nextUuid != null){
+			values.set(values.size()-1, nextUuid);
+		}
+
 		ret.setValues(values.toArray());
 		return ret;
 	}
 
+	@Override
+	public void setLimit(int limit){
+		this.numberRemaining = limit;
+	}
+
+	@Override
+	public void nextShard(){
+
+		currentShardId = shardIdIterator.next();
+	}
 	public boolean isBounded(){
 		return true;
 	}

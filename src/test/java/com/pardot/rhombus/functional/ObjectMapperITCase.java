@@ -10,7 +10,6 @@ import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.*;
 import com.pardot.rhombus.helpers.TestHelpers;
 import com.pardot.rhombus.util.JsonUtil;
-import com.pardot.rhombus.util.UuidUtil;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

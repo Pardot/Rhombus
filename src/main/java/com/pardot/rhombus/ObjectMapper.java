@@ -14,9 +14,7 @@ import com.pardot.rhombus.cobject.async.StatementIteratorConsumer;
 import com.pardot.rhombus.cobject.migrations.CKeyspaceDefinitionMigrator;
 import com.pardot.rhombus.cobject.migrations.CObjectMigrationException;
 import com.pardot.rhombus.cobject.shardingstrategy.ShardingStrategyNone;
-import com.pardot.rhombus.cobject.statement.BoundedCQLStatementIterator;
-import com.pardot.rhombus.cobject.statement.CQLStatement;
-import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
+import com.pardot.rhombus.cobject.statement.*;
 import com.pardot.rhombus.util.JsonUtil;
 import com.yammer.metrics.core.*;
 import org.apache.cassandra.exceptions.InvalidRequestException;
@@ -514,35 +512,43 @@ public class ObjectMapper implements CObjectShardList {
 		int statementNumber = 0;
 		int resultNumber = 0;
 		Map<String, Object> clientFilters = statementIterator.getClientFilters();
-		while(statementIterator.hasNext(resultNumber) ) {
-			CQLStatement cql = statementIterator.next();
-			ResultSet resultSet = cqlExecutor.executeSync(cql);
-			long nonMatching = 0;
-			long matching = 0;
-			for(Row row : resultSet) {
-				Map<String, Object> result = mapResult(row, definition);
-				boolean resultMatchesFilters = true;
-				if(clientFilters != null) {
-					resultMatchesFilters = this.resultMatchesFilters(result, clientFilters);
-				}
-				if(resultMatchesFilters) {
-					results.add(result); 
-					resultNumber++;
-					matching++;
-				} else {
-					nonMatching++;
-				}
+		CQLExecutorIterator cqlIterator = new CQLExecutorIterator(cqlExecutor, (BaseCQLStatementIterator) statementIterator);
+		long nonMatching = 0;
+		long matching = 0;
+
+		while (cqlIterator.hasNext()){
+
+			Row row = cqlIterator.next();
+			Map<String, Object> result = mapResult(row, definition);
+
+			boolean resultMatchesFilters = true;
+
+			if(clientFilters != null) {
+				resultMatchesFilters = this.resultMatchesFilters(result, clientFilters);
 			}
+
+			if(resultMatchesFilters) {
+				results.add(result);
+				resultNumber++;
+				matching++;
+			} else {
+				nonMatching++;
+			}
+
 			logger.debug("Matching results: {}, Non-matching results: {}", matching, nonMatching);
-			statementNumber++;
+
+
 			if((limit > 0 && resultNumber >= limit)) {
 				logger.debug("Breaking from mapping results");
 				break;
 			}
-			if(statementNumber > reasonableStatementLimit) {
+
+			if(cqlIterator.statementNumber > reasonableStatementLimit) {
 				throw new RhombusException("Query attempted to execute more than " + reasonableStatementLimit + " statements.");
 			}
+
 		}
+
 		return results;
 	}
 
@@ -565,33 +571,55 @@ public class ObjectMapper implements CObjectShardList {
 
 	private Long mapCount(CQLStatementIterator statementIterator, CDefinition definition, Long limit) throws RhombusException {
 		Long resultCount = 0L;
-        int statementNumber = 0;
-		while (statementIterator.hasNext()){
-			CQLStatement cql = statementIterator.next();
-            Map<String, Object> clientFilters = statementIterator.getClientFilters();
-			ResultSet resultSet = cqlExecutor.executeSync(cql);
-			if(!resultSet.isExhausted()){
-                if (clientFilters == null) {
-                    // If we don't have client filters, this was just a count query, so increment by the result value
-                    resultCount += resultSet.one().getLong(0);
-                } else {
-                    // Otherwise we do have client filters so we need to map the results and apply the filters
-                    for (Row row : resultSet) {
-                        Map<String, Object> result = mapResult(row, definition);
-                        if (this.resultMatchesFilters(result, clientFilters)) {
-                            resultCount++;
-                        }
-                    }
-                }
-                statementNumber++;
-                if((limit > 0 && resultCount >= limit)) {
-                    logger.debug("Breaking from mapping count query results");
-                    resultCount = limit;
-                    break;
-                }
-                if(statementNumber > reasonableStatementLimit) {
-                    throw new RhombusException("Query attempted to execute more than " + reasonableStatementLimit + " statements.");
-                }
+		Map<String, Object> clientFilters = statementIterator.getClientFilters();
+
+		if (clientFilters == null){
+
+			int statementNumber = 0;
+			while (statementIterator.hasNext()){
+
+				CQLStatement cql = statementIterator.next();
+				ResultSet resultSet = cqlExecutor.executeSync(cql);
+				resultCount += resultSet.one().getLong(0);
+				statementNumber++;
+				if((limit > 0 && resultCount >= limit)) {
+					logger.debug("Breaking from mapping count query results");
+					resultCount = limit;
+					break;
+				}
+				if(statementNumber > reasonableStatementLimit) {
+					throw new RhombusException("Query attempted to execute more than " + reasonableStatementLimit + " statements.");
+				}
+
+				if (statementIterator.hasNext()){
+					statementIterator.nextShard();
+				}
+			}
+
+		} else {
+			// if filtering is true we will use the executorIterator to page through the result set
+			CQLExecutorIterator cqlIterator = new CQLExecutorIterator(cqlExecutor, (BaseCQLStatementIterator) statementIterator);
+			while (cqlIterator.hasNext()){
+
+				Row row = cqlIterator.next();
+				Map<String, Object> result = mapResult(row, definition);
+
+				boolean resultMatchesFilters = this.resultMatchesFilters(result, clientFilters);
+
+
+				if(resultMatchesFilters) {
+					resultCount++;
+				}
+
+				if((limit > 0 && resultCount >= limit)) {
+					logger.debug("Breaking from mapping count query results");
+					break;
+				}
+
+				if(cqlIterator.statementNumber > reasonableStatementLimit) {
+					throw new RhombusException("Query attempted to execute more than " + reasonableStatementLimit + " statements.");
+				}
+
 			}
 		}
 		return resultCount;
