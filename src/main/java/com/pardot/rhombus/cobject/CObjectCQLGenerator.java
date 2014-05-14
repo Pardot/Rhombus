@@ -34,7 +34,7 @@ public class CObjectCQLGenerator {
 
 	protected static final String KEYSPACE_DEFINITIONS_TABLE_NAME = "__keyspace_definitions";
 	protected static final String INDEX_UPDATES_TABLE_NAME = "__index_updates";
-	protected static final long CQL_LIMIT_MAX = 10000;
+	protected static final Integer MAX_CQL_STATEMENT_LIMIT = 1000;
 
 	protected static final String TEMPLATE_CREATE_STATIC = "CREATE TABLE \"%s\".\"%s\" (id %s PRIMARY KEY, %s);";
 	protected static final String TEMPLATE_CREATE_WIDE = "CREATE TABLE \"%s\".\"%s\" (id %s, shardid bigint, %s, PRIMARY KEY ((shardid, %s),id) );";
@@ -86,8 +86,8 @@ public class CObjectCQLGenerator {
 	public CObjectCQLGenerator(String keyspace, Map<String, CDefinition> objectDefinitions, CObjectShardList shardList, Integer consistencyHorizon){
 		this.definitions = objectDefinitions;
 		this.consistencyHorizon = consistencyHorizon;
-        this.keyspace = keyspace;
-        setShardList(shardList);
+		this.keyspace = keyspace;
+		setShardList(shardList);
 	}
 
 	/**
@@ -134,62 +134,62 @@ public class CObjectCQLGenerator {
 		return makeCQLforTruncate(this.keyspace, this.definitions.get(objType));
 	}
 
-    /**
-     *
-     * @param objType - The name of the Object type aka CDefinition.name
-     * @return Iterator of CQL statements that need to be executed for this task.
-     * @throws CQLGenerationException
-     */
-    @NotNull
-    public CQLStatement makeCQLforInsertNoValuesforStaticTable(String objType) throws CQLGenerationException {
-        CDefinition definition = this.definitions.get(objType);
-        Map<String, CField> fields = Maps.newHashMap(definition.getFields());
-        Object id = null;
-        if (fields.containsKey("id")) {
-            id = fields.get("id");
-            fields.remove("id");
-        }
-        List<String> fieldNames = new ArrayList<String>(fields.keySet());
-        List<String> valuePlaceholders = new ArrayList<String>(fields.keySet());
-        return makeInsertStatementStatic(this.keyspace, definition.getName(), fieldNames, valuePlaceholders, id, null, null);
-    }
+	/**
+	 *
+	 * @param objType - The name of the Object type aka CDefinition.name
+	 * @return Iterator of CQL statements that need to be executed for this task.
+	 * @throws CQLGenerationException
+	 */
+	@NotNull
+	public CQLStatement makeCQLforInsertNoValuesforStaticTable(String objType) throws CQLGenerationException {
+		CDefinition definition = this.definitions.get(objType);
+		Map<String, CField> fields = Maps.newHashMap(definition.getFields());
+		Object id = null;
+		if (fields.containsKey("id")) {
+			id = fields.get("id");
+			fields.remove("id");
+		}
+		List<String> fieldNames = new ArrayList<String>(fields.keySet());
+		List<String> valuePlaceholders = new ArrayList<String>(fields.keySet());
+		return makeInsertStatementStatic(this.keyspace, definition.getName(), fieldNames, valuePlaceholders, id, null, null);
+	}
 
-    /**
-     * @param definition The object definition of the wide table to insert into
-     * @param tableName - The name of the wide table to insert into
-     * @return CQL insert statement
-     * @throws CQLGenerationException
-     */
-    @NotNull
-    public CQLStatement makeCQLforInsertNoValuesforWideTable(CDefinition definition, String tableName, Long shardId) throws CQLGenerationException {
-        Map<String, CField> fields = Maps.newHashMap(definition.getFields());
-        Object id = null;
-        if (fields.containsKey("id")) {
-            id = fields.get("id");
-            fields.remove("id");
-        }
-        List<String> fieldNames = new ArrayList<String>(fields.keySet());
-        List<Object> valuePlaceholders = new ArrayList<Object>(fields.keySet());
-        shardId = (shardId == null) ? 1L : shardId;
-        return makeInsertStatementWide(this.keyspace, tableName, fieldNames, valuePlaceholders, id, shardId, null, null);
-    }
+	/**
+	 * @param definition The object definition of the wide table to insert into
+	 * @param tableName - The name of the wide table to insert into
+	 * @return CQL insert statement
+	 * @throws CQLGenerationException
+	 */
+	@NotNull
+	public CQLStatement makeCQLforInsertNoValuesforWideTable(CDefinition definition, String tableName, Long shardId) throws CQLGenerationException {
+		Map<String, CField> fields = Maps.newHashMap(definition.getFields());
+		Object id = null;
+		if (fields.containsKey("id")) {
+			id = fields.get("id");
+			fields.remove("id");
+		}
+		List<String> fieldNames = new ArrayList<String>(fields.keySet());
+		List<Object> valuePlaceholders = new ArrayList<Object>(fields.keySet());
+		shardId = (shardId == null) ? 1L : shardId;
+		return makeInsertStatementWide(this.keyspace, tableName, fieldNames, valuePlaceholders, id, shardId, null, null);
+	}
 
-    /**
-     * @param tableName - The name of the wide table to insert into
-     * @return CQL insert statement
-     * @throws CQLGenerationException
-     */
-    @NotNull
-    public CQLStatement makeCQLforInsertNoValuesforShardIndex(String tableName) throws CQLGenerationException {
-        return CQLStatement.make(
-                String.format(
-                        TEMPLATE_INSERT_WIDE_INDEX,
-                        keyspace,
-                        tableName
-                ),
-                tableName,
-                null);
-    }
+	/**
+	 * @param tableName - The name of the wide table to insert into
+	 * @return CQL insert statement
+	 * @throws CQLGenerationException
+	 */
+	@NotNull
+	public CQLStatement makeCQLforInsertNoValuesforShardIndex(String tableName) throws CQLGenerationException {
+		return CQLStatement.make(
+				String.format(
+						TEMPLATE_INSERT_WIDE_INDEX,
+						keyspace,
+						tableName
+				),
+				tableName,
+				null);
+	}
 
 	/**
 	 *
@@ -288,14 +288,14 @@ public class CObjectCQLGenerator {
 				if(i.getCompositeKeyList().contains(key)) {
 					newIndexValues.put(key, indexValues.get(key));
 				} else {
-                    // Index keys will always exactly match the criteria index values if allowFiltering is false, so this only happens if allowFiltering is true
+					// Index keys will always exactly match the criteria index values if allowFiltering is false, so this only happens if allowFiltering is true
 					clientFilters.put(key, indexValues.get(key));
 				}
 			}
 			indexValues = newIndexValues;
 		}
 
-        boolean hasClientFilters = clientFilters != null && !clientFilters.isEmpty();
+		boolean hasClientFilters = clientFilters != null && !clientFilters.isEmpty();
 
 		// Now validate the remaining index values
 		if(!i.validateIndexKeys(indexValues)){
@@ -314,28 +314,19 @@ public class CObjectCQLGenerator {
 			values.add(end);
 		}
 		String limitCQL;
-
-		// Do our best to come up with a sensible limit
-		if(hasClientFilters) {
-			if(limit * 2 >= 50l) {
-				limit = limit * 2;
-			} else {
-				limit = 50l;
-			}
-		} else if(limit < 0) {
-			limit = 50l;
-		} else if(limit > CQL_LIMIT_MAX) {
-			limit = CQL_LIMIT_MAX;
+		// If we have client side filters, apply a hard max limit here since the client specified criteria limit needs to be applied on the results that match the filters
+		if(limit > 0 && !hasClientFilters && limit < CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT){
+			limitCQL = "LIMIT %d";
+		} else {
+			limitCQL = "LIMIT " + CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT;
 		}
-		limitCQL = "LIMIT %d";
 
-
-        // TODO: if we feel like it's worth the trouble, for count queries with client side filters, only select the fields needed to satisfy the filters
-        // note that doing so will also require modifying ObjectMapper.mapResult() so it only maps fields that exist in the row
+		// TODO: if we feel like it's worth the trouble, for count queries with client side filters, only select the fields needed to satisfy the filters
+		// note that doing so will also require modifying ObjectMapper.mapResult() so it only maps fields that exist in the row
 		String CQLTemplate = String.format(
 				TEMPLATE_SELECT_WIDE,
-                // If this was a count query and filtering was allowed and client filters weren't defined, just do a count query because we don't need to apply filters
-                // Otherwise if this was a count query, but allowFiltering was true and we have client-side filters to apply, do a full row query so we can apply the filters
+				// If this was a count query and filtering was allowed and client filters weren't defined, just do a count query because we don't need to apply filters
+				// Otherwise if this was a count query, but allowFiltering was true and we have client-side filters to apply, do a full row query so we can apply the filters
 				countOnly && !(allowFiltering && hasClientFilters) ? "count(*)":"*",
 				keyspace,
 				makeTableName(def, i),
@@ -461,7 +452,7 @@ public class CObjectCQLGenerator {
 	 */
 	public CQLStatement makeGetFirstEligibleIndexUpdate(){
 		return CQLStatement.make(String.format(TEMPLATE_SELECT_FIRST_ELIGIBLE_INDEX_UPDATE, keyspace),
-			INDEX_UPDATES_TABLE_NAME, Arrays.asList(getTimeUUIDAtEndOfConsistencyHorizion()).toArray());
+				INDEX_UPDATES_TABLE_NAME, Arrays.asList(getTimeUUIDAtEndOfConsistencyHorizion()).toArray());
 	}
 
 	/**
@@ -512,80 +503,80 @@ public class CObjectCQLGenerator {
 			values.add(Long.valueOf(i.getShardingStrategy().getShardKey(end)));
 		}
 		String query =  String.format(
-			TEMPLATE_SELECT_WIDE_INDEX,
-            keyspace,
-			CObjectShardList.SHARD_INDEX_TABLE_NAME,
-			whereCQL,
-			ordering
+				TEMPLATE_SELECT_WIDE_INDEX,
+				keyspace,
+				CObjectShardList.SHARD_INDEX_TABLE_NAME,
+				whereCQL,
+				ordering
 		);
 		return CQLStatement.make(query, CObjectShardList.SHARD_INDEX_TABLE_NAME, values.toArray());
 	}
 
-    private CQLStatementIterator makeCQLforLeveledCompaction(CKeyspaceDefinition keyspaceDefinition, Integer sstableSize){
-        List ret =  Lists.newArrayList();
-        //global tables
-        ret.add(makeCQLforLeveledCompaction(keyspaceDefinition.getName(), "__shardindex", sstableSize));
-        ret.add(makeCQLforLeveledCompaction(keyspaceDefinition.getName(), "__index_updates", sstableSize));
+	private CQLStatementIterator makeCQLforLeveledCompaction(CKeyspaceDefinition keyspaceDefinition, Integer sstableSize){
+		List ret =  Lists.newArrayList();
+		//global tables
+		ret.add(makeCQLforLeveledCompaction(keyspaceDefinition.getName(), "__shardindex", sstableSize));
+		ret.add(makeCQLforLeveledCompaction(keyspaceDefinition.getName(), "__index_updates", sstableSize));
 
-        //CDefinition tables
-        for(CDefinition def : keyspaceDefinition.getDefinitions().values()){
-            //static table
-            ret.add(makeCQLforLeveledCompaction(keyspaceDefinition.getName(), makeTableName(def, null), sstableSize));
-            //indexes
-            for(CIndex index : def.getIndexes().values()){
-                ret.add(makeCQLforLeveledCompaction(keyspaceDefinition.getName(), makeTableName(def,index), sstableSize));
-            }
-        }
-        return new BoundedCQLStatementIterator(ret);
-    }
+		//CDefinition tables
+		for(CDefinition def : keyspaceDefinition.getDefinitions().values()){
+			//static table
+			ret.add(makeCQLforLeveledCompaction(keyspaceDefinition.getName(), makeTableName(def, null), sstableSize));
+			//indexes
+			for(CIndex index : def.getIndexes().values()){
+				ret.add(makeCQLforLeveledCompaction(keyspaceDefinition.getName(), makeTableName(def,index), sstableSize));
+			}
+		}
+		return new BoundedCQLStatementIterator(ret);
+	}
 
-    private CQLStatementIterator makeCQLforTieredCompaction(CKeyspaceDefinition keyspaceDefinition, Integer minThreshold){
-        List ret =  Lists.newArrayList();
-        //global tables
-        ret.add(makeCQLforTieredCompaction(keyspaceDefinition.getName(), "__shardindex", minThreshold));
-        ret.add(makeCQLforTieredCompaction(keyspaceDefinition.getName(), "__index_updates", minThreshold));
+	private CQLStatementIterator makeCQLforTieredCompaction(CKeyspaceDefinition keyspaceDefinition, Integer minThreshold){
+		List ret =  Lists.newArrayList();
+		//global tables
+		ret.add(makeCQLforTieredCompaction(keyspaceDefinition.getName(), "__shardindex", minThreshold));
+		ret.add(makeCQLforTieredCompaction(keyspaceDefinition.getName(), "__index_updates", minThreshold));
 
-        //CDefinition tables
-        for(CDefinition def : keyspaceDefinition.getDefinitions().values()){
-            //static table
-            ret.add(makeCQLforTieredCompaction(keyspaceDefinition.getName(), makeTableName(def, null), minThreshold));
-            //indexes
-            for(CIndex index : def.getIndexes().values()){
-                ret.add(makeCQLforTieredCompaction(keyspaceDefinition.getName(), makeTableName(def,index), minThreshold));
-            }
-        }
-        return new BoundedCQLStatementIterator(ret);
-    }
+		//CDefinition tables
+		for(CDefinition def : keyspaceDefinition.getDefinitions().values()){
+			//static table
+			ret.add(makeCQLforTieredCompaction(keyspaceDefinition.getName(), makeTableName(def, null), minThreshold));
+			//indexes
+			for(CIndex index : def.getIndexes().values()){
+				ret.add(makeCQLforTieredCompaction(keyspaceDefinition.getName(), makeTableName(def,index), minThreshold));
+			}
+		}
+		return new BoundedCQLStatementIterator(ret);
+	}
 
-    public CQLStatementIterator makeCQLforCompaction(CKeyspaceDefinition keyspaceDefinition, String strategy, Map<String,Object> options) throws CQLGenerationException {
-        if(strategy.equals("LeveledCompactionStrategy")){
-            Integer sstableSize = (options.get("sstable_size_in_mb") == null) ? 5 : (Integer)options.get("sstable_size_in_mb");
-            return makeCQLforLeveledCompaction(keyspaceDefinition,sstableSize);
-        }
-        else if(strategy.equals("SizeTieredCompactionStrategy")){
-            Integer minThreshold = (options.get("min_threshold") == null) ? 6 : (Integer)options.get("min_threshold");
-            return makeCQLforTieredCompaction(keyspaceDefinition,minThreshold);
-        }
-        throw new CQLGenerationException("Unknown Strategy " + strategy);
-    }
+	public CQLStatementIterator makeCQLforCompaction(CKeyspaceDefinition keyspaceDefinition, String strategy, Map<String,Object> options) throws CQLGenerationException {
+		if(strategy.equals("LeveledCompactionStrategy")){
+			Integer sstableSize = (options.get("sstable_size_in_mb") == null) ? 5 : (Integer)options.get("sstable_size_in_mb");
+			return makeCQLforLeveledCompaction(keyspaceDefinition,sstableSize);
+		}
+		else if(strategy.equals("SizeTieredCompactionStrategy")){
+			Integer minThreshold = (options.get("min_threshold") == null) ? 6 : (Integer)options.get("min_threshold");
+			return makeCQLforTieredCompaction(keyspaceDefinition,minThreshold);
+		}
+		throw new CQLGenerationException("Unknown Strategy " + strategy);
+	}
 
-    /**
-     * @param table - The table to update with the compaction strategy
-     * @param sstableSize - the size in MB of the ss tables
-     * @return String of single CQL statement required to set
-     */
-    public static CQLStatement makeCQLforLeveledCompaction(String keyspace, String table, Integer sstableSize){
-        return CQLStatement.make(String.format(TEMPLATE_SET_COMPACTION_LEVELED, keyspace, table, sstableSize), table);
-    }
+	/**
+	 * @param table - The table to update with the compaction strategy
+	 * @param sstableSize - the size in MB of the ss tables
+	 * @return String of single CQL statement required to set
+	 */
+	public static CQLStatement makeCQLforLeveledCompaction(String keyspace, String table, Integer sstableSize){
+		return CQLStatement.make(String.format(TEMPLATE_SET_COMPACTION_LEVELED, keyspace, table, sstableSize), table);
+	}
 
-    /**
-     * @param table - The table to update with the compaction strategy
-     * @param minThreshold - minimum number of SSTables to trigger a minor compaction
-     * @return String of single CQL statement required to set
-     */
-    public static CQLStatement makeCQLforTieredCompaction(String keyspace, String table, Integer minThreshold){
-        return CQLStatement.make(String.format(TEMPLATE_SET_COMPACTION_TIERED, keyspace, table, minThreshold), table);
-    }
+	/**
+	 * @param table - The table to update with the compaction strategy
+	 * @param minThreshold - minimum number of SSTables to trigger a minor compaction
+	 * @return String of single CQL statement required to set
+	 */
+	public static CQLStatement makeCQLforTieredCompaction(String keyspace, String table, Integer minThreshold){
+		return CQLStatement.make(String.format(TEMPLATE_SET_COMPACTION_TIERED, keyspace, table, minThreshold), table);
+	}
 
 	public CQLStatement makeCQLforIndexUpdateTableCreate(){
 		return CQLStatement.make(String.format(TEMPLATE_CREATE_INDEX_UPDATES, this.keyspace), INDEX_UPDATES_TABLE_NAME);
@@ -666,7 +657,7 @@ public class CObjectCQLGenerator {
 		Map<String,ArrayList> fieldsAndValuesOnlyForChanges = makeFieldAndValueList(def,newValues);
 		ret.add(makeInsertStatementStatic(
 				keyspace,
-                makeTableName(def,null),
+				makeTableName(def,null),
 				(List<String>)fieldsAndValuesOnlyForChanges.get("fields").clone(),
 				(List<Object>)fieldsAndValuesOnlyForChanges.get("values").clone(),
 				key,
@@ -747,7 +738,7 @@ public class CObjectCQLGenerator {
 		values.add(0, id);
 		String query = String.format(
 				TEMPLATE_INSERT_STATIC,
-                keyspace,
+				keyspace,
 				tableName,
 				makeCommaList(fields),
 				makeCommaList(values, true),
@@ -786,13 +777,13 @@ public class CObjectCQLGenerator {
 		values.add(0,uuid);
 
 		String query = String.format(
-			TEMPLATE_INSERT_WIDE,
-            keyspace,
-			tableName,
-			makeCommaList(fields),
-			makeCommaList(values,true),
-			//timestamp.toString(), //add timestamp back when timestamps become preparable
-			(ttl == null) ? "" : (" USING TTL "+ttl)//(" AND TTL "+ttl) //Revert this back to AND when timestamps are preparable
+				TEMPLATE_INSERT_WIDE,
+				keyspace,
+				tableName,
+				makeCommaList(fields),
+				makeCommaList(values,true),
+				//timestamp.toString(), //add timestamp back when timestamps become preparable
+				(ttl == null) ? "" : (" USING TTL "+ttl)//(" AND TTL "+ttl) //Revert this back to AND when timestamps are preparable
 		);
 
 		return CQLStatement.make(query, tableName, values.toArray());
@@ -803,10 +794,10 @@ public class CObjectCQLGenerator {
 		Object[] values = {targetTableName, indexValuesString, Long.valueOf(shardId), shardId+":"+indexValuesString};
 		return CQLStatement.make(
 				String.format(
-					TEMPLATE_INSERT_WIDE_INDEX,
-					keyspace,
-					tableName
-					//timestamp.toString() //Add back timestamp when timestamps become preparable
+						TEMPLATE_INSERT_WIDE_INDEX,
+						keyspace,
+						tableName
+						//timestamp.toString() //Add back timestamp when timestamps become preparable
 				),
 				tableName,
 				values);
@@ -838,7 +829,7 @@ public class CObjectCQLGenerator {
 		Map<String,ArrayList> fieldsAndValues = makeFieldAndValueList(def,data);
 		//Static Table
 		ret.add(makeInsertStatementStatic(
-                keyspace,
+				keyspace,
 				makeTableName(def,null),
 				(List<String>)fieldsAndValues.get("fields").clone(),
 				(List<Object>)fieldsAndValues.get("values").clone(),
@@ -866,7 +857,7 @@ public class CObjectCQLGenerator {
 		//insert it into the index
 		long shardId = i.getShardingStrategy().getShardKey(uuid);
 		statementListToAddTo.add(makeInsertStatementWide(
-                keyspace,
+				keyspace,
 				makeTableName(def,i),
 				(List<String>)fieldsAndValues.get("fields").clone(),
 				(List<Object>)fieldsAndValues.get("values").clone(),
@@ -878,7 +869,7 @@ public class CObjectCQLGenerator {
 		if( includeShardInsert && (!(i.getShardingStrategy() instanceof ShardingStrategyNone))){
 			//record that we have made an insert into that shard
 			statementListToAddTo.add(makeInsertStatementWideIndex(
-                    keyspace,
+					keyspace,
 					CObjectShardList.SHARD_INDEX_TABLE_NAME,
 					makeTableName(def,i),
 					shardId,
@@ -924,8 +915,8 @@ public class CObjectCQLGenerator {
 				makeTableName(def, null),
 				//timestamp, //Add back when timestamps become preparable
 				"id = ?"),
-			makeTableName(def, null),
-			values);
+				makeTableName(def, null),
+				values);
 	}
 
 
@@ -935,20 +926,20 @@ public class CObjectCQLGenerator {
 		values.addAll(Arrays.asList(wheres.getValues()));
 		String whereCQL = String.format( "id = ? AND shardid = ? AND %s", wheres.getQuery());
 		String query = String.format(
-			TEMPLATE_DELETE,
-			keyspace,
-			makeTableName(def,index),
-			//timestamp, //Add back when timestamps become preparable
-			whereCQL);
+				TEMPLATE_DELETE,
+				keyspace,
+				makeTableName(def,index),
+				//timestamp, //Add back when timestamps become preparable
+				whereCQL);
 		return CQLStatement.make(query, makeTableName(def,index), values.toArray());
 	}
 
 	public static Statement makeCQLforDeleteUUIDFromIndex_WorkaroundForUnpreparableTimestamp(String keyspace, CDefinition def, CIndex index, UUID uuid, Map<String,Object> indexValues, Long timestamp){
 		Statement ret = QueryBuilder.delete()
-						.from(keyspace,makeIndexTableName(def,index))
-						.using(QueryBuilder.timestamp(timestamp))
-						.where(QueryBuilder.eq("id",uuid))
-						.and(QueryBuilder.eq("shardid", Long.valueOf(index.getShardingStrategy().getShardKey(uuid))));
+				.from(keyspace,makeIndexTableName(def,index))
+				.using(QueryBuilder.timestamp(timestamp))
+				.where(QueryBuilder.eq("id",uuid))
+				.and(QueryBuilder.eq("shardid", Long.valueOf(index.getShardingStrategy().getShardKey(uuid))));
 		for(String key : indexValues.keySet()){
 			((Delete.Where)ret).and(QueryBuilder.eq(key,indexValues.get(key)));
 		}
@@ -965,22 +956,22 @@ public class CObjectCQLGenerator {
 
 	public CQLStatement makeStaticTableCreate(CDefinition def){
 		String query = String.format(
-			TEMPLATE_CREATE_STATIC,
-			keyspace,
-			def.getName(),
-			def.getPrimaryKeyType(),
-			makeFieldList(def.getFields().values(),true));
+				TEMPLATE_CREATE_STATIC,
+				keyspace,
+				def.getName(),
+				def.getPrimaryKeyType(),
+				makeFieldList(def.getFields().values(),true));
 		return CQLStatement.make(query, def.getName());
 	}
 
 	public CQLStatement makeWideTableCreate(CDefinition def, CIndex index){
 		String query = String.format(
-			TEMPLATE_CREATE_WIDE,
-			keyspace,
-			makeTableName(def,index),
-			def.getPrimaryKeyType(),
-			makeFieldList(def.getFields().values(), true),
-			makeCommaList(index.getCompositeKeyList()));
+				TEMPLATE_CREATE_WIDE,
+				keyspace,
+				makeTableName(def,index),
+				def.getPrimaryKeyType(),
+				makeFieldList(def.getFields().values(), true),
+				makeCommaList(index.getCompositeKeyList()));
 		return CQLStatement.make(query, makeTableName(def, index));
 	}
 

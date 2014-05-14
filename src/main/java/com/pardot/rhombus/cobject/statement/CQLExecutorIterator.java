@@ -30,8 +30,9 @@ public class CQLExecutorIterator implements Iterator {
 
 	public boolean hasNext(){
 		fetchIfNeeded();
-
-		if (page.size() > nextItem){
+		if (page.size() == 0){
+			return false;
+		} else if (page.size() > nextItem){
 			return true;
 		} else if (statementIterator.hasNext()){
 
