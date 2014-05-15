@@ -519,6 +519,10 @@ public class ObjectMapper implements CObjectShardList {
 		while (cqlIterator.hasNext()){
 
 			Row row = cqlIterator.next();
+
+			if (row == null){
+				continue;
+			}
 			Map<String, Object> result = mapResult(row, definition);
 
 			boolean resultMatchesFilters = true;
@@ -602,6 +606,9 @@ public class ObjectMapper implements CObjectShardList {
 			while (cqlIterator.hasNext()){
 
 				Row row = cqlIterator.next();
+				if (row == null){
+					continue;
+				}
 				Map<String, Object> result = mapResult(row, definition);
 
 				boolean resultMatchesFilters = this.resultMatchesFilters(result, clientFilters);
