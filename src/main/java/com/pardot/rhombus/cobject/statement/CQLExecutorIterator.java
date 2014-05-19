@@ -16,7 +16,6 @@ public class CQLExecutorIterator implements Iterator {
 	private	int pageSize = 50;
 	private int nextItem = 0;
 	private int currentPage = 0;
-	private int currentShardId = 1;
 	private CQLExecutor cqlExecutor;
 	private BaseCQLStatementIterator statementIterator;
 	boolean hasMore = false;

@@ -4,8 +4,10 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.*;
+import com.pardot.rhombus.cobject.statement.BoundedLazyCQLStatementIterator;
 import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
+import com.pardot.rhombus.cobject.statement.UnboundableCQLStatementIterator;
 import com.pardot.rhombus.helpers.TestHelpers;
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -250,6 +252,249 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 			Subject subject = new Subject(1000);
 			CQLStatementIterator actual = subject.makeCQLforCreate(def);
 			assertEquals("Should generate CQL statements for the static table plus all indexes", 4, actual.size());
+		}
+
+		public void testBoundedLazyCQLStatementIterator() throws CQLGenerationException, IOException {
+
+			// this test case mainly tests correctness of nextUuid() of the unBoundediterator
+			String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
+			CDefinition def = CDefinition.fromJsonString(json);
+			CObjectShardList shardIdLists = new ShardListMock(Arrays.asList(1L,2L,3L,4L,5L));
+			UUID stop = UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43");
+
+			//Wide table using shardIdList and therefore bounded
+			TreeMap<String,Object> indexkeys = Maps.newTreeMap();
+			indexkeys.put("foreignid","777");
+			indexkeys.put("type", "5");
+			indexkeys.put("instance", "222222");
+
+			// creating a iterator that has both start and end and both are inclusive
+			BoundedLazyCQLStatementIterator boundedLazyIterator = (BoundedLazyCQLStatementIterator) CObjectCQLGenerator.makeCQLforList(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.DESCENDING, null, stop, 10l, true, false, false);
+			CQLStatement actual = boundedLazyIterator.next();
+			CQLStatement expected = CQLStatement.make(
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id <= ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+					TABLE_NAME,
+					arrayFromValues(Long.valueOf(1),"777","222222","5", stop)
+			);
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(expected.getValues()[4], actual.getValues()[4]);
+
+
+			// testing if next start uuid is correctly applied
+			UUID nextUuid = UUID.fromString("ada375b1-a2d9-11e2-99a3-3f36d3955e43");
+			boundedLazyIterator.setNextUuid(nextUuid);
+
+			assertTrue(boundedLazyIterator.hasNext());
+			actual = boundedLazyIterator.next();
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(nextUuid, actual.getValues()[4]);
+
+			// testing iterator that has both start and end , non inclusive
+			boundedLazyIterator = (BoundedLazyCQLStatementIterator) CObjectCQLGenerator.makeCQLforList(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.DESCENDING, null, stop, 10l, false, false, false);
+			actual = boundedLazyIterator.next();
+			expected = CQLStatement.make(
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+					TABLE_NAME,
+					arrayFromValues(Long.valueOf(1),"777","222222","5", stop)
+			);
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(expected.getValues()[4], actual.getValues()[4]);
+
+			// testing if next start uuid is correctly applied
+			nextUuid = UUID.fromString("ada375b1-a2d9-11e2-99a3-3f36d3955e43");
+			boundedLazyIterator.setNextUuid(nextUuid);
+
+			assertTrue(boundedLazyIterator.hasNext());
+			actual = boundedLazyIterator.next();
+
+			expected = CQLStatement.make(
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id <= ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+					TABLE_NAME,
+					arrayFromValues(Long.valueOf(1),"777","222222","5", nextUuid)
+			);
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(nextUuid, actual.getValues()[4]);
+
+		}
+
+		public void testUnboundableCQLStatementIterator() throws CQLGenerationException, IOException {
+			// this test case mainly tests correctness of nextUuid() of the unBoundediterator
+			String json = TestHelpers.readFileToString(this.getClass(), "CObjectCQLGeneratorTestData.js");
+			CDefinition def = CDefinition.fromJsonString(json);
+			CObjectShardList shardIdLists = new ShardListMock(Arrays.asList(1L,2L,3L,4L,5L));
+			UUID start = UUID.fromString("a8a2abe0-a251-11e2-bcbb-adf1a79a327f");
+			UUID stop = UUID.fromString("ada375b0-a2d9-11e2-99a3-3f36d3955e43");
+			//Wide table using shardIdList and therefore bounded
+			TreeMap<String,Object> indexkeys = Maps.newTreeMap();
+			indexkeys.put("foreignid","777");
+			indexkeys.put("type", "5");
+			indexkeys.put("instance", "222222");
+
+			// creating a iterator that has both start and end and both are inclusive
+			UnboundableCQLStatementIterator unBoundedIterator = (UnboundableCQLStatementIterator) CObjectCQLGenerator.makeCQLforList(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.DESCENDING, start, stop, 10l, true, false, false);
+			CQLStatement actual = unBoundedIterator.next();
+			CQLStatement expected = CQLStatement.make(
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+					TABLE_NAME,
+					arrayFromValues(Long.valueOf(160),"777","222222","5", start, stop)
+			);
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(expected.getValues()[4], actual.getValues()[4]);
+			assertEquals(expected.getValues()[5], actual.getValues()[5]);
+
+			// testing if next start uuid is correctly applied
+			UUID nextUuid = UUID.fromString("ada375b1-a2d9-11e2-99a3-3f36d3955e43");
+			unBoundedIterator.setNextUuid(nextUuid);
+
+			// should not contain next shard
+			assertFalse(unBoundedIterator.hasNext());
+			actual = unBoundedIterator.next();
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(expected.getValues()[4], actual.getValues()[4]);
+			assertEquals(nextUuid, actual.getValues()[5]);
+
+			// testing iterator that has both start and end , non inclusive
+			unBoundedIterator = (UnboundableCQLStatementIterator) CObjectCQLGenerator.makeCQLforList(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.DESCENDING, start, stop, 10l, false, false, false);
+			actual = unBoundedIterator.next();
+			expected = CQLStatement.make(
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id > ? AND id < ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+					TABLE_NAME,
+					arrayFromValues(Long.valueOf(160),"777","222222","5", start, stop)
+			);
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(expected.getValues()[4], actual.getValues()[4]);
+			assertEquals(expected.getValues()[5], actual.getValues()[5]);
+
+			// testing if next start uuid is correctly applied
+			nextUuid = UUID.fromString("ada375b1-a2d9-11e2-99a3-3f36d3955e43");
+			unBoundedIterator.setNextUuid(nextUuid);
+
+			// should not contain next shard
+			assertFalse(unBoundedIterator.hasNext());
+			actual = unBoundedIterator.next();
+
+			expected = CQLStatement.make(
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id DESC LIMIT 10 ALLOW FILTERING;",
+					TABLE_NAME,
+					arrayFromValues(Long.valueOf(160),"777","222222","5", start, nextUuid)
+			);
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(expected.getValues()[4], actual.getValues()[4]);
+			assertEquals(expected.getValues()[5], actual.getValues()[5]);
+
+
+			// Repeating the above tests for ascending
+			unBoundedIterator = (UnboundableCQLStatementIterator) CObjectCQLGenerator.makeCQLforList(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.ASCENDING, start, stop, 10l, true, false, false);
+			actual = unBoundedIterator.next();
+			expected = CQLStatement.make(
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id ASC LIMIT 10 ALLOW FILTERING;",
+					TABLE_NAME,
+					arrayFromValues(Long.valueOf(160),"777","222222","5", start, stop)
+			);
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(expected.getValues()[4], actual.getValues()[4]);
+			assertEquals(expected.getValues()[5], actual.getValues()[5]);
+
+			// testing if next start uuid is correctly applied
+			nextUuid = UUID.fromString("ada375b1-a2d9-11e2-99a3-3f36d3955e43");
+			unBoundedIterator.setNextUuid(nextUuid);
+
+			// should not contain next shard
+			assertFalse(unBoundedIterator.hasNext());
+			actual = unBoundedIterator.next();
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(nextUuid, actual.getValues()[4]);
+			assertEquals(expected.getValues()[5], actual.getValues()[5]);
+
+			// testing iterator that has both start and end , non inclusive
+			unBoundedIterator = (UnboundableCQLStatementIterator) CObjectCQLGenerator.makeCQLforList(KEYSPACE_NAME, shardIdLists, def, indexkeys, CObjectOrdering.ASCENDING, start, stop, 10l, false, false, false);
+			actual = unBoundedIterator.next();
+			expected = CQLStatement.make(
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id > ? AND id < ? ORDER BY id ASC LIMIT 10 ALLOW FILTERING;",
+					TABLE_NAME,
+					arrayFromValues(Long.valueOf(160),"777","222222","5", start, stop)
+			);
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(expected.getValues()[4], actual.getValues()[4]);
+			assertEquals(expected.getValues()[5], actual.getValues()[5]);
+
+			// testing if next start uuid is correctly applied
+			nextUuid = UUID.fromString("ada375b1-a2d9-11e2-99a3-3f36d3955e43");
+			unBoundedIterator.setNextUuid(nextUuid);
+
+			// should not contain next shard
+			assertFalse(unBoundedIterator.hasNext());
+			actual = unBoundedIterator.next();
+
+			expected = CQLStatement.make(
+					"SELECT * FROM \"testspace\".\"testtypef9bf3332bb4ec879849ec43c67776131\" WHERE shardid = ? AND foreignid = ? AND instance = ? AND type = ? AND id >= ? AND id <= ? ORDER BY id ASC LIMIT 10 ALLOW FILTERING;",
+					TABLE_NAME,
+					arrayFromValues(Long.valueOf(160),"777","222222","5", nextUuid, stop)
+			);
+
+			assertEquals(expected.getQuery(), actual.getQuery());
+			assertEquals(expected.getValues()[0], actual.getValues()[0]);
+			assertEquals(expected.getValues()[1], actual.getValues()[1]);
+			assertEquals(expected.getValues()[2], actual.getValues()[2]);
+			assertEquals(expected.getValues()[3], actual.getValues()[3]);
+			assertEquals(expected.getValues()[4], actual.getValues()[4]);
+			assertEquals(expected.getValues()[5], actual.getValues()[5]);
+
 		}
 
 		public void testMakeCQLforGet() throws CObjectParseException,CObjectParseException, CQLGenerationException, IOException {
@@ -677,6 +922,16 @@ public class CObjectCQLGeneratorTest  extends TestCase {
 	public void testMakeWideTableCreate() throws CObjectParseException, IOException {
 		Subject s = new Subject(0);
 		s.testMakeWideTableCreate();
+	}
+
+	public void testUnboundableCQLStatementIterator() throws CQLGenerationException, CObjectParseException, IOException {
+		Subject s = new Subject(0);
+		s.testUnboundableCQLStatementIterator();
+	}
+
+	public void testBoundedCQLStatementIterator() throws CQLGenerationException, CObjectParseException, IOException {
+		Subject s = new Subject(0);
+		s.testBoundedLazyCQLStatementIterator();
 	}
 
 	public void testMakeCQLforCreate() throws CObjectParseException, IOException {

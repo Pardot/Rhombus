@@ -56,7 +56,7 @@ public class UnboundableCQLStatementIterator extends BaseCQLStatementIterator {
 		List values = Lists.newArrayList(CQLTemplate.getValues());
 		String query = CQLTemplate.getQuery();
 		//shardid is the first value
-		if (currentShardId == 0){
+		if (currentShardId == -1){
 			nextShard();
 		}
 		values.add(0, currentShardId);
@@ -81,6 +81,7 @@ public class UnboundableCQLStatementIterator extends BaseCQLStatementIterator {
 				values.set(endUuidIndex, nextUuid);
 			}
 
+			query = setIdClausesToBeInclusive(query);
 		}
 
 		// numberRemaining is the limit

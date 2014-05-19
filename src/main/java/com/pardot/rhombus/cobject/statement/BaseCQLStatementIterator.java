@@ -14,11 +14,11 @@ import java.util.UUID;
 public abstract class BaseCQLStatementIterator implements CQLStatementIterator {
 	private Map<String, Object> clientFilters;
 	protected long limit = 0;
-	protected long currentShardId = 0;
+	protected long currentShardId = -1;
 	protected UUID nextUuid = null;
 	CObjectOrdering ordering = null;
 	protected int startUUidIndex = 0;
-	protected int endUuidIndex =0;
+	protected int endUuidIndex = 0;
 
 	public Map<String, Object> getClientFilters() {
 		return clientFilters;
@@ -74,6 +74,21 @@ public abstract class BaseCQLStatementIterator implements CQLStatementIterator {
 			this.startUUidIndex = values.length - 2;
 			this.endUuidIndex =  values.length - 1;
 		}
+	}
+
+	protected String setIdClausesToBeInclusive(String query){
+
+		if (!query.contains("id >=")){
+
+			query = query.replace("id >", "id >=");
+		}
+
+		if (!query.contains("id <=")){
+
+			query = query.replace("id <", "id <=");
+		}
+
+		return query;
 	}
 
 	protected String insertStartUuidClause(String query){
