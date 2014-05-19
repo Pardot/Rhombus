@@ -3,8 +3,8 @@ package com.pardot.rhombus.cobject.statement;
 import com.google.common.collect.Lists;
 import com.pardot.rhombus.cobject.CQLGenerationException;
 
-import java.util.List;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Pardot, An ExactTarget Company

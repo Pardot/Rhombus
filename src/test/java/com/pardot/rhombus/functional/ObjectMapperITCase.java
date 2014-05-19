@@ -10,7 +10,6 @@ import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.*;
 import com.pardot.rhombus.helpers.TestHelpers;
 import com.pardot.rhombus.util.JsonUtil;
-import com.pardot.rhombus.util.UuidUtil;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -823,7 +822,6 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		criteria.setAllowFiltering(false);
 		criteria.setLimit(pageSize + 1);
 
-
 		dbObjects = om.list("object2", criteria);
 		assertEquals(pageSize + 1, dbObjects.size());
 		for (Map<String, Object> result : dbObjects) {
@@ -840,6 +838,81 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		criteria.setIndexKeys(indexValues);
 		criteria.setAllowFiltering(false);
 		criteria.setEndUuid(UUID.fromString(endUuid));
+		criteria.setLimit(pageSize + 1);
+
+		dbObjects = om.list("object2", criteria);
+		assertEquals(pageSize, dbObjects.size());
+
+		// simulating two page retrievals, like in the php side iterator
+		// assuming the page size is 100
+		// limit is pageSize + 1 , 101
+		// we should get 100 objects back in the last iteration
+		// ordering DESC
+		// inclusive set to false
+
+		nextItem = 0;
+
+		criteria = new Criteria();
+		criteria.setIndexKeys(indexValues);
+		criteria.setAllowFiltering(false);
+		criteria.setInclusive(false);
+		criteria.setLimit(pageSize + 1);
+
+		dbObjects = om.list("object2", criteria);
+		assertEquals(pageSize + 1, dbObjects.size());
+		for (Map<String, Object> result : dbObjects) {
+
+			String dbObjectId = (String) result.get("id").toString();
+			if (nextItem == pageSize) {
+				break;
+			}
+			nextItem++;
+		}
+
+		endUuid = dbObjects.get(nextItem).get("id").toString();
+		criteria = new Criteria();
+		criteria.setIndexKeys(indexValues);
+		criteria.setAllowFiltering(false);
+		criteria.setEndUuid(UUID.fromString(endUuid));
+		criteria.setLimit(pageSize + 1);
+
+		dbObjects = om.list("object2", criteria);
+		assertEquals(pageSize, dbObjects.size());
+
+
+		// simulating two page retrievals, like in the php side iterator
+		// assuming the page size is 100
+		// limit is pageSize + 1 , 101
+		// we should get 100 objects back in the last iteration
+		// ordering ASC
+		// inclusive set to false
+
+		nextItem = 0;
+
+		criteria = new Criteria();
+		criteria.setIndexKeys(indexValues);
+		criteria.setAllowFiltering(false);
+		criteria.setInclusive(false);
+		criteria.setOrdering("ASC");
+		criteria.setLimit(pageSize + 1);
+
+		dbObjects = om.list("object2", criteria);
+		assertEquals(pageSize + 1, dbObjects.size());
+		for (Map<String, Object> result : dbObjects) {
+
+			String dbObjectId = (String) result.get("id").toString();
+			if (nextItem == pageSize) {
+				break;
+			}
+			nextItem++;
+		}
+
+		startUuid = dbObjects.get(nextItem).get("id").toString();
+		criteria = new Criteria();
+		criteria.setIndexKeys(indexValues);
+		criteria.setAllowFiltering(false);
+		criteria.setOrdering("ASC");
+		criteria.setStartUuid(UUID.fromString(startUuid));
 		criteria.setLimit(pageSize + 1);
 
 		dbObjects = om.list("object2", criteria);

@@ -1,8 +1,7 @@
 package com.pardot.rhombus.cobject.statement;
 
 import com.google.common.collect.Lists;
-import com.pardot.rhombus.cobject.statement.CQLStatement;
-import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
+import com.pardot.rhombus.cobject.CObjectOrdering;
 
 import java.util.Iterator;
 import java.util.List;
@@ -45,14 +44,52 @@ public class BoundedLazyCQLStatementIterator extends BaseCQLStatementIterator {
 
 	@Override
 	public CQLStatement next() {
-		CQLStatement ret = CQLStatement.make(String.format(CQLTemplate.getQuery(), numberRemaining), this.getObjectName());
 		List values = Lists.newArrayList(CQLTemplate.getValues());
-		//shardid is the first value and limit should be the last value
-		values.add(0,this.shardIdIterator.next());
-		ret.setValues(values.toArray());
+		String query = CQLTemplate.getQuery();
+		//shardid is the first value
+		if (currentShardId == -1){
+			nextShard();
+		}
+		values.add(0, currentShardId);
+
+		// the id in the where clause is the last value
+		if (nextUuid != null){
+
+			setStartEndUuidIndexes(CQLTemplate, values.toArray());
+
+			if (ordering == CObjectOrdering.ASCENDING){
+
+				if (startUUidIndex == 0){
+
+					query = insertStartUuidClause(CQLTemplate.getQuery());
+					values.add(endUuidIndex, nextUuid);
+
+				} else {
+					values.set(startUUidIndex, nextUuid);
+				}
+
+			} else {
+				values.set(endUuidIndex, nextUuid);
+			}
+
+			query = setIdClausesToBeInclusive(query);
+		}
+
+		// numberRemaining is the limit
+		CQLStatement ret = CQLStatement.make(String.format(query, numberRemaining), this.getObjectName(), values.toArray());
 		return ret;
 	}
 
+	@Override
+	public void setLimit(int limit){
+		this.numberRemaining = limit;
+	}
+
+	@Override
+	public void nextShard(){
+
+		currentShardId = shardIdIterator.next();
+	}
 	public boolean isBounded(){
 		return true;
 	}

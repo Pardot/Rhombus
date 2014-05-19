@@ -12,7 +12,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -94,4 +97,108 @@ public class ObjectMapperClientFilteringITCase extends RhombusFunctionalTest {
 		cm.teardown();
 	}
 
+	@Test
+	public void testClientFilterNoPaging() throws Exception {
+		logger.debug("Starting testClientFilterNoPaging");
+
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
+		assertNotNull(definition);
+		definition.getDefinitions().get("testtype");
+
+		//Build the keyspace, get the object mapper, and truncate data
+		cm.buildKeyspace(definition, true);
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper(definition.getName());
+		om.setExecuteAsync(false);
+
+		Map<String, Object> testObject;
+		long pageSize = 50;
+		for(int i = 0 ; i < pageSize*2 - 5 ; i++) {
+			testObject = Maps.newHashMap();
+			testObject.put("foreignid", 123l);
+			testObject.put("filtered", 0);
+			testObject.put("data1", "notfiltered");
+			om.insert("testtype", testObject);
+		}
+
+		testObject = Maps.newHashMap();
+		testObject.put("foreignid", 123l);
+		testObject.put("filtered", 1);
+		testObject.put("data1", "filtered");
+		UUID filteredKey = (UUID)om.insert("testtype", testObject);
+
+		Thread.sleep(1000l);
+
+		// Make sure we get one filtered result back when we query with a limit less than the number of objects
+		Criteria foreignIdCriteria = new Criteria();
+		foreignIdCriteria.setOrdering(CObjectOrdering.DESCENDING);
+		foreignIdCriteria.setLimit(pageSize);
+		foreignIdCriteria.setAllowFiltering(true);
+		SortedMap<String, Object> indexKeys = Maps.newTreeMap();
+		indexKeys.put("foreignid", 123l);
+		indexKeys.put("filtered", 1);
+		foreignIdCriteria.setIndexKeys(indexKeys);
+		List<Map<String, Object>> dbObjects = om.list("testtype", foreignIdCriteria);
+		assertEquals(1, dbObjects.size());
+
+		//Teardown connections
+		cm.teardown();
+	}
+
+	@Test
+	public void testClientFilterPaging() throws Exception {
+		logger.debug("Starting testClientFilterPaging");
+
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
+		assertNotNull(definition);
+		definition.getDefinitions().get("testtype");
+
+		//Build the keyspace, get the object mapper, and truncate data
+		cm.buildKeyspace(definition, true);
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper(definition.getName());
+		om.setExecuteAsync(false);
+
+		Map<String, Object> testObject;
+		testObject = Maps.newHashMap();
+		testObject.put("foreignid", 123l);
+		testObject.put("filtered", 1);
+		testObject.put("data1", "filtered");
+		UUID filteredKey = (UUID)om.insert("testtype", testObject);
+
+
+		long pageSize = 50;
+		for(int i = 0 ; i < pageSize*2 + 1 ; i++) {
+			testObject = Maps.newHashMap();
+			testObject.put("foreignid", 123l);
+			testObject.put("filtered", 0);
+			testObject.put("data1", "notfiltered");
+			om.insert("testtype", testObject);
+		}
+
+		Thread.sleep(1000l);
+
+		// Make sure we get one filtered result back when we query with a limit less than the number of objects
+		Criteria foreignIdCriteria = new Criteria();
+		foreignIdCriteria.setOrdering(CObjectOrdering.DESCENDING);
+		foreignIdCriteria.setLimit(pageSize);
+		foreignIdCriteria.setAllowFiltering(true);
+		SortedMap<String, Object> indexKeys = Maps.newTreeMap();
+		indexKeys.put("foreignid", 123l);
+		indexKeys.put("filtered", 1);
+		foreignIdCriteria.setIndexKeys(indexKeys);
+		List<Map<String, Object>> dbObjects = om.list("testtype", foreignIdCriteria);
+		assertEquals(1, dbObjects.size());
+
+		//Teardown connections
+		cm.teardown();
+	}
 }
