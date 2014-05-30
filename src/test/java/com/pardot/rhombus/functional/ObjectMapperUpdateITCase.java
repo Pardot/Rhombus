@@ -1,6 +1,8 @@
 package com.pardot.rhombus.functional;
 
 
+import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.Criteria;
@@ -213,5 +215,42 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		Map<String, Object> result = om.getByKey("object_audit", id);
 		assertNotNull(result);
 		assertEquals(null, result.get("changes"));
+	}
+
+	@Test
+	public void testUpdatingNonExistingObject() throws Exception {
+		logger.debug("Starting testUpdatingNonExistingObject");
+
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "AuditKeyspace.js");
+		assertNotNull(definition);
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, true);
+		logger.debug("Built keyspace: {}", definition.getName());
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper();
+		om.setLogCql(true);
+
+		//Insert our test data
+		Map<String, Object> values = Maps.newHashMap();
+		values.put("account_id", "00000003-0000-0030-0040-000000030000");
+		values.put("object_type", "Account");
+		values.put("object_id", "00000003-0000-0030-0040-000000030000");
+		values.put("source_type", null);
+		values.put("source_id", null);
+		values.put("user_id", null);
+		values.put("changes", "{\"Website\":{\"f\":\"http://www.somesite1.com\",\"t\":\"http://www.somesite2.com\"}}");
+
+		UUID id = UUIDs.timeBased();
+		om.update("object_audit", id, JsonUtil.rhombusMapFromJsonMap(values,definition.getDefinitions().get("object_audit")));
+
+		//Get back the data and make sure things match
+		Map<String, Object> result = om.getByKey("object_audit", id);
+		assertNotNull(result);
+		assertEquals("Account", result.get("object_type"));
 	}
 }

@@ -372,6 +372,12 @@ public class ObjectMapper implements CObjectShardList {
 		//New Version
 		//(1) Get the old version
 		Map<String, Object> oldversion = getByKey(objectType, key);
+		if(oldversion == null) {
+			// If we couldn't find the old version, the best we can do is an insert
+			logger.info("Update requested for non-existent object, inserting instead");
+			insert(objectType, values, key);
+			return key;
+		}
 
 		//(2) Pass it all into the cql generator so it can create the right statements
 		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
