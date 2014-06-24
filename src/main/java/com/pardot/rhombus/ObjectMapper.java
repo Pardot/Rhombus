@@ -252,30 +252,40 @@ public class ObjectMapper implements CObjectShardList {
 	/**
 	 * Insert a batch of mixed new object with values
 	 * @param objects Objects to insert
-	 * @return ID of most recently inserted object
+	 * @return Map of ids of inserted objects
 	 * @throws CQLGenerationException
 	 */
-	public Object insertBatchMixed(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, RhombusException {
+	public Map<String, List<UUID>> insertBatchMixed(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, RhombusException {
 		logger.debug("Insert batch mixed");
 		List<CQLStatementIterator> statementIterators = Lists.newArrayList();
-		Object key = null;
+		Map<String, List<UUID>> insertedIds = Maps.newHashMap();
 		for(String objectType : objects.keySet()) {
+			List<UUID> ids = Lists.newArrayList();
 			for(Map<String, Object> values : objects.get(objectType)) {
+				UUID uuid;
 				//use the id that was passed in for the insert if it was provided. Otherwise assume the key is a timeuuid
 				if(values.containsKey("id")){
-					key = values.get("id");
+					try {
+						uuid = UUID.fromString(values.get("id").toString());
+					} catch (IllegalArgumentException e) {
+						throw new RhombusException("Failed to parse input id " + values.get("id").toString() + " as UUID for object type " + objectType + " in insertBatchMixed");
+					}
 					values.remove("id");
 				}
 				else{
-					key = UUIDs.timeBased();
+					uuid = UUIDs.timeBased();
 				}
 				long timestamp = System.currentTimeMillis();
-				CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, key, timestamp);
+				CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, uuid, timestamp);
 				statementIterators.add(statementIterator);
+				ids.add(uuid);
+			}
+			if (!ids.isEmpty()) {
+				insertedIds.put(objectType, ids);
 			}
 		}
 		executeStatements(statementIterators);
-		return key;
+		return insertedIds;
 	}
 
 

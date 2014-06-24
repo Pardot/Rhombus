@@ -2,6 +2,7 @@ package com.pardot.rhombus.functional;
 
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.ConnectionManager;
@@ -954,7 +955,9 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		multiInsertMap.put("object2", updatedValues2);
 
 		//Insert data
-		om.insertBatchMixed(multiInsertMap);
+		Map<String, List<UUID>> insertResults = om.insertBatchMixed(multiInsertMap);
+		assertTrue(insertResults.containsKey("object1"));
+		assertTrue(insertResults.containsKey("object2"));
 
 		//Query it back out
 		//Make sure that we have the proper number of results
@@ -965,9 +968,46 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		criteria.setIndexKeys(indexValues);
 		criteria.setLimit(50L);
 		List<Map<String, Object>> results = om.list("object1", criteria);
+		// Index by field1 so we can compare
+		Map<String, Map<String, Object>> indexedResults = Maps.uniqueIndex(results, new Function<Map<String, Object>, String>() {
+			public String apply(Map<String, Object> object) {
+				return object.get("id").toString();
+			}
+		});
 		assertEquals(3, results.size());
+		// Verify the insert results were correct
+		List<UUID> ids = insertResults.get("object1");
+		for(int i = 0; i < updatedValues1.size(); i++) {
+			// Ensure that the updatedValues insert result was in the right order
+			String key = "Value" + (i+1);
+			// Verify that the field1 value was where it should be in updatedValues
+			assertEquals(updatedValues1.get(i).get("field1").toString(), key);
+			UUID id = ids.get(i);
+			assertTrue(indexedResults.containsKey(id.toString()));
+			Map<String, Object> result = indexedResults.get(id.toString());
+			assertEquals(key, result.get("field1"));
+		}
+
 		results = om.list("object2", criteria);
 		assertEquals(4, results.size());
+		// Index by field1 so we can compare
+		indexedResults = Maps.uniqueIndex(results, new Function<Map<String, Object>, String>() {
+			public String apply(Map<String, Object> object) {
+				return object.get("id").toString();
+			}
+		});
+		// Verify the insert results were correct
+		ids = insertResults.get("object2");
+		for(int i = 0; i < updatedValues2.size(); i++) {
+			// Ensure that the updatedValues insert result was in the right order
+			String key = "Value" + (i+4);
+			// Verify that the field1 value was where it should be in updatedValues
+			assertEquals(updatedValues2.get(i).get("field2").toString(), key);
+			UUID id = ids.get(i);
+			assertTrue(indexedResults.containsKey(id.toString()));
+			Map<String, Object> result = indexedResults.get(id.toString());
+			assertEquals(key, result.get("field2"));
+		}
 		//now test the count function too
 		long count = om.count("object2", criteria);
 		assertEquals(4, count);
