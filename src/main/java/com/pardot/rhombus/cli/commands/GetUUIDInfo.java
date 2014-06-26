@@ -47,7 +47,7 @@ public class GetUUIDInfo extends RhombusCli {
 		String stringuuid = cl.getOptionValue("uuid");
 		UUID uuid = UUID.fromString(stringuuid);
 		Integer namespace = UuidUtil.namespaceFromUUID(uuid);
-		Integer name = UuidUtil.nameFromUUID(uuid);
+		Long name = UuidUtil.nameFromUUID(uuid);
 
 		System.out.println("Namespace = " + namespace);
 		System.out.println("Name = " + name);
