@@ -1,7 +1,5 @@
 package com.pardot.rhombus.cobject.statement;
 
-import com.pardot.rhombus.cobject.statement.CQLStatement;
-
 import java.util.Iterator;
 import java.util.Map;
 
@@ -17,4 +15,5 @@ public interface CQLStatementIterator extends Iterator<CQLStatement>{
 	public boolean hasNext(long currentResultCount);
 	public boolean isBounded();
 	public long size();
+	public void nextShard();
 }

@@ -2,15 +2,11 @@ package com.pardot.rhombus.functional;
 
 
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.Criteria;
 import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
-import com.pardot.rhombus.cobject.CObjectVisitor;
-import com.pardot.rhombus.cobject.IndexUpdateRow;
-import com.pardot.rhombus.helpers.TestHelpers;
 import com.pardot.rhombus.util.JsonUtil;
 import org.joda.time.DateTime;
 import org.junit.BeforeClass;

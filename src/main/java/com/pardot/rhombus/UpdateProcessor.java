@@ -122,14 +122,19 @@ public class UpdateProcessor {
 				listOfValuesToDelete.add(update);
 				listOfIndexesToDelete.addAll(
 					getListOfEffectedIndexes(objectMapper.getKeyspaceDefinition().getDefinitions().get(row.getObjectName()),
-					mostRecentUpdate,
-					update));
+						mostRecentUpdate,
+						update
+					)
+				);
 			}
 		}
 		//delete the list of indexes with a timestamp of the current update
 		for(CIndex index : listOfIndexesToDelete){
 			for(Map<String,Object> values: listOfValuesToDelete){
-				objectMapper.deleteObsoleteIndex(row,index, values);
+				//if any of the values are null we can skip it because its not actually a written index
+				if(!areAnyValuesNull(values)){
+					objectMapper.deleteObsoleteIndex(row,index, values);
+				}
 			}
 		}
 
@@ -140,7 +145,15 @@ public class UpdateProcessor {
 
 	}
 
-	//todo add unit test
+	protected boolean areAnyValuesNull(Map<String,Object> indexValues){
+		for(String key : indexValues.keySet()){
+			if(indexValues.get(key) == null){
+				return true;
+			}
+		}
+		return false;
+	}
+
 	protected List<CIndex> getListOfEffectedIndexes(CDefinition def, Map<String,Object> a, Map<String,Object> b){
 		List<CIndex> ret = Lists.newArrayList();
 		for(CIndex i: def.getIndexesAsList()){
@@ -153,7 +166,6 @@ public class UpdateProcessor {
 		return ret;
 	}
 
-	//todo add unit test
 	protected boolean areIndexValuesEqual(Map<String,Object> a, Map<String,Object> b){
 		if(a.keySet().size() != b.keySet().size()){
 			return false;

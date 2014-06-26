@@ -5,11 +5,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
-import com.yammer.metrics.core.TimerContext;
+import com.pardot.rhombus.util.StringUtil;
 import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.pardot.rhombus.util.StringUtil;
 
 import java.util.Arrays;
 import java.util.List;

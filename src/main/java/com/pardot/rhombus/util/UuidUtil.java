@@ -2,6 +2,8 @@ package com.pardot.rhombus.util;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import java.util.UUID;
 
 /**
@@ -105,6 +107,16 @@ public class UuidUtil {
         char msb = (char)((uuid.getMostSignificantBits() >>> 16) & 0xffff);
         long out = uuid.getLeastSignificantBits() & 0xffffffffffffL;
         return out | ((long)msb << 48);
+	}
+
+	static final long NUMBER_OF_100NS_INTERVALS_SINCE_UUID_EPOCH = 0x01b21dd213814000L;
+
+	public static DateTime getDateFromUUID(UUID uuid) {
+		return new DateTime(convertUUIDToJavaMillis(uuid), DateTimeZone.UTC);
+	}
+
+	public static Long convertUUIDToJavaMillis(UUID uuid){
+		return (uuid.timestamp() - NUMBER_OF_100NS_INTERVALS_SINCE_UUID_EPOCH) / 10000;
 	}
 
 
