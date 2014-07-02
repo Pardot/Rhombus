@@ -132,6 +132,16 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 			return true;
 		}
 
+		@Override
+		public void setUp() {
+
+		}
+
+		@Override
+		public void cleanUp() {
+
+		}
+
 		public long getObjectCount() {
 			return objectCount;
 		}
