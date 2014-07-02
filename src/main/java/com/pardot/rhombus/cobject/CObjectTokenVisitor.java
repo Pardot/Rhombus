@@ -22,6 +22,10 @@ public abstract class CObjectTokenVisitor {
 
 	public abstract boolean shouldInclude(Map<String, Object> object);
 
+	public abstract void setUp();
+
+	public abstract void cleanUp();
+
 	public CObjectTokenVisitor(String name) {
 		this.name = name;
 	}

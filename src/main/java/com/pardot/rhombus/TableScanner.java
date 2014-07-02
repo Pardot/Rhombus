@@ -91,12 +91,14 @@ public class TableScanner {
 	}
 
 	public void handle(Long minToken, Long maxToken, CObjectTokenVisitor visitor) {
+		visitor.setUp();
 		List<Map<String, Object>> results = executeStatement(objectType, minToken, maxToken, batchSize);
 		while(results != null && results.size() > 0) {
 			visitResults(results, visitor);
 			String minUuid = String.valueOf(results.get(results.size() - 1).get("id"));
 			results = executeStatement(objectType, minUuid, maxToken, batchSize);
 		}
+		visitor.cleanUp();
 		shutdownLatch.countDown();
 	}
 
