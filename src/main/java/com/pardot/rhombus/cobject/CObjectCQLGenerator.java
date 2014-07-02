@@ -60,6 +60,8 @@ public class CObjectCQLGenerator {
 	protected static final String TEMPLATE_SELECT_ROW_INDEX_UPDATE = "SELECT * FROM \"%s\".\"" + INDEX_UPDATES_TABLE_NAME + "\" where statictablename = ? and instanceid = ? order by id DESC;";
 	protected static final String TEMPLATE_SET_COMPACTION_LEVELED = "ALTER TABLE \"%s\".\"%s\" WITH compaction = { 'class' :  'LeveledCompactionStrategy',  'sstable_size_in_mb' : %d }";
 	protected static final String TEMPLATE_SET_COMPACTION_TIERED = "ALTER TABLE \"%s\".\"%s\" WITH compaction = { 'class' :  'SizeTieredCompactionStrategy',  'min_threshold' : %d }";
+	protected static final String TEMPLATE_SCAN_TABLE_MIN_TOKEN = "SELECT * FROM \"%s\".\"%s\" WHERE token(id) >= ? AND token(id) <= ? LIMIT %d;";
+	protected static final String TEMPLATE_SCAN_TABLE_MIN_ID = "SELECT * FROM \"%s\".\"%s\" WHERE token(id) > token(?) AND token(id) <= ? LIMIT %d;";
 	protected static final String TEMPLATE_TABLE_SCAN = "SELECT * FROM \"%s\".\"%s\";";
 	protected static final String TEMPLATE_ADD_FIELD = "ALTER TABLE \"%s\".\"%s\" add %s %s";
 
@@ -887,6 +889,28 @@ public class CObjectCQLGenerator {
 		String statement = String.format(TEMPLATE_SELECT_KEYSPACE, keyspace, name);
 		Object[] values = {name};
 		return CQLStatement.make(statement, KEYSPACE_DEFINITIONS_TABLE_NAME, values);
+	}
+
+	public CQLStatementIterator makeCQLForScanTableMinToken(String objectType, Long startToken, Long endToken, Long limit) {
+		String cql = String.format(TEMPLATE_SCAN_TABLE_MIN_TOKEN, this.keyspace, objectType, limit);
+		Object[] values = new Object[2];
+		values[0] = startToken;
+		values[1] = endToken;
+		CQLStatement statement = CQLStatement.make(cql, objectType, values);
+		List<CQLStatement> ret = Lists.newArrayList();
+		ret.add(statement);
+		return new BoundedCQLStatementIterator(ret);
+	}
+
+	public CQLStatementIterator makeCQLForScanTableMinId(String objectType, Object startId, Long endToken, Long limit) {
+		String cql = String.format(TEMPLATE_SCAN_TABLE_MIN_ID, this.keyspace, objectType, limit);
+		Object[] values = new Object[2];
+		values[0] = startId;
+		values[1] = endToken;
+		CQLStatement statement = CQLStatement.make(cql, objectType, values);
+		List<CQLStatement> ret = Lists.newArrayList();
+		ret.add(statement);
+		return new BoundedCQLStatementIterator(ret);
 	}
 
 	protected static CQLStatementIterator makeCQLforDelete(String keyspace, CDefinition def, UUID key, Map<String,Object> data, Long timestamp){

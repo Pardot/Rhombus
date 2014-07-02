@@ -21,7 +21,7 @@ import java.util.UUID;
  */
 public class UpdateProcessor {
 
-	private static Logger logger = LoggerFactory.getLogger(ObjectMapper.class);
+	private static Logger logger = LoggerFactory.getLogger(UpdateProcessor.class);
 	private ObjectMapper objectMapper;
 
 	public UpdateProcessor(ObjectMapper om){
