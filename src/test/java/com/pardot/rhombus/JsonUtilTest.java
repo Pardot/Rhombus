@@ -36,7 +36,7 @@ public class JsonUtilTest extends JsonUtil{
     public void typedObjectFromDateAndVarchar() throws CObjectParseException {
         CField field = new CField("test", "varchar");
         Date jsonValue = new Date(1376079901000L);
-        String expected = "Fri Aug 09 16:25:01 EDT 2013";
+        String expected = jsonValue.toString();
 
         Object result = JsonUtil.typedObjectFromValueAndField(jsonValue, field);
         assertEquals(expected, result.toString());
