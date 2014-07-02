@@ -475,6 +475,17 @@ public class ObjectMapper implements CObjectShardList {
 		}
 	}
 
+	public List<Map<String, Object>> scanTableWithStartToken(String objectType, Long startToken, Long endToken, Long limit) throws CQLGenerationException, RhombusException {
+		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
+		CQLStatementIterator statementIterator = cqlGenerator.makeCQLForScanTableMinToken(objectType, startToken, endToken, limit);
+		return mapResults(statementIterator, def, limit);
+	}
+
+	public List<Map<String, Object>> scanTableWithStartId(String objectType, String startId, Long endToken, Long limit) throws CQLGenerationException, RhombusException {
+		CDefinition def = keyspaceDefinition.getDefinitions().get(objectType);
+		CQLStatementIterator statementIterator = cqlGenerator.makeCQLForScanTableMinId(objectType, JsonUtil.typedObjectFromValueAndFieldType(startId, this.getDefinition(objectType).getPrimaryKeyCDataType()), endToken, limit);
+		return mapResults(statementIterator, def, limit);
+	}
 
 	protected SortedMap<String,Object> unpackIndexValuesFromJson(CDefinition def, String json) throws IOException, JsonMappingException {
 		com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
