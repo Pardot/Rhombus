@@ -123,7 +123,7 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		ObjectMapper om = cm.getObjectMapper();
 		om.setLogCql(true);
 
-		long insertNum = 20000l;
+		long insertNum = 2000l;
 		long batchSize = 200;
 		insertNObjects(om, insertNum, batchSize);
 

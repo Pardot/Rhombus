@@ -158,8 +158,6 @@ public class ObjectMapper implements CObjectShardList {
 								logger.error("Could not rebuild table: {}", cql.getQuery(), qe);
 							}
 							cqlExecutor.executeSync(cql);
-						} else {
-							logger.warn("Table already exists and will not be updated");
 						}
 					}
 				}
