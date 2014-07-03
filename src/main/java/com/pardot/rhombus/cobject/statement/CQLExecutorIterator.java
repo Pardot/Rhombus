@@ -4,6 +4,8 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.collect.Lists;
 import com.pardot.rhombus.cobject.CQLExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -12,8 +14,10 @@ import java.util.*;
  */
 public class CQLExecutorIterator implements Iterator {
 
+	private static Logger logger = LoggerFactory.getLogger(CQLExecutorIterator.class);
+
 	private List<Row> page;
-	private	int pageSize = 50;
+	private	long pageSize = 50l;
 	private int nextItem = 0;
 	private int currentPage = 0;
 	private CQLExecutor cqlExecutor;
@@ -85,7 +89,7 @@ public class CQLExecutorIterator implements Iterator {
 			statementNumber++;
 			populatePage(resultSet);
 
-			if (page.size() > pageSize) {
+			if (statementIterator.size() > currentPage + 1 && page.size() > pageSize) {
 				hasMore = true;
 			} else {
 				hasMore = false;
@@ -103,7 +107,7 @@ public class CQLExecutorIterator implements Iterator {
 
 			populatePage(resultSet);
 
-			if (page.size() > pageSize) {
+			if (statementIterator.size() > currentPage + 1 && page.size() > pageSize) {
 				hasMore = true;
 			} else {
 				hasMore = false;
@@ -136,12 +140,12 @@ public class CQLExecutorIterator implements Iterator {
 		statementIterator.setClientFilters(clientFilters);
 	}
 
-	public void setPageSize(int pageSize){
+	public void setPageSize(long pageSize){
 
 		this.pageSize = pageSize;
 	}
 
-	public int getPageSize(){
+	public long getPageSize(){
 		return pageSize;
 	}
 }

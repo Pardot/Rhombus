@@ -28,7 +28,7 @@ public abstract class BaseCQLStatementIterator implements CQLStatementIterator {
 		this.clientFilters = clientFilters;
 	}
 
-	public void setLimit(int limit){
+	public void setLimit(long limit){
 		this.limit = limit;
 	}
 

@@ -81,7 +81,7 @@ public class BoundedLazyCQLStatementIterator extends BaseCQLStatementIterator {
 	}
 
 	@Override
-	public void setLimit(int limit){
+	public void setLimit(long limit){
 		this.numberRemaining = limit;
 	}
 
