@@ -108,8 +108,6 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 	@Test
 	public void testBigScan() throws Exception {
 		String objectType = "simple";
-		String index1Value = "value1";
-		String index2Value = "value2";
 
 		//Build the connection manager
 		ConnectionManager cm = getConnectionManager();
@@ -125,7 +123,7 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		ObjectMapper om = cm.getObjectMapper();
 		om.setLogCql(true);
 
-		long insertNum = 2000l;
+		long insertNum = 20000l;
 		long batchSize = 200;
 		insertNObjects(om, insertNum, batchSize);
 

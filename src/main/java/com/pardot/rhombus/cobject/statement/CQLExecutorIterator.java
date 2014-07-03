@@ -26,7 +26,7 @@ public class CQLExecutorIterator implements Iterator {
 	public int statementNumber = 0;
 
 	public CQLExecutorIterator(CQLExecutor cqlExecutor, BaseCQLStatementIterator statementIterator){
-
+		logger.info("Creating exutor with iterator shards {}", statementIterator);
 		this.cqlExecutor = cqlExecutor;
 		this.statementIterator = statementIterator;
 	}
@@ -89,13 +89,13 @@ public class CQLExecutorIterator implements Iterator {
 			statementNumber++;
 			populatePage(resultSet);
 
-			if (statementIterator.size() > currentPage + 1 && page.size() > pageSize) {
+			if (page.size() > pageSize) {
 				hasMore = true;
 			} else {
 				hasMore = false;
 			}
 			currentPage++;
-
+			logger.info("Fetched page {}", currentPage);
 		} else if (hasMore && (nextItem == pageSize)){
 
 			Row row = page.get(nextItem);
@@ -107,13 +107,14 @@ public class CQLExecutorIterator implements Iterator {
 
 			populatePage(resultSet);
 
-			if (statementIterator.size() > currentPage + 1 && page.size() > pageSize) {
+			if (page.size() > pageSize) {
 				hasMore = true;
 			} else {
 				hasMore = false;
 			}
 			nextItem = 0;
 			currentPage++;
+			logger.info("Fetched page {}", currentPage);
 		}
 	}
 
