@@ -65,6 +65,7 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		}
 
 		assertEquals(20l, totalCount);
+		cm.teardown();
 	}
 
 	@Test
@@ -103,6 +104,7 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		}
 
 		assertEquals(83l, totalCount);
+		cm.teardown();
 	}
 
 	@Test
@@ -137,6 +139,7 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		}
 
 		assertEquals(insertNum, totalCount);
+		cm.teardown();
 	}
 
 	public void insertNObjects(ObjectMapper om, long number, long batchSize) throws RhombusException, CQLGenerationException {

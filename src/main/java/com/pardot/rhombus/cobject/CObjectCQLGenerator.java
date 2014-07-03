@@ -347,7 +347,6 @@ public class CObjectCQLGenerator {
 			//the query is either bounded or unsharded, so we do not need to check the shardindex
 			try {
 				Range<Long> shardIdRange = i.getShardingStrategy().getShardKeyRange(startTime,endTime);
-				logger.info("Shard id range is {}", shardIdRange);
 				returnIterator = new UnboundableCQLStatementIterator(shardIdRange, limit, ordering, templateCQLStatement, def.getName());
 			}
 			catch(ShardStrategyException e){

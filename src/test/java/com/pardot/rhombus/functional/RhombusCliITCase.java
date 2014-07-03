@@ -44,6 +44,8 @@ public class RhombusCliITCase extends RhombusFunctionalTest {
 		assertEquals("clifunctional", keyspace.getName());
 		assertEquals(3, keyspace.getDefinitions().get("clitest").getFields().size());
 		assertEquals(2, keyspace.getDefinitions().get("clitest").getIndexes().size());
+
+		cm.teardown();
 	}
 
 	@Test
@@ -83,6 +85,8 @@ public class RhombusCliITCase extends RhombusFunctionalTest {
 		assertEquals(3, keyspace.getDefinitions().get("clitest").getFields().size());
 		assertEquals(3, keyspace.getDefinitions().get("clitest").getIndexes().size());
 		assertEquals(2, keyspace.getDefinitions().get("clitest2").getIndexes().size());
+
+		cm.teardown();
 	}
 
 	@Test
@@ -120,6 +124,8 @@ public class RhombusCliITCase extends RhombusFunctionalTest {
 		//cm = getConnectionManager();
 		//ResultSet result = cm.getEmptySession().execute("describe keyspace clifunctional;");
 		//result.one();
+
+		cm.teardown();
 	}
 
 

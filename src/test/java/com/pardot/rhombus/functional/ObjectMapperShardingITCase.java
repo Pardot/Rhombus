@@ -66,6 +66,8 @@ public class ObjectMapperShardingITCase extends RhombusFunctionalTest {
 		criteria.setLimit(50L);
 		List<Map<String, Object>> results = om.list("object1", criteria);
 		assertEquals(3, results.size());
+
+		cm.teardown();
 	}
 
 	@Test
@@ -100,6 +102,8 @@ public class ObjectMapperShardingITCase extends RhombusFunctionalTest {
 		List<Map<String, Object>> results = om.list("object1", criteria);
 
 		assertEquals(1, results.size());
+
+		cm.teardown();
 	}
 
 }

@@ -57,6 +57,8 @@ public class ObjectMapperTableScanITCase extends RhombusFunctionalTest {
 		for(Map<String, Object> value : next10) {
 			assertFalse(valuesContainsId(first10, value.get("id")));
 		}
+
+		cm.teardown();
 	}
 
 	private boolean valuesContainsId(List<Map<String, Object>> values, Object id) {

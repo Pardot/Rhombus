@@ -29,7 +29,6 @@ public class BoundedLazyCQLStatementIterator extends BaseCQLStatementIterator {
 		this.limit = limit;
 		this.numberRemaining = this.limit;
 		this.CQLTemplate = CQLTemplate;
-		logger.info("Creating bounded statement iterator with shard ids {}", shardIds);
 		this.shardIdIterator = shardIds.iterator();
 		this.setObjectName(objectName);
 	}

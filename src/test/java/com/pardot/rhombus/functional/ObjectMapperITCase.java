@@ -161,6 +161,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		result = om.getByKey("customkey", "B");
 		assertEquals("B-data1", result.get("data1"));
 
+		cm.teardown();
 	}
 
 	@Test
@@ -223,6 +224,8 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		om.delete("testtype", key3);
 		//Query to get back the object from the database
 		assertEquals(null, om.getByKey("testtype", key3));
+
+		cm.teardown();
 	}
 
 	//This does not test blob or counter types
@@ -356,6 +359,8 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 			}
 			logger.debug("{} Result: {}, Input: {}", key, result.get(key), object.get(key));
 		}
+
+		cm.teardown();
 	}
 
 	@Test
@@ -411,6 +416,8 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//now test the count function
 		long count = om.count("object2", criteria);
 		assertEquals(nDataItems, count);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -467,6 +474,8 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//now test the count function
 		long count = om.count("object2", criteria);
 		assertEquals(nDataItems, count);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -524,6 +533,8 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//now test the count function
 		long count = om.count("object2", criteria);
 		assertEquals(20, count);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -586,6 +597,8 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//now test the count function
 		long count = om.count("object2", criteria);
 		assertEquals((nDataItems / 3) + 1, count);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -649,6 +662,8 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//now test the count function
 		long count = om.count("object2", criteria);
 		assertEquals((nDataItems / 3) - 10, count);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -919,6 +934,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		dbObjects = om.list("object2", criteria);
 		assertEquals(pageSize, dbObjects.size());
 
+		cm.teardown();
 	}
 
 	@Test
@@ -1011,6 +1027,8 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//now test the count function too
 		long count = om.count("object2", criteria);
 		assertEquals(4, count);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -1082,9 +1100,9 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		long syncTime = end - start;
 
 		System.out.println("Visiting all objects took " + syncTime + "ms");
-
-
 		assertEquals(20000, visitor.getCount());
+
+		cm.teardown();
 	}
 
 
@@ -1117,5 +1135,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		// Make sure it is there
 		returnedObject = om.getByKey("testtype", key);
 		assertNotNull(returnedObject);
+
+		cm.teardown();
 	}
 }

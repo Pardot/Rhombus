@@ -161,6 +161,8 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
 
         // Clean up the SSTable directories after ourselves
         FileUtils.deleteRecursive(new File(keyspaceName));
+
+		cm.teardown();
     }
 
     @Test
@@ -299,6 +301,8 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
 
         // Clean up the SSTable directories after ourselves
         FileUtils.deleteRecursive(new File(keyspaceName));
+
+		cm.teardown();
     }
 
     @Test
@@ -429,6 +433,8 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
 
         // Clean up the SSTable directories after ourselves
         FileUtils.deleteRecursive(new File(keyspaceName));
+
+		cm.teardown();
     }
 
     @Test
@@ -519,5 +525,7 @@ public class SSTableWriterITCase extends RhombusFunctionalTest {
 
         // Clean up the SSTable directories after ourselves
         FileUtils.deleteRecursive(new File(keyspaceName));
+
+		cm.teardown();
     }
 }
