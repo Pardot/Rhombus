@@ -2,6 +2,8 @@ package com.pardot.rhombus.cobject.statement;
 
 import com.google.common.collect.Lists;
 import com.pardot.rhombus.cobject.CObjectOrdering;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.List;
@@ -12,6 +14,8 @@ import java.util.List;
  * Date: 4/17/13
  */
 public class BoundedLazyCQLStatementIterator extends BaseCQLStatementIterator {
+
+	private static Logger logger = LoggerFactory.getLogger(BoundedLazyCQLStatementIterator.class);
 
 	private long limit = 0;
 	private long numberRemaining = 0;
@@ -81,7 +85,7 @@ public class BoundedLazyCQLStatementIterator extends BaseCQLStatementIterator {
 	}
 
 	@Override
-	public void setLimit(int limit){
+	public void setLimit(long limit){
 		this.numberRemaining = limit;
 	}
 

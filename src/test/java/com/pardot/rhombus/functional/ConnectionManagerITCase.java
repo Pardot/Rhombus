@@ -40,6 +40,8 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 
 		assertEquals(1,cassCluster.getMetadata().getAllHosts().size());
 		assertEquals(cassCluster.getMetadata().getClusterName(), "Test Cluster");
+
+		connectionManager.teardown();
 	}
 
 	@Test
@@ -60,6 +62,8 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		CKeyspaceDefinition queriedDef = cm.hydrateLatestKeyspaceDefinitionFromCassandra(definition.getName());
 		assertEquals(definition.getDefinitions().size(), queriedDef.getDefinitions().size());
 		assertEquals(queriedDef.getDefinitions().get("testtype").getField("foreignid").getType(), CField.CDataType.BIGINT);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -84,6 +88,8 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		ObjectMapper om = cm.getObjectMapper(definition2);
 		ResultSet rs = om.getCqlExecutor().executeSync(CQLStatement.make("SELECT * FROM testtype3cb23c7ffc4256283064bd5eae1886b4", "testtype"));
 		assertEquals(0, rs.all().size());
+
+		cm.teardown();
 	}
 
 	@Test
@@ -108,6 +114,8 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		}
 		session.close();
 		assertTrue(caught);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -123,6 +131,8 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 				, this.getClass().getClassLoader(), "CKeyspaceTestData.js");
 		ObjectMapper om = cm.getRhombusObjectMapper(definition);
 		assertNotNull(om);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -152,6 +162,8 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		cm = getConnectionManager();
 		ObjectMapper defObjectMapper = cm.getObjectMapper(definition);
 		assertEquals(definition, defObjectMapper.getKeyspaceDefinition_ONLY_FOR_TESTING());
+
+		cm.teardown();
 	}
 
 	@Test
@@ -186,6 +198,8 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		ObjectMapper om = cm.getObjectMapper(definition2);
 		CKeyspaceDefinition omDef = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
 		assertEquals(definition, omDef);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -212,6 +226,8 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 		ObjectMapper om = cm.getObjectMapper(definition.getName());
 		CKeyspaceDefinition rhombusStorageKeyspaceDefinition = om.getKeyspaceDefinition_ONLY_FOR_TESTING();
 		assertEquals(definition, rhombusStorageKeyspaceDefinition);
+
+		cm.teardown();
 	}
 
 	@Test
@@ -318,5 +334,7 @@ public class ConnectionManagerITCase extends RhombusFunctionalTest {
 			rsIter.next();
 		}
 		assertEquals(2, counter);
+
+		cm.teardown();
 	}
 }

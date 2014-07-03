@@ -317,7 +317,7 @@ public class CObjectCQLGenerator {
 		}
 		String limitCQL;
 		// If we have client side filters, apply a hard max limit here since the client specified criteria limit needs to be applied on the results that match the filters
-		if(limit > 0 && !hasClientFilters && limit < CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT){
+		if(limit > 0 && limit < CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT){
 			limitCQL = "LIMIT %d";
 		} else {
 			limitCQL = "LIMIT " + CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT;

@@ -153,6 +153,8 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		assertEquals(100L,indexObjects.get(0).get("foreignid"));
 		assertEquals(101,indexObjects.get(0).get("type"));
 		assertEquals(103,indexObjects.get(0).get("filtered"));
+
+		cm.teardown();
 	}
 
 
@@ -225,6 +227,8 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 
 		//Test that we can see all 5 diffs when we search for those happening within 9 seconds of each other
 		assertEquals(5, up.getUpdatesThatHappenedWithinTimeframe(900000L * 1000).size()); //9 seconds
+
+		cm.teardown();
 	}
 
 
@@ -290,6 +294,8 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		UpdateProcessor up = new UpdateProcessor(om);
 		assertEquals(1, up.getUpdatesThatHappenedWithinTimeframe(900000L, 1).size());
 		assertEquals(2, up.getUpdatesThatHappenedWithinTimeframe(900000L, 2).size());
+
+		cm.teardown();
 	}
 
 	@Test
@@ -364,6 +370,8 @@ public class UpdateProcessorITCase extends RhombusFunctionalTest {
 		assertEquals(77L,indexObjects.get(0).get("foreignid"));
 		assertEquals(101,indexObjects.get(0).get("type"));
 		assertEquals(103,indexObjects.get(0).get("filtered"));
+
+		cm.teardown();
 	}
 
 }

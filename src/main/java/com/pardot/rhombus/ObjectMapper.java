@@ -158,8 +158,6 @@ public class ObjectMapper implements CObjectShardList {
 								logger.error("Could not rebuild table: {}", cql.getQuery(), qe);
 							}
 							cqlExecutor.executeSync(cql);
-						} else {
-							logger.warn("Table already exists and will not be updated");
 						}
 					}
 				}
@@ -540,6 +538,7 @@ public class ObjectMapper implements CObjectShardList {
 		int resultNumber = 0;
 		Map<String, Object> clientFilters = statementIterator.getClientFilters();
 		CQLExecutorIterator cqlIterator = new CQLExecutorIterator(cqlExecutor, (BaseCQLStatementIterator) statementIterator);
+		cqlIterator.setPageSize(limit);
 		long nonMatching = 0;
 		long matching = 0;
 
@@ -630,6 +629,7 @@ public class ObjectMapper implements CObjectShardList {
 		} else {
 			// if filtering is true we will use the executorIterator to page through the result set
 			CQLExecutorIterator cqlIterator = new CQLExecutorIterator(cqlExecutor, (BaseCQLStatementIterator) statementIterator);
+			cqlIterator.setPageSize(limit);
 			while (cqlIterator.hasNext()){
 
 				Row row = cqlIterator.next();

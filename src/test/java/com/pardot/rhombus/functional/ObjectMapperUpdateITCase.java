@@ -84,6 +84,8 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		criteria.setLimit(50l);
 		dbObjects = om.list(objectType, criteria);
 		assertEquals(0, dbObjects.size());
+
+		cm.teardown();
 	}
 
 	private List<Map<String, Object>> getNValues(int number, String index1Value, String index2Value) {
@@ -145,6 +147,7 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		List<Map<String, Object>> dbObjects = om.list("object_audit", criteria);
 		assertEquals(1, dbObjects.size());
 
+		cm.teardown();
 	}
 
 	@Test
@@ -180,6 +183,8 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		Map<String, Object> result = om.getByKey("object_audit", id);
 		assertNotNull(result);
 		assertEquals(null, result.get("user_id"));
+
+		cm.teardown();
 	}
 
 	@Test
@@ -215,6 +220,8 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		Map<String, Object> result = om.getByKey("object_audit", id);
 		assertNotNull(result);
 		assertEquals(null, result.get("changes"));
+
+		cm.teardown();
 	}
 
 	@Test
@@ -252,5 +259,7 @@ public class ObjectMapperUpdateITCase extends RhombusFunctionalTest {
 		Map<String, Object> result = om.getByKey("object_audit", id);
 		assertNotNull(result);
 		assertEquals("Account", result.get("object_type"));
+
+		cm.teardown();
 	}
 }

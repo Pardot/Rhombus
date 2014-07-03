@@ -46,6 +46,8 @@ public class InsertTimingITCase extends RhombusFunctionalTest {
 			logger.debug("Inserting audit with created_at: {}", createdAt);
 			om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
 		}
+
+		cm.teardown();
 	}
 
 	@Test
@@ -73,6 +75,8 @@ public class InsertTimingITCase extends RhombusFunctionalTest {
 			logger.debug("Inserting audit with created_at: {}", createdAt);
 			om.insert("object_audit", JsonUtil.rhombusMapFromJsonMap(object,definition.getDefinitions().get("object_audit")), createdAt);
 		}
+
+		cm.teardown();
 	}
 
 }

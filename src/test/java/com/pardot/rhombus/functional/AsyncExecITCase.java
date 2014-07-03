@@ -56,6 +56,8 @@ public class AsyncExecITCase extends RhombusFunctionalTest{
 			insertObjectSetAsync(numThreads, executorService, om, values, objectAuditDef);
 		}
 		logger.warn("Total time: {}ms", System.currentTimeMillis() - startTime);
+
+		cm.teardown();
 	}
 
 	private void insertObjectSetAsync(int numThreads, ExecutorService executorService, final ObjectMapper om, final List<Map<String, Object>> values, final CDefinition objectAuditDef) {

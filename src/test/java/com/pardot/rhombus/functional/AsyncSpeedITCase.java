@@ -117,6 +117,7 @@ public class AsyncSpeedITCase extends RhombusFunctionalTest {
 		logger.info("======================");
 		assertEquals(numberOfObjects,count);
 
+		cm.teardown();
 	}
 
 }
