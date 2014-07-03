@@ -536,19 +536,24 @@ public class ObjectMapper implements CObjectShardList {
 	 */
 	private List<Map<String, Object>> mapResults(CQLStatementIterator statementIterator, CDefinition definition, Long limit) throws RhombusException {
 		List<Map<String, Object>> results = Lists.newArrayList();
+		int statementNumber = 0;
 		int resultNumber = 0;
 		Map<String, Object> clientFilters = statementIterator.getClientFilters();
 		CQLExecutorIterator cqlIterator = new CQLExecutorIterator(cqlExecutor, (BaseCQLStatementIterator) statementIterator);
+		long nonMatching = 0;
+		long matching = 0;
 
 		while (cqlIterator.hasNext()){
+
 			Row row = cqlIterator.next();
+
 			if (row == null){
 				continue;
 			}
-
 			Map<String, Object> result = mapResult(row, definition);
 
 			boolean resultMatchesFilters = true;
+
 			if(clientFilters != null) {
 				resultMatchesFilters = this.resultMatchesFilters(result, clientFilters);
 			}
@@ -556,9 +561,16 @@ public class ObjectMapper implements CObjectShardList {
 			if(resultMatchesFilters) {
 				results.add(result);
 				resultNumber++;
+				matching++;
+			} else {
+				nonMatching++;
 			}
 
+			logger.debug("Matching results: {}, Non-matching results: {}", matching, nonMatching);
+
+
 			if((limit > 0 && resultNumber >= limit)) {
+				logger.debug("Breaking from mapping results");
 				break;
 			}
 

@@ -77,10 +77,6 @@ public class CQLExecutorIterator implements Iterator {
 
 	private void fetchIfNeeded(){
 
-		if(!statementIterator.hasNext()) {
-			return;
-		}
-
 		if (currentPage == 0){
 
 			statementIterator.setLimit(pageSize+1);
