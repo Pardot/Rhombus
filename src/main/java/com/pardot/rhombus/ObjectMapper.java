@@ -534,10 +534,12 @@ public class ObjectMapper implements CObjectShardList {
 	 */
 	private List<Map<String, Object>> mapResults(CQLStatementIterator statementIterator, CDefinition definition, Long limit) throws RhombusException {
 		List<Map<String, Object>> results = Lists.newArrayList();
-		int statementNumber = 0;
 		int resultNumber = 0;
 		Map<String, Object> clientFilters = statementIterator.getClientFilters();
-		CQLExecutorIterator cqlIterator = new CQLExecutorIterator(cqlExecutor, (BaseCQLStatementIterator) statementIterator);
+		CQLExecutorIterator cqlIterator = new CQLExecutorIterator(cqlExecutor, statementIterator);
+		if(limit <= 0) {
+			limit = CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT;
+		}
 		cqlIterator.setPageSize(limit);
 		long nonMatching = 0;
 		long matching = 0;
@@ -604,10 +606,8 @@ public class ObjectMapper implements CObjectShardList {
 		Map<String, Object> clientFilters = statementIterator.getClientFilters();
 
 		if (clientFilters == null){
-
 			int statementNumber = 0;
 			while (statementIterator.hasNext()){
-
 				CQLStatement cql = statementIterator.next();
 				ResultSet resultSet = cqlExecutor.executeSync(cql);
 				resultCount += resultSet.one().getLong(0);
@@ -620,7 +620,6 @@ public class ObjectMapper implements CObjectShardList {
 				if(statementNumber > reasonableStatementLimit) {
 					throw new RhombusException("Query attempted to execute more than " + reasonableStatementLimit + " statements.");
 				}
-
 				if (statementIterator.hasNext()){
 					statementIterator.nextShard();
 				}
@@ -629,17 +628,18 @@ public class ObjectMapper implements CObjectShardList {
 		} else {
 			// if filtering is true we will use the executorIterator to page through the result set
 			CQLExecutorIterator cqlIterator = new CQLExecutorIterator(cqlExecutor, (BaseCQLStatementIterator) statementIterator);
+			if(limit <= 0) {
+				limit = CObjectCQLGenerator.MAX_CQL_STATEMENT_LIMIT;
+			}
 			cqlIterator.setPageSize(limit);
 			while (cqlIterator.hasNext()){
-
 				Row row = cqlIterator.next();
 				if (row == null){
 					continue;
 				}
+
 				Map<String, Object> result = mapResult(row, definition);
-
 				boolean resultMatchesFilters = this.resultMatchesFilters(result, clientFilters);
-
 
 				if(resultMatchesFilters) {
 					resultCount++;
