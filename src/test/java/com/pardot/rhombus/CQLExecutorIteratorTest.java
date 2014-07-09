@@ -201,6 +201,8 @@ public class CQLExecutorIteratorTest  extends TestCase {
 
 		public void testPageSizePlus1() throws Exception {
 
+			String objectType = "object2";
+
 			//Get a connection manager based on the test properties
 			ConnectionManagerTester cm = TestHelpers.getTestConnectionManager();
 			cm.setLogCql(true);
@@ -218,8 +220,8 @@ public class CQLExecutorIteratorTest  extends TestCase {
 			om.setLogCql(true);
 
 			// Set up test data
-			// we will insert 200 objects
-			int nDataItems = 201;
+			// we will insert 20 objects
+			int nDataItems = 20;
 
 			List<Map<String, Object>> values2 = generateNObjects(nDataItems);
 
@@ -229,7 +231,7 @@ public class CQLExecutorIteratorTest  extends TestCase {
 			}
 
 			Map<String, List<Map<String, Object>>> multiInsertMap = Maps.newHashMap();
-			multiInsertMap.put("object2", updatedValues2);
+			multiInsertMap.put(objectType, updatedValues2);
 
 			//Insert data
 			om.insertBatchMixed(multiInsertMap);
@@ -238,10 +240,12 @@ public class CQLExecutorIteratorTest  extends TestCase {
 			SortedMap<String, Object> indexValues = Maps.newTreeMap();
 			indexValues.put("account_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
 			indexValues.put("user_id", UUID.fromString("00000003-0000-0030-0040-000000030000"));
+			Criteria criteria = new Criteria();
+			criteria.setIndexKeys(indexValues);
 
-			UUID stop = UUID.fromString(uuidList.get(nDataItems-1));
-			CDefinition cDefinition = definition.getDefinitions().get("object2");
-			BaseCQLStatementIterator unBoundedIterator = (BaseCQLStatementIterator) CObjectCQLGenerator.makeCQLforList(KEYSPACE_NAME, shardIdLists, cDefinition, indexValues, CObjectOrdering.DESCENDING, null, stop, 10l, true, false, false);
+			CObjectCQLGenerator cqlGenerator = om.getCqlGenerator_ONLY_FOR_TESTING();
+			CQLStatementIterator unBoundedIterator = cqlGenerator.makeCQLforList(objectType, criteria, false);
+
 			Session session = cm.getRhombusSession(definition);
 			CQLExecutor cqlExecutor = new CQLExecutor(session, true, definition.getConsistencyLevel());
 			CQLExecutorIterator cqlExecutorIterator = new CQLExecutorIterator(cqlExecutor, unBoundedIterator);
