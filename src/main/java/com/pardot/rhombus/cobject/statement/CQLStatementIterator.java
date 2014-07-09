@@ -2,6 +2,7 @@ package com.pardot.rhombus.cobject.statement;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Pardot, An ExactTarget Company
@@ -16,4 +17,6 @@ public interface CQLStatementIterator extends Iterator<CQLStatement>{
 	public boolean isBounded();
 	public long size();
 	public void nextShard();
+	public void setLimit(long limit);
+	public void setNextUuid(UUID uuid);
 }

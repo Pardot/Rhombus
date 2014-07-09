@@ -120,7 +120,6 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 
 		//Rebuild the keyspace and get the object mapper
 		cm.buildKeyspace(definition, true);
-		logger.debug("Built keyspace: {}", definition.getName());
 		cm.setDefaultKeyspace(definition);
 		ObjectMapper om = cm.getObjectMapper();
 		om.setLogCql(true);

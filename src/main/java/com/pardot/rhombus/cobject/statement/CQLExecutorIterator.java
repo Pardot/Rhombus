@@ -21,47 +21,39 @@ public class CQLExecutorIterator implements Iterator {
 	private int nextItem = 0;
 	private int currentPage = 0;
 	private CQLExecutor cqlExecutor;
-	private BaseCQLStatementIterator statementIterator;
+	private CQLStatementIterator statementIterator;
 	boolean hasMore = false;
 	public int statementNumber = 0;
 
-	public CQLExecutorIterator(CQLExecutor cqlExecutor, BaseCQLStatementIterator statementIterator){
+	public CQLExecutorIterator(CQLExecutor cqlExecutor, CQLStatementIterator statementIterator){
 		this.cqlExecutor = cqlExecutor;
 		this.statementIterator = statementIterator;
 	}
 
 	public boolean hasNext(){
 		fetchIfNeeded();
-
-		if (page.size() > nextItem){
+		if (page != null && page.size() > nextItem){
 			return true;
 		} else if (statementIterator.hasNext()){
-
 			//we are rolling over to next shard
 			statementIterator.nextShard();
 			currentPage = 0;
 			nextItem = 0;
 			fetchIfNeeded();
 			return true;
-
 		} else {
 			return false;
 		}
 	}
 
 	public Row next(){
-
 		fetchIfNeeded();
 		Row ret = null;
-
 		if (page.size() > nextItem){
-
 			// we are exhausting the items in the current page
 			ret = page.get(nextItem);
 			nextItem++;
-
 		} else if(statementIterator.hasNext()) {
-
 			//we are rolling over to next shard
 			statementIterator.nextShard();
 			currentPage = 0;
@@ -69,20 +61,15 @@ public class CQLExecutorIterator implements Iterator {
 			fetchIfNeeded();
 			if (page.size() > 0) {
 				ret = page.get(nextItem);
-			} else {
-				ret = null;
 			}
-
 		}
 
 		return ret;
 	}
 
 	private void fetchIfNeeded(){
-
-		if (currentPage == 0){
-
-			statementIterator.setLimit(pageSize+1);
+		if (currentPage == 0 && statementIterator.hasNext()){
+			statementIterator.setLimit(pageSize+1l);
 			CQLStatement cql = statementIterator.next();
 			ResultSet resultSet = cqlExecutor.executeSync(cql);
 			statementNumber++;
@@ -94,9 +81,7 @@ public class CQLExecutorIterator implements Iterator {
 				hasMore = false;
 			}
 			currentPage++;
-			logger.info("Fetched page {}", currentPage);
 		} else if (hasMore && (nextItem == pageSize)) {
-
 			Row row = page.get(nextItem);
 			UUID uuid = row.getUUID("id");
 			statementIterator.setNextUuid(uuid);
@@ -113,7 +98,6 @@ public class CQLExecutorIterator implements Iterator {
 			}
 			nextItem = 0;
 			currentPage++;
-			logger.info("Fetched page {}", currentPage);
 		}
 	}
 
