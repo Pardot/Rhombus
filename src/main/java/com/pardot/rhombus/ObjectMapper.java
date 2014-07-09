@@ -608,9 +608,11 @@ public class ObjectMapper implements CObjectShardList {
 		if (clientFilters == null){
 			int statementNumber = 0;
 			while (statementIterator.hasNext()){
+				statementIterator.nextShard();
 				CQLStatement cql = statementIterator.next();
 				ResultSet resultSet = cqlExecutor.executeSync(cql);
-				resultCount += resultSet.one().getLong(0);
+				Long numResults = resultSet.one().getLong(0);
+				resultCount += numResults;
 				statementNumber++;
 				if((limit > 0 && resultCount >= limit)) {
 					logger.debug("Breaking from mapping count query results");
@@ -620,11 +622,7 @@ public class ObjectMapper implements CObjectShardList {
 				if(statementNumber > reasonableStatementLimit) {
 					throw new RhombusException("Query attempted to execute more than " + reasonableStatementLimit + " statements.");
 				}
-				if (statementIterator.hasNext()){
-					statementIterator.nextShard();
-				}
 			}
-
 		} else {
 			// if filtering is true we will use the executorIterator to page through the result set
 			CQLExecutorIterator cqlIterator = new CQLExecutorIterator(cqlExecutor, (BaseCQLStatementIterator) statementIterator);
@@ -653,7 +651,6 @@ public class ObjectMapper implements CObjectShardList {
 				if(cqlIterator.statementNumber > reasonableStatementLimit) {
 					throw new RhombusException("Query attempted to execute more than " + reasonableStatementLimit + " statements.");
 				}
-
 			}
 		}
 		return resultCount;

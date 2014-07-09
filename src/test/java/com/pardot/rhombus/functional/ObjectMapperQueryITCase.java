@@ -176,7 +176,6 @@ public class ObjectMapperQueryITCase extends RhombusFunctionalTest {
 		cm.teardown();
 	}
 
-
 	@Test
 	public void testInsert18WithIdsAcrossShardsAndGet() throws Exception {
 		//Build the connection manager
@@ -231,6 +230,114 @@ public class ObjectMapperQueryITCase extends RhombusFunctionalTest {
 		for(UUID id : idList) {
 			assertTrue(resultsContainId(results, id));
 		}
+
+		cm.teardown();
+	}
+
+	@Test
+	public void testInsert18WithIdsAcrossShardsAndCount() throws Exception {
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+		cm.setLogCql(true);
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "ShardedKeyspace.js");
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, true);
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper();
+		om.setLogCql(true);
+
+		long insertNum = 18l;
+
+		List<UUID> idList = Lists.newArrayList();
+		idList.add(UUID.fromString("7dcf8c00-bcc1-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("d1db7000-bcc3-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("25e75400-bcc6-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("79f33800-bcc8-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("cdff1c00-bcca-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("220b0000-bccd-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("7616e400-bccf-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("ca22c800-bcd1-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("1e2eac00-bcd4-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("723a9000-bcd6-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("c6467400-bcd8-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("f1a16400-bbef-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("48574400-ba1e-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("5cff6400-9ed5-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("3ffb0000-a496-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("1d2cc000-8c3a-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("799bc000-7639-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("6d554c00-61ce-11e2-8080-808080808080"));
+
+		insertNObjects(om, insertNum, idList);
+
+		Criteria criteria = new Criteria();
+		SortedMap<String, Object> indexKeys = Maps.newTreeMap();
+		indexKeys.put("account_id", accountId);
+		indexKeys.put("user_id", userId);
+		criteria.setIndexKeys(indexKeys);
+
+		long count = om.count(objectType, criteria);
+		assertEquals(insertNum, count);
+
+		cm.teardown();
+	}
+
+	@Test
+	public void testInsert18WithIdsAcrossShardsAndCountWithFiltering() throws Exception {
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+		cm.setLogCql(true);
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "ShardedKeyspace.js");
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, true);
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper();
+		om.setLogCql(true);
+
+		long insertNum = 18l;
+
+		List<UUID> idList = Lists.newArrayList();
+		idList.add(UUID.fromString("7dcf8c00-bcc1-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("d1db7000-bcc3-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("25e75400-bcc6-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("79f33800-bcc8-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("cdff1c00-bcca-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("220b0000-bccd-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("7616e400-bccf-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("ca22c800-bcd1-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("1e2eac00-bcd4-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("723a9000-bcd6-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("c6467400-bcd8-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("f1a16400-bbef-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("48574400-ba1e-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("5cff6400-9ed5-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("3ffb0000-a496-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("1d2cc000-8c3a-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("799bc000-7639-11e2-8080-808080808080"));
+		idList.add(UUID.fromString("6d554c00-61ce-11e2-8080-808080808080"));
+
+		insertNObjects(om, insertNum, idList);
+
+		Map<String, Object> object = Maps.newHashMap();
+		object.put("id", UUIDs.timeBased());
+		object.put("account_id", accountId);
+		object.put("user_id", UUIDs.random());
+		om.insert(objectType, object);
+
+		Criteria criteria = new Criteria();
+		SortedMap<String, Object> indexKeys = Maps.newTreeMap();
+		indexKeys.put("account_id", accountId);
+		indexKeys.put("user_id", userId);
+		criteria.setIndexKeys(indexKeys);
+
+		long count = om.count(objectType, criteria);
+		assertEquals(insertNum, count);
 
 		cm.teardown();
 	}
