@@ -19,10 +19,9 @@ public class CQLExecutorIterator implements Iterator {
 	private List<Row> page;
 	private	long pageSize = 50l;
 	private int nextItem = 0;
-	private int currentPage = 0;
 	private CQLExecutor cqlExecutor;
 	private CQLStatementIterator statementIterator;
-	boolean hasMore = false;
+	boolean moreResultsInShard = false;
 	public int statementNumber = 0;
 
 	public CQLExecutorIterator(CQLExecutor cqlExecutor, CQLStatementIterator statementIterator){
@@ -30,16 +29,21 @@ public class CQLExecutorIterator implements Iterator {
 		this.statementIterator = statementIterator;
 	}
 
+	/**
+	 * An ExecutorIterator has next if
+	 * 1.  Our current page within this shard has more results
+	 * 2.  Our current page within this shard is exhausted, but a future shard has results
+	 * @return true if more results, false if not
+	 */
+
 	public boolean hasNext(){
-		fetchIfNeeded();
-		if (page != null && page.size() > nextItem){
+		// If our current page within this shard has more results, we can just return true
+		if(page != null && nextItem < pageSize && page.size() > nextItem) {
 			return true;
-		} else if (statementIterator.hasNext()){
-			//we are rolling over to next shard
-			statementIterator.nextShard();
-			currentPage = 0;
-			nextItem = 0;
-			fetchIfNeeded();
+		}
+		// If not, we have to fetch more results and try again
+		fetchIfNeeded();
+		if(page != null && page.size() > nextItem) {
 			return true;
 		} else {
 			return false;
@@ -47,85 +51,90 @@ public class CQLExecutorIterator implements Iterator {
 	}
 
 	public Row next(){
-		fetchIfNeeded();
-		Row ret = null;
-		if (page.size() > nextItem){
-			// we are exhausting the items in the current page
-			ret = page.get(nextItem);
+		// If our current page within this shard has more results, just return one from this page
+		if(page != null && nextItem < pageSize && page.size() > nextItem) {
 			nextItem++;
-		} else if(statementIterator.hasNext()) {
-			//we are rolling over to next shard
-			statementIterator.nextShard();
-			currentPage = 0;
-			nextItem = 0;
-			fetchIfNeeded();
-			if (page.size() > 0) {
-				ret = page.get(nextItem);
-			}
+			return page.get(nextItem - 1);
 		}
-
-		return ret;
+		// If not, fetch more results and try again
+		fetchIfNeeded();
+		if(page != null && nextItem < pageSize && page.size() > nextItem) {
+			nextItem++;
+			return page.get(nextItem - 1);
+		} else {
+			return null;
+		}
 	}
 
-	private void fetchIfNeeded(){
-		if (currentPage == 0 && statementIterator.hasNext()){
-			statementIterator.setLimit(pageSize+1l);
-			CQLStatement cql = statementIterator.next();
-			ResultSet resultSet = cqlExecutor.executeSync(cql);
-			statementNumber++;
-			populatePage(resultSet);
+	private void fetchIfNeeded() {
+		// Just to be safe, make sure that we don't have anything remaining in the current page for this shard
+		if(page != null && nextItem < pageSize && page.size() > nextItem) {
+			return;
+		}
 
-			if (page.size() > pageSize) {
-				hasMore = true;
-			} else {
-				hasMore = false;
-			}
-			currentPage++;
-		} else if (hasMore && (nextItem == pageSize)) {
+		if (moreResultsInShard) {
+			// If we are within a shard already, get more results from this shard
 			Row row = page.get(nextItem);
 			UUID uuid = row.getUUID("id");
 			statementIterator.setNextUuid(uuid);
 			CQLStatement cql = statementIterator.next();
 			ResultSet resultSet = cqlExecutor.executeSync(cql);
 			statementNumber++;
-
 			populatePage(resultSet);
-
 			if (page.size() > pageSize) {
-				hasMore = true;
+				moreResultsInShard = true;
 			} else {
-				hasMore = false;
+				moreResultsInShard = false;
 			}
 			nextItem = 0;
-			currentPage++;
+		} else {
+			// Reset our current shard state
+			nextItem = 0;
+			page = null;
+			moreResultsInShard = false;
+
+			// Start going through the remaining shards until we find one with results or hit the last one
+			while (statementIterator.hasNext()) {
+				// Move to the next shard in the iterator and reset the limits and stuff
+				statementIterator.setLimit(pageSize + 1l);
+				statementIterator.nextShard();
+				statementIterator.setNextUuid(null);
+				CQLStatement cql = statementIterator.next();
+				ResultSet resultSet = cqlExecutor.executeSync(cql);
+				statementNumber++;
+				if (!resultSet.isExhausted()) {
+					populatePage(resultSet);
+					if (page.size() > pageSize) {
+						moreResultsInShard = true;
+					} else {
+						moreResultsInShard = false;
+					}
+					return;
+				}
+			}
 		}
 	}
 
 	private void populatePage(ResultSet resultSet){
-
 		page = Lists.newArrayList();
 		for(Row row : resultSet) {
 			page.add(row);
 		}
-
 	}
 
-	public void remove(){
-
+	public void remove() {
 		statementIterator.remove();
 	}
 
-	public Map<String,Object> getClientFilters(){
+	public Map<String,Object> getClientFilters() {
 		return statementIterator.getClientFilters();
 	}
 
-	public void setClientFilters(Map<String, Object> clientFilters){
-
+	public void setClientFilters(Map<String, Object> clientFilters) {
 		statementIterator.setClientFilters(clientFilters);
 	}
 
 	public void setPageSize(long pageSize){
-
 		this.pageSize = pageSize;
 	}
 

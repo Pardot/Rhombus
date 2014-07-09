@@ -252,7 +252,7 @@ public class CQLExecutorIteratorTest  extends TestCase {
 			cqlExecutorIterator.setPageSize(nDataItems-1);
 
 
-			for (int i=0 ; i< nDataItems; i++ ){
+			for (int i=0 ; i < nDataItems ; i++ ){
 				assertTrue(cqlExecutorIterator.hasNext());
 				assertNotNull(cqlExecutorIterator.next());
 			}
