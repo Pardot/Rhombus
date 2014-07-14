@@ -382,7 +382,7 @@ public class ObjectMapper implements CObjectShardList {
 		Map<String, Object> oldversion = getByKey(objectType, key);
 		if(oldversion == null) {
 			// If we couldn't find the old version, the best we can do is an insert
-			logger.info("Update requested for non-existent object, inserting instead");
+			logger.debug("Update requested for non-existent object, inserting instead");
 			insert(objectType, values, key);
 			return key;
 		}
