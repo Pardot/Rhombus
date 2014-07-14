@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.pardot</groupId>
     <artifactId>rhombus</artifactId>
-    <version>2.0.9-SNAPSHOT</version>
+    <version>2.0.9-a-SNAPSHOT</version>
     <name>Rhombus</name>
 
     <parent>
@@ -22,10 +22,10 @@
         <commons-io.version>2.1</commons-io.version>
         <javax-validation.version>1.1.0.Final</javax-validation.version>
         <findbugs.version>2.0.1</findbugs.version>
-        <java-driver.version>2.0.1</java-driver.version>
+        <java-driver.version>2.0.3</java-driver.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cassandra.version>2.0.6</cassandra.version>
-        <cassandra-dependency.version>2.0.6</cassandra-dependency.version>
+        <cassandra.version>2.0.9</cassandra.version>
+        <cassandra-dependency.version>2.0.9</cassandra-dependency.version>
         <cassandra-maven-plugin.version>2.0.0-1</cassandra-maven-plugin.version>
     </properties>
 
