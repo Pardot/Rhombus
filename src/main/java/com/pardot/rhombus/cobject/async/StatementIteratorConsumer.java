@@ -27,7 +27,7 @@ import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterrup
 public class StatementIteratorConsumer {
 
 	private static Logger logger = LoggerFactory.getLogger(StatementIteratorConsumer.class);
-	private static ExecutorService executorService = Executors.newFixedThreadPool(260);
+	private static ExecutorService executorService = Executors.newCachedThreadPool();
 
 	private final BoundedCQLStatementIterator statementIterator;
 	private CQLExecutor cqlExecutor;
