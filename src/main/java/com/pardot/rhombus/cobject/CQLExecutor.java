@@ -1,8 +1,11 @@
 package com.pardot.rhombus.cobject;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.driver.core.exceptions.QueryExecutionException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pardot.rhombus.RhombusTimeoutException;
 import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
 import com.pardot.rhombus.util.StringUtil;
@@ -74,29 +77,46 @@ public class CQLExecutor {
 		}
     }
 
-	public ResultSet executeSync(CQLStatement cql){
+	public ResultSet executeSync(CQLStatement cql) {
 		if(logCql) {
 			logger.debug("Executing CQL: {}", cql.getQuery());
 			if(cql.getValues() != null) {
 				logger.debug("With values: {}", StringUtil.detailedListToString(Arrays.asList(cql.getValues())));
 			}
 		}
-		if(cql.isPreparable()){
+		if(cql.isPreparable()) {
 			BoundStatement bs = getBoundStatement(session, cql);
-			return session.execute(bs);
-		}
-		else{
+			try {
+				return session.execute(bs);
+			} catch(NoHostAvailableException e) {
+				throw new RhombusTimeoutException(e);
+			} catch(QueryExecutionException e2) {
+				throw new RhombusTimeoutException(e2);
+			}
+		} else {
 			//just run a normal execute without a prepared statement
-			return session.execute(cql.getQuery());
+			try {
+				return session.execute(cql.getQuery());
+			} catch(NoHostAvailableException e) {
+				throw new RhombusTimeoutException(e);
+			} catch(QueryExecutionException e2) {
+				throw new RhombusTimeoutException(e2);
+			}
 		}
 	}
 
-	public ResultSet executeSync(Statement cql){
+	public ResultSet executeSync(Statement cql) {
 		if(logCql) {
 			logger.debug("Executing QueryBuilder Query: {}", cql.toString());
 		}
 		//just run a normal execute without a prepared statement
-		return session.execute(cql);
+		try {
+			return session.execute(cql);
+		} catch(NoHostAvailableException e) {
+			throw new RhombusTimeoutException(e);
+		} catch(QueryExecutionException e2) {
+			throw new RhombusTimeoutException(e2);
+		}
 	}
 
 	public ResultSetFuture executeAsync(CQLStatement cql){
@@ -126,8 +146,13 @@ public class CQLExecutor {
 				CQLStatement statement = statementIterator.next();
 				batchStatement.add(getBoundStatement(session, statement));
 			}
+		} try {
+			session.execute(batchStatement);
+		} catch(NoHostAvailableException e) {
+			throw new RhombusTimeoutException(e);
+		} catch(QueryExecutionException e2) {
+			throw new RhombusTimeoutException(e2);
 		}
-		session.execute(batchStatement);
 	}
 
 	public void executeBatch(CQLStatementIterator statementIterator) {
