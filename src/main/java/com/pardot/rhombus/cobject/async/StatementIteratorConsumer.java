@@ -4,6 +4,7 @@ import com.datastax.driver.core.*;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.pardot.rhombus.RhombusException;
+import com.pardot.rhombus.RhombusTimeoutException;
 import com.pardot.rhombus.cobject.statement.BoundedCQLStatementIterator;
 import com.pardot.rhombus.cobject.CQLExecutor;
 import com.pardot.rhombus.cobject.statement.CQLStatement;
@@ -66,7 +67,7 @@ public class StatementIteratorConsumer {
 				for(Throwable t : this.executionExceptions) {
 					logger.warn("Timeout executing statements. Found future failure: ", t);
 				}
-				throw new RhombusException("Timout executing statements asynch");
+				throw new RhombusTimeoutException("Timout executing statements asynch");
 			}
 			for(Throwable t : this.executionExceptions) {
 				logger.warn("Completed executing statements, but found future failure: ", t);

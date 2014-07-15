@@ -1,8 +1,10 @@
 package com.pardot.rhombus.cobject;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pardot.rhombus.RhombusTimeoutException;
 import com.pardot.rhombus.cobject.statement.CQLStatement;
 import com.pardot.rhombus.cobject.statement.CQLStatementIterator;
 import com.pardot.rhombus.util.StringUtil;
@@ -74,29 +76,40 @@ public class CQLExecutor {
 		}
     }
 
-	public ResultSet executeSync(CQLStatement cql){
+	public ResultSet executeSync(CQLStatement cql) {
 		if(logCql) {
 			logger.debug("Executing CQL: {}", cql.getQuery());
 			if(cql.getValues() != null) {
 				logger.debug("With values: {}", StringUtil.detailedListToString(Arrays.asList(cql.getValues())));
 			}
 		}
-		if(cql.isPreparable()){
+		if(cql.isPreparable()) {
 			BoundStatement bs = getBoundStatement(session, cql);
-			return session.execute(bs);
-		}
-		else{
+			try {
+				return session.execute(bs);
+			} catch(NoHostAvailableException e) {
+				throw new RhombusTimeoutException(e);
+			}
+		} else {
 			//just run a normal execute without a prepared statement
-			return session.execute(cql.getQuery());
+			try {
+				return session.execute(cql.getQuery());
+			} catch(NoHostAvailableException e) {
+				throw new RhombusTimeoutException(e);
+			}
 		}
 	}
 
-	public ResultSet executeSync(Statement cql){
+	public ResultSet executeSync(Statement cql) {
 		if(logCql) {
 			logger.debug("Executing QueryBuilder Query: {}", cql.toString());
 		}
 		//just run a normal execute without a prepared statement
-		return session.execute(cql);
+		try {
+			return session.execute(cql);
+		} catch(NoHostAvailableException e) {
+			throw new RhombusTimeoutException(e);
+		}
 	}
 
 	public ResultSetFuture executeAsync(CQLStatement cql){
