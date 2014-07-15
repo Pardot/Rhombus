@@ -2,6 +2,7 @@ package com.pardot.rhombus.cobject;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.driver.core.exceptions.QueryExecutionException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.RhombusTimeoutException;
@@ -89,6 +90,8 @@ public class CQLExecutor {
 				return session.execute(bs);
 			} catch(NoHostAvailableException e) {
 				throw new RhombusTimeoutException(e);
+			} catch(QueryExecutionException e2) {
+				throw new RhombusTimeoutException(e2);
 			}
 		} else {
 			//just run a normal execute without a prepared statement
@@ -96,6 +99,8 @@ public class CQLExecutor {
 				return session.execute(cql.getQuery());
 			} catch(NoHostAvailableException e) {
 				throw new RhombusTimeoutException(e);
+			} catch(QueryExecutionException e2) {
+				throw new RhombusTimeoutException(e2);
 			}
 		}
 	}
@@ -109,6 +114,8 @@ public class CQLExecutor {
 			return session.execute(cql);
 		} catch(NoHostAvailableException e) {
 			throw new RhombusTimeoutException(e);
+		} catch(QueryExecutionException e2) {
+			throw new RhombusTimeoutException(e2);
 		}
 	}
 
@@ -139,8 +146,13 @@ public class CQLExecutor {
 				CQLStatement statement = statementIterator.next();
 				batchStatement.add(getBoundStatement(session, statement));
 			}
+		} try {
+			session.execute(batchStatement);
+		} catch(NoHostAvailableException e) {
+			throw new RhombusTimeoutException(e);
+		} catch(QueryExecutionException e2) {
+			throw new RhombusTimeoutException(e2);
 		}
-		session.execute(batchStatement);
 	}
 
 	public void executeBatch(CQLStatementIterator statementIterator) {
