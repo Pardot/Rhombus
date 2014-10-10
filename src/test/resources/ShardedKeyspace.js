@@ -19,6 +19,21 @@
                     "shardingStrategy": {"type": "ShardingStrategyMonthly"}
                 }
             ]
+        },
+        {
+            "name": "object2",
+            "fields": [
+                {"name": "account_id", "type": "uuid"},
+                {"name": "user_id", "type": "uuid"},
+                {"name": "field1", "type": "varchar"},
+                {"name": "created_at", "type": "timestamp"}
+            ],
+            "indexes" : [
+                {
+                    "key": "account_id:user_id",
+                    "shardingStrategy": {"type": "ShardingStrategyWeekly"}
+                }
+            ]
         }
     ]
 }
