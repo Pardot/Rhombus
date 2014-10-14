@@ -203,20 +203,20 @@ public class FakeCIndex {
 
 		public Map<String,Object> next() {
 			// Iterate over rows in the current id range
-			if(rowIt.hasNext()){
-				return makeObject(currentWideRowCounter,rowIt.next());
-			}
 			// We're out of ids in this id range, but we still have more wide rows in this index
-			else if(wideRowCounterIt.hasNext()){
+			if(!rowIt.hasNext() && wideRowCounterIt.hasNext()){
 				this.currentWideRowCounter = wideRowCounterIt.next();
 				try{
 					resetRowIt();
-					//recurse
-					return this.next();
 				}catch (RhombusException re){
 					re.printStackTrace();
 					return null;
 				}
+			}
+			if(rowIt.hasNext()){
+				FakeIdRange.IdInRange lastIdInRange = rowIt.next();
+				this.lastObjectId = lastIdInRange.getId();
+				return makeObject(currentWideRowCounter,lastIdInRange);
 			}
 			else {
 				return null;
