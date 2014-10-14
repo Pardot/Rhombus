@@ -1,6 +1,7 @@
 package com.pardot.rhombus;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.collect.Sets;
 import com.pardot.rhombus.cobject.CDefinition;
 import com.pardot.rhombus.cobject.CIndex;
 import com.pardot.rhombus.cobject.CObjectOrdering;
@@ -10,9 +11,11 @@ import org.junit.Test;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * User: Rob Righter
@@ -35,11 +38,14 @@ public class FakeCIndexTest {
 				50L,
 				10L );
 		Iterator<Map<String,Object>> masterIt = subject.getMasterIterator(CObjectOrdering.DESCENDING);
+		Set<String> idSet = Sets.newHashSet();
 
 		long counter = 0;
 		while(masterIt.hasNext()){
 			counter++;
 			Map<String,Object> item = masterIt.next();
+			assertFalse("Id is not unique", idSet.contains(item.get("id").toString()));
+			idSet.add(item.get("id").toString());
 			System.out.println(item);
 		}
 

@@ -2,6 +2,7 @@ package com.pardot.rhombus;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pardot.rhombus.cobject.CDefinition;
 import com.pardot.rhombus.cobject.CKeyspaceDefinition;
 import com.pardot.rhombus.cobject.CObjectOrdering;
@@ -34,9 +35,12 @@ public class FakeRTest {
 		FakeR faker1 = new FakeR(ckdef, wideRowsPerIndex, totalObjectsPerWideRange, totalObjectsPerShard);
 		Iterator<Map<String, Object>> iterator = faker1.getMasterIterator(CObjectOrdering.ASCENDING, null, null);
 
-		List<Map<String, Object>> materializedObjects1 = Lists.newArrayList();
+		Map<String, Map<String, Object>> materializedObjects1 = Maps.newHashMap();
 		while (iterator.hasNext()) {
-			materializedObjects1.add(iterator.next());
+			Map<String, Object> next = iterator.next();
+			assertTrue(next.containsKey("id"));
+			assertFalse("Materialized objects shouldn't have this id yet", materializedObjects1.containsKey(next.get("id").toString()));
+			materializedObjects1.put(next.get("id").toString(), next);
 		}
 		assertFalse(materializedObjects1.isEmpty());
 		assertEquals((wideRowsPerIndex*totalObjectsPerWideRange)*totalIndexCount, materializedObjects1.size());
@@ -49,9 +53,12 @@ public class FakeRTest {
 		FakeR faker2 = new FakeR(ckdef, wideRowsPerIndex, totalObjectsPerWideRange, totalObjectsPerShard);
 		iterator = faker2.getMasterIterator(CObjectOrdering.ASCENDING, null, null);
 
-		List<Map<String, Object>> materializedObjects2 = Lists.newArrayList();
+		Map<String, Map<String, Object>> materializedObjects2 = Maps.newHashMap();
 		while (iterator.hasNext()) {
-			materializedObjects2.add(iterator.next());
+			Map<String, Object> next = iterator.next();
+			assertTrue(next.containsKey("id"));
+			assertFalse("Materialized objects shouldn't have this id yet", materializedObjects2.containsKey(next.get("id").toString()));
+			materializedObjects2.put(next.get("id").toString(), next);
 		}
 		assertFalse(materializedObjects2.isEmpty());
 		assertEquals((wideRowsPerIndex*totalObjectsPerWideRange)*totalIndexCount, materializedObjects2.size());
