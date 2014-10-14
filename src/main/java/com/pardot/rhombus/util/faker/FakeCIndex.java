@@ -3,7 +3,6 @@ package com.pardot.rhombus.util.faker;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.*;
 import com.pardot.rhombus.Criteria;
-import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.RhombusException;
 import com.pardot.rhombus.cobject.CDefinition;
 import com.pardot.rhombus.cobject.CField;
@@ -26,7 +25,7 @@ public class FakeCIndex {
 	private CIndex index;
 	private FakeIdRange uniqueRange = null;
 	private List<FakeCIndex> indexesThatIAmASubsetOf = null;
-	private Range<Long> counterRange;
+	private Range<Long> wideRowCounterRange;
 	private List<String> nonIndexValuesOnAnyIndex;
 	private CDefinition def;
 
@@ -39,7 +38,7 @@ public class FakeCIndex {
 		this.index = index;
 		this.indexesThatIAmASubsetOf = Lists.newArrayList();
 		this.uniqueRange = new FakeIdRange(def.getPrimaryKeyCDataType(),startId,totalObjectsPerWideRange,objectsPerShard,index.getShardingStrategy(), index.getKey());
-		this.counterRange = Range.closed(1L, totalWideRows);
+		this.wideRowCounterRange = Range.closed(1L, totalWideRows);
 		this.def = def;
 
 		this.nonIndexValuesOnAnyIndex = Lists.newArrayList();
@@ -105,9 +104,9 @@ public class FakeCIndex {
 	}
 
 	public Iterator<Map<String, Object>> getIterator(CObjectOrdering ordering, Object startId, Object endId) throws RhombusException {
-		ContiguousSet<Long> set = ContiguousSet.create(this.counterRange, DiscreteDomain.longs());
-		Iterator<Long> topLevelIterator = (ordering == CObjectOrdering.ASCENDING) ? set.iterator() : set.descendingIterator();
-		return new FakeCIndexIterator(topLevelIterator, this.getUniqueRange(), ordering, startId, endId);
+		ContiguousSet<Long> wideRowCounterSet = ContiguousSet.create(this.wideRowCounterRange, DiscreteDomain.longs());
+		Iterator<Long> topLevelWideRowIterator = (ordering == CObjectOrdering.ASCENDING) ? wideRowCounterSet.iterator() : wideRowCounterSet.descendingIterator();
+		return new FakeCIndexIterator(topLevelWideRowIterator, this.getUniqueRange(), ordering, startId, endId);
 	}
 
 	/**
@@ -172,21 +171,21 @@ public class FakeCIndex {
 
 		private FakeIdRange fRange;
 		private Iterator<FakeIdRange.IdInRange> rowIt;
-		private Iterator<Long> counterIt;
+		private Iterator<Long> wideRowCounterIt;
 		private CObjectOrdering ordering;
 		Object startId;
 		Object endId;
-		Long currentCounter;
+		Long currentWideRowCounter;
 
 
-		public FakeCIndexIterator(Iterator<Long> counterIt, FakeIdRange fRange, CObjectOrdering ordering, Object startId, Object endId) throws RhombusException{
+		public FakeCIndexIterator(Iterator<Long> wideRowCounterIt, FakeIdRange fRange, CObjectOrdering ordering, Object startId, Object endId) throws RhombusException{
 			this.fRange = fRange;
 			this.ordering = ordering;
 			this.startId = startId;
 			this.endId = endId;
 			resetRowIt();
-			this.counterIt = counterIt;
-			this.currentCounter = counterIt.next();
+			this.wideRowCounterIt = wideRowCounterIt;
+			this.currentWideRowCounter = wideRowCounterIt.next();
 		}
 
 		public void resetRowIt() throws RhombusException {
@@ -199,15 +198,17 @@ public class FakeCIndex {
 		}
 
 		public boolean hasNext(){
-			return rowIt.hasNext() || counterIt.hasNext();
+			return rowIt.hasNext() || wideRowCounterIt.hasNext();
 		}
 
 		public Map<String,Object> next() {
+			// Iterate over rows in the current id range
 			if(rowIt.hasNext()){
-				return makeObject(currentCounter,rowIt.next());
+				return makeObject(currentWideRowCounter,rowIt.next());
 			}
-			else if(counterIt.hasNext()){
-				this.currentCounter = counterIt.next();
+			// We're out of ids in this id range, but we still have more wide rows in this index
+			else if(wideRowCounterIt.hasNext()){
+				this.currentWideRowCounter = wideRowCounterIt.next();
 				try{
 					resetRowIt();
 					//recurse
@@ -223,7 +224,7 @@ public class FakeCIndex {
 		}
 
 		public void remove(){
-			counterIt.remove();
+			wideRowCounterIt.remove();
 			rowIt.remove();
 		}
 

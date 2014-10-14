@@ -53,6 +53,10 @@ public class FakeCDefinition {
 		return this.fakeCIndexes;
 	}
 
+	public CDefinition getCdef() {
+		return cdef;
+	}
+
 	public Iterator<Map<String, Object>> getIterator(final CObjectOrdering ordering, final Object startId, final Object endId) throws RhombusException {
 		final Iterator<FakeCIndex> indexIterator = this.fakeCIndexes.iterator();
 

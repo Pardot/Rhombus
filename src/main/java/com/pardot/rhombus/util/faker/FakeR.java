@@ -35,65 +35,70 @@ public class FakeR {
 	 * @param startId - The range of the minimumUniqueIndexHits counter. Set to null in order to
 	 *                         iterate over all values.
 	 */
-	public Iterator<Map<String, Object>> getMasterIterator(final CObjectOrdering ordering, final UUID startId, final UUID endId) {
+	public FakeRIterator getMasterIterator(final CObjectOrdering ordering, final UUID startId, final UUID endId) {
 		final Iterator<FakeCDefinition> fakeDefIterator = this.fakeDefinitions.iterator();
-		return new Iterator<Map<String, Object>>() {
-			Iterator<Map<String, Object>> currentDefinitionIterator = null;
-
-			@Override
-			public boolean hasNext() {
-				boolean doesHaveNext = false;
-				while (!doesHaveNext) {
-					if (currentDefinitionIterator == null || !currentDefinitionIterator.hasNext()) { //if we need to move on to the next definition
-						if (fakeDefIterator.hasNext()) {//if we have a next definition
-							try {
-								currentDefinitionIterator = fakeDefIterator.next().getIterator(ordering, startId, endId);
-							} catch (RhombusException re) {
-								System.out.print("Error while creating iterator: " + re.getMessage());
-								re.printStackTrace();
-								throw new RuntimeException("Rhombus Exception");
-							}
-						} else {
-							return false; //we are out of indexes to iterate over
-						}
-					}
-					//set the doesHaveNext from the current index and continue looping just in case we get a false back.
-					doesHaveNext = currentDefinitionIterator.hasNext();
-					//if doesHaveNext is true, we will break out of the loop, otherwise we keep iterating until we run out of stuff
-				}
-				return true;
-			}
-
-			@Override
-			public Map<String, Object> next() {
-				return currentDefinitionIterator.next();
-			}
-
-			@Override
-			public void remove() {
-				//no op
-			}
-		};
-	}
-
-	/**
-	 *
-	 * @param objectType Type of object to get
-	 * @param key Key of object to get
-	 * @return Object of type with key or null if it does not exist
-	 */
-	public Map<String, Object> getByKey(String objectType, Object key) {
-//		for (FakeCDefinition def : this.fakeDefinitions) {
-//			if (def.cdef.getName().equals(objectType)) {
-//				def.cdef.ge
-//			}
-//		}
-
-		return null;
+		return new FakeRIterator(fakeDefIterator, ordering, startId, endId);
 	}
 
 	public Iterator<Map<String, Object>> list(String objectType, Criteria criteria) {
 		return null;
 	}
 
+	public class FakeRIterator implements Iterator<Map<String, Object>> {
+		private final Iterator<FakeCDefinition> fakeDefIterator;
+		private final CObjectOrdering ordering;
+		private final UUID startId;
+		private final UUID endId;
+		Iterator<Map<String, Object>> currentDefinitionIterator;
+		String currentObjectType;
+
+		public FakeRIterator(Iterator<FakeCDefinition> fakeDefIterator, CObjectOrdering ordering, UUID startId, UUID endId) {
+			this.fakeDefIterator = fakeDefIterator;
+			this.ordering = ordering;
+			this.startId = startId;
+			this.endId = endId;
+			currentDefinitionIterator = null;
+			currentObjectType = null;
+		}
+
+		@Override
+		public boolean hasNext() {
+			boolean doesHaveNext = false;
+			while (!doesHaveNext) {
+				if (currentDefinitionIterator == null || !currentDefinitionIterator.hasNext()) { //if we need to move on to the next definition
+					if (fakeDefIterator.hasNext()) {//if we have a next definition
+						try {
+							FakeCDefinition nextDef = fakeDefIterator.next();
+							currentDefinitionIterator = nextDef.getIterator(ordering, startId, endId);
+							this.currentObjectType = nextDef.getCdef().getName();
+						} catch (RhombusException re) {
+							System.out.print("Error while creating iterator: " + re.getMessage());
+							re.printStackTrace();
+							throw new RuntimeException("Rhombus Exception");
+						}
+					} else {
+						return false; //we are out of indexes to iterate over
+					}
+				}
+				//set the doesHaveNext from the current index and continue looping just in case we get a false back.
+				doesHaveNext = currentDefinitionIterator.hasNext();
+				//if doesHaveNext is true, we will break out of the loop, otherwise we keep iterating until we run out of stuff
+			}
+			return true;
+		}
+
+		@Override
+		public Map<String, Object> next() {
+			return currentDefinitionIterator.next();
+		}
+
+		@Override
+		public void remove() {
+			//no op
+		}
+
+		public String getCurrentObjectType() {
+			return this.currentObjectType;
+		}
+	}
 }
