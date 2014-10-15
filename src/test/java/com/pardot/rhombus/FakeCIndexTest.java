@@ -49,7 +49,7 @@ public class FakeCIndexTest {
 			System.out.println(item);
 		}
 
-		assertEquals(5000L,counter);
+		assertEquals(50L,counter);
 
 
 	}

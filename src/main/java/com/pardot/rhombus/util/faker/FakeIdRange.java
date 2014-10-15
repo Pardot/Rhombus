@@ -312,7 +312,6 @@ public class FakeIdRange {
 		public IdInRange next() {
 			try{
 				Long counter = rangeIterator.next();
-				Object ret = getIdAtCounter(counter,shardingStrategy);
 				return new IdInRange(getIdAtCounter(counter,shardingStrategy),counter);
 			}
 			catch (RhombusException re){

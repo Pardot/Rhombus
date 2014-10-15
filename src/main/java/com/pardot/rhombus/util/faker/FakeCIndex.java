@@ -37,6 +37,8 @@ public class FakeCIndex {
 	                  Long objectsPerShard ){
 		this.index = index;
 		this.indexesThatIAmASubsetOf = Lists.newArrayList();
+		// Each index's id range is represented by a fakeIdRange object, which represents all the ids for that index,
+		// across all the index's shards/wide rows
 		this.uniqueRange = new FakeIdRange(def.getPrimaryKeyCDataType(),startId,totalObjectsPerWideRange,objectsPerShard,index.getShardingStrategy(), index.getKey());
 		this.wideRowCounterRange = Range.closed(1L, totalWideRows);
 		this.def = def;
@@ -198,25 +200,13 @@ public class FakeCIndex {
 		}
 
 		public boolean hasNext(){
-			return rowIt.hasNext() || wideRowCounterIt.hasNext();
+			return rowIt.hasNext();
 		}
 
 		public Map<String,Object> next() {
-			// Iterate over rows in the current id range
-			// We're out of ids in this id range, but we still have more wide rows in this index
-			if(!rowIt.hasNext() && wideRowCounterIt.hasNext()){
-				this.currentWideRowCounter = wideRowCounterIt.next();
-				try{
-					resetRowIt();
-				}catch (RhombusException re){
-					re.printStackTrace();
-					return null;
-				}
-			}
 			if(rowIt.hasNext()){
 				FakeIdRange.IdInRange lastIdInRange = rowIt.next();
-				this.lastObjectId = lastIdInRange.getId();
-				return makeObject(currentWideRowCounter,lastIdInRange);
+				return makeObject(lastIdInRange.getCounterValue(),lastIdInRange);
 			}
 			else {
 				return null;

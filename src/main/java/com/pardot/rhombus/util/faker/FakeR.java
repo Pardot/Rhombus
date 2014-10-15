@@ -20,13 +20,21 @@ public class FakeR {
 	protected CKeyspaceDefinition keyspace;
 	protected List<FakeCDefinition> fakeDefinitions;
 
-	public FakeR(CKeyspaceDefinition keyspace, Long totalWideRowsPerIndex, Long totalObjectsPerWideRange, Long objectsPerShard) throws RhombusException {
+	/**
+	 *
+	 * @param keyspace
+	 * @param totalShardsPerIndex Ostensibly the number of wide rows to generate per index. Not currently used.
+	 * @param totalObjectsPerIndex The total number of objects in a wide range (each index has one wide range)
+	 * @param objectsPerShard The number of objects per shard/wide row in an index. Each index divides the objects in its wide range across its shards.
+	 * @throws RhombusException
+	 */
+	public FakeR(CKeyspaceDefinition keyspace, Long totalShardsPerIndex, Long totalObjectsPerIndex, Long objectsPerShard) throws RhombusException {
 		this.keyspace = keyspace;
 
 		Map<String, CDefinition> definitions = keyspace.getDefinitions();
 		this.fakeDefinitions = Lists.newArrayList();
 		for (String defKey : definitions.keySet()) {
-			this.fakeDefinitions.add(new FakeCDefinition(definitions.get(defKey), totalWideRowsPerIndex, totalObjectsPerWideRange, objectsPerShard));
+			this.fakeDefinitions.add(new FakeCDefinition(definitions.get(defKey), totalShardsPerIndex, totalObjectsPerIndex, objectsPerShard));
 		}
 	}
 

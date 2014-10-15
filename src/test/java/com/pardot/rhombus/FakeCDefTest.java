@@ -35,7 +35,7 @@ public class FakeCDefTest {
 			System.out.println(item);
 		}
 
-		assertEquals(3L*5000L,counter);
+		assertEquals(3L*50L,counter);
 
 	}
 }
