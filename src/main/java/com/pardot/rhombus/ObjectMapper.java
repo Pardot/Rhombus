@@ -47,8 +47,8 @@ public class ObjectMapper implements CObjectShardList {
 	private CKeyspaceDefinition keyspaceDefinition;
 	private CObjectCQLGenerator cqlGenerator;
 	private Long batchTimeout;
-    private String defaultSSTableOutputPath = System.getProperty("user.dir");
-    private Map<String, Pair<CQLSSTableWriter, Map<CIndex, CQLSSTableWriter>>> SSTableWriters = Maps.newHashMap();
+	private String defaultSSTableOutputPath = System.getProperty("user.dir");
+	private Map<String, Pair<CQLSSTableWriter, Map<CIndex, CQLSSTableWriter>>> SSTableWriters = Maps.newHashMap();
 
 	public ObjectMapper(Session session, CKeyspaceDefinition keyspaceDefinition, Integer consistencyHorizon, Long batchTimeout) {
 		this.cqlExecutor = new CQLExecutor(session, logCql, keyspaceDefinition.getConsistencyLevel());
@@ -250,7 +250,7 @@ public class ObjectMapper implements CObjectShardList {
 	/**
 	 * Insert a batch of mixed new object with values
 	 * @param objects Objects to insert
-     * @param ttl the time-to-live for cassandra
+	 * @param ttl the time-to-live for cassandra
 	 * @return Map of ids of inserted objects
 	 * @throws CQLGenerationException
 	 */
@@ -287,22 +287,22 @@ public class ObjectMapper implements CObjectShardList {
 		return insertedIds;
 	}
 
-    /**
-     * Insert a batch of mixed new object with values
-     * @param objects Objects to insert
-     * @return Map of ids of inserted objects
-     * @throws CQLGenerationException
-     */
-    public Map<String, List<UUID>> insertBatchMixed(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, RhombusException {
-        return insertBatchMixed(objects, null);
-    }
+	/**
+	 * Insert a batch of mixed new object with values
+	 * @param objects Objects to insert
+	 * @return Map of ids of inserted objects
+	 * @throws CQLGenerationException
+	 */
+	public Map<String, List<UUID>> insertBatchMixed(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, RhombusException {
+		return insertBatchMixed(objects, null);
+	}
 
 	/**
 	 * Insert a new object with values and key and TTL
 	 * @param objectType Type of object to insert
 	 * @param values Values to insert
 	 * @param key Time UUID to use as key
-     * @param ttl the time-to-live for cassandra
+	 * @param ttl the time-to-live for cassandra
 	 * @return ID if newly inserted object
 	 * @throws CQLGenerationException
 	 */
@@ -336,49 +336,49 @@ public class ObjectMapper implements CObjectShardList {
 		return insert(objectType, values, key, null);
 	}
 
-    /**
-     * Used to insert an object with an Integer TTL for auto-cleanup in Cassandra.
-     * @param objectType Type of object to insert
-     * @param values Values to insert
-     * @param ttl Integer for use of the Cassandra TTL
-     * @return the UUID of the newly inserted object
-     */
-    public Object insert(String objectType, Map<String, Object> values, Integer ttl) throws CQLGenerationException, RhombusException {
-        Object key = null;
-        if(values.containsKey("id")) {
-            key = values.get("id");
-            values.remove("id");
-        }
-        else{
-            key = UUIDs.timeBased();
-        }
-        return insert(objectType, values, key, ttl);
-    }
+	/**
+	 * Used to insert an object with an Integer TTL for auto-cleanup in Cassandra.
+	 * @param objectType Type of object to insert
+	 * @param values Values to insert
+	 * @param ttl Integer for use of the Cassandra TTL
+	 * @return the UUID of the newly inserted object
+	 */
+	public Object insert(String objectType, Map<String, Object> values, Integer ttl) throws CQLGenerationException, RhombusException {
+		Object key = null;
+		if(values.containsKey("id")) {
+			key = values.get("id");
+			values.remove("id");
+		}
+		else{
+			key = UUIDs.timeBased();
+		}
+		return insert(objectType, values, key, ttl);
+	}
 
-    /**
-     * Used to insert an object with a UUID based on the provided timestamp
-     * Best used for testing, as time resolution collisions are not accounted for
-     * @param objectType Type of object to insert
-     * @param values Values to insert
-     * @param timestamp Timestamp to use to create the object UUID
-     * @return the UUID of the newly inserted object
-     */
-    public Object insert(String objectType, Map<String, Object> values, Long timestamp) throws CQLGenerationException, RhombusException {
-        UUID uuid = UUIDs.startOf(timestamp);
-        return insert(objectType, values, uuid, null);
-    }
+	/**
+	 * Used to insert an object with a UUID based on the provided timestamp
+	 * Best used for testing, as time resolution collisions are not accounted for
+	 * @param objectType Type of object to insert
+	 * @param values Values to insert
+	 * @param timestamp Timestamp to use to create the object UUID
+	 * @return the UUID of the newly inserted object
+	 */
+	public Object insert(String objectType, Map<String, Object> values, Long timestamp) throws CQLGenerationException, RhombusException {
+		UUID uuid = UUIDs.startOf(timestamp);
+		return insert(objectType, values, uuid, null);
+	}
 
 
-    /**
-     * Used for backwards-compatibility of many methods that already know the key
-     * @param objectType Type of object to insert
-     * @param values Values to insert
-     * @param key the UUID to use as key
-     * @return the UUID of the newly inserted object
-     */
-    public Object insert(String objectType, Map<String, Object> values, Object key) throws CQLGenerationException, RhombusException {
-        return insert(objectType, values, key, null);
-    }
+	/**
+	 * Used for backwards-compatibility of many methods that already know the key
+	 * @param objectType Type of object to insert
+	 * @param values Values to insert
+	 * @param key the UUID to use as key
+	 * @return the UUID of the newly inserted object
+	 */
+	public Object insert(String objectType, Map<String, Object> values, Object key) throws CQLGenerationException, RhombusException {
+		return insert(objectType, values, key, null);
+	}
 
 
 	/**
@@ -738,26 +738,26 @@ public class ObjectMapper implements CObjectShardList {
 		return result;
 	}
 
-    public void prePrepareInsertStatements() throws CQLGenerationException {
-        Map<String,CDefinition> defs = this.getKeyspaceDefinition().getDefinitions();
+	public void prePrepareInsertStatements() throws CQLGenerationException {
+		Map<String,CDefinition> defs = this.getKeyspaceDefinition().getDefinitions();
 		if(defs != null) {
 			for(CDefinition def : defs.values()){
 				prePrepareInsertStatements(def);
 			}
 		}
-    }
+	}
 
-    public void prePrepareInsertStatements(CDefinition def) throws CQLGenerationException{
-        SortedMap<String, Object> values = Maps.newTreeMap();
-        for( CField f : def.getFields().values() ){
-            values.put(f.getName(), f.getEmptyJavaObjectOfThisType());
-        }
-        CQLStatementIterator sti = cqlGenerator.makeCQLforInsert(def.getName(),values,UUIDs.timeBased(),0L);
-        while(sti.hasNext()){
-            CQLStatement cql = sti.next();
-            cqlExecutor.prepareStatement(session,cql);
-        }
-    }
+	public void prePrepareInsertStatements(CDefinition def) throws CQLGenerationException{
+		SortedMap<String, Object> values = Maps.newTreeMap();
+		for( CField f : def.getFields().values() ){
+			values.put(f.getName(), f.getEmptyJavaObjectOfThisType());
+		}
+		CQLStatementIterator sti = cqlGenerator.makeCQLforInsert(def.getName(),values,UUIDs.timeBased(),0L);
+		while(sti.hasNext()){
+			CQLStatement cql = sti.next();
+			cqlExecutor.prepareStatement(session,cql);
+		}
+	}
 
 	private Object getFieldValue(Row row, CField field) {
 		if(row.isNull(field.getName())){
@@ -812,234 +812,234 @@ public class ObjectMapper implements CObjectShardList {
 		return JsonUtil.rhombusMapFromJsonMap(values, keyspaceDefinition.getDefinitions().get(objectType));
 	}
 
-    /**
-     * Creates an SSTable keyspace output directory at defaultSSTableOutputPath and table output directories for each SSTable,
-     * and initializes each SSTableWriter for each static and index table in this keyspace.
-     * @param sorted Defines if the SSTableWriters created by this should be set as sorted, which improves performance if
-     *               rows are inserted in SSTable sort order, but throws exceptions if they are inserted in the wrong order.
-     * @throws CQLGenerationException
-     * @throws IOException
-     */
-    public void initializeSSTableWriters(boolean sorted) throws CQLGenerationException, IOException {
-        Map<String, CDefinition> definitions = this.keyspaceDefinition.getDefinitions();
+	/**
+	 * Creates an SSTable keyspace output directory at defaultSSTableOutputPath and table output directories for each SSTable,
+	 * and initializes each SSTableWriter for each static and index table in this keyspace.
+	 * @param sorted Defines if the SSTableWriters created by this should be set as sorted, which improves performance if
+	 *               rows are inserted in SSTable sort order, but throws exceptions if they are inserted in the wrong order.
+	 * @throws CQLGenerationException
+	 * @throws IOException
+	 */
+	public void initializeSSTableWriters(boolean sorted) throws CQLGenerationException, IOException {
+		Map<String, CDefinition> definitions = this.keyspaceDefinition.getDefinitions();
 
-        // Make sure the SSTableOutput directory exists and is clear
-        String keyspacePath = this.defaultSSTableOutputPath + "/" + this.keyspaceDefinition.getName();
-        File keyspaceDir = new File(keyspacePath);
-        if (keyspaceDir.exists()) {
-            FileUtils.deleteRecursive(new File(keyspacePath));
-        }
-        if (!new File(keyspacePath).mkdir()) {
-            throw new IOException("Failed to create SSTable keyspace output directory at " + keyspacePath);
-        }
+		// Make sure the SSTableOutput directory exists and is clear
+		String keyspacePath = this.defaultSSTableOutputPath + "/" + this.keyspaceDefinition.getName();
+		File keyspaceDir = new File(keyspacePath);
+		if (keyspaceDir.exists()) {
+			FileUtils.deleteRecursive(new File(keyspacePath));
+		}
+		if (!new File(keyspacePath).mkdir()) {
+			throw new IOException("Failed to create SSTable keyspace output directory at " + keyspacePath);
+		}
 
-        this.SSTableWriters.put(CObjectShardList.SHARD_INDEX_TABLE_NAME, Pair.create(this.buildSSTableWriterForShardIndexTable(sorted), (Map<CIndex, CQLSSTableWriter>) null));
+		this.SSTableWriters.put(CObjectShardList.SHARD_INDEX_TABLE_NAME, Pair.create(this.buildSSTableWriterForShardIndexTable(sorted), (Map<CIndex, CQLSSTableWriter>) null));
 
-        for (String defName : definitions.keySet()) {
-            // Build the CQLSSTableWriter for the static table
-            CQLSSTableWriter staticWriter = buildSSTableWriterForStaticTable(definitions.get(defName), sorted);
+		for (String defName : definitions.keySet()) {
+			// Build the CQLSSTableWriter for the static table
+			CQLSSTableWriter staticWriter = buildSSTableWriterForStaticTable(definitions.get(defName), sorted);
 
-            // Build the CQLSSTableWriter for all the index tables
-            List<CIndex> indexes = definitions.get(defName).getIndexesAsList();
-            Map<CIndex, CQLSSTableWriter> indexWriters = Maps.newHashMap();
-            for (CIndex index : indexes) {
-                CQLSSTableWriter writer = buildSSTableWriterForWideTable(definitions.get(defName), index, sorted);
-                indexWriters.put(index, writer);
-            }
-            this.SSTableWriters.put(defName, Pair.create(staticWriter, indexWriters));
-        }
-    }
+			// Build the CQLSSTableWriter for all the index tables
+			List<CIndex> indexes = definitions.get(defName).getIndexesAsList();
+			Map<CIndex, CQLSSTableWriter> indexWriters = Maps.newHashMap();
+			for (CIndex index : indexes) {
+				CQLSSTableWriter writer = buildSSTableWriterForWideTable(definitions.get(defName), index, sorted);
+				indexWriters.put(index, writer);
+			}
+			this.SSTableWriters.put(defName, Pair.create(staticWriter, indexWriters));
+		}
+	}
 
-    /**
-     * Writes Rhombus objects into the appropriate static and index SSTableWriters for their object definition. Requires that initializeSSTableWriters
-     * be called first and completeSSTableWrites be called when you're done inserting things. Object values with key "shardid" will be ignored and removed.
-     * @param objects Map keyed by object name with a list of Rhombus objects to insert for that table
-     * @throws CQLGenerationException
-     * @throws IOException
-     * @throws InvalidRequestException
-     */
-    public void insertIntoSSTable(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, IOException, InvalidRequestException {
-        Map<String, CDefinition> definitions = this.keyspaceDefinition.getDefinitions();
-        for (String tableName : objects.keySet()) {
-            CDefinition definition = definitions.get(tableName);
-            // Pull an existing CQLSSTableWriter for this object type if we already have one, if not make a new one
-            if (!this.SSTableWriters.containsKey(tableName)) {
-                throw new RuntimeException("Tried to write to uninitialized SSTableWriter for static table " + tableName);
-            }
-            CQLSSTableWriter staticWriter = this.SSTableWriters.get(tableName).left;
-            Map<CIndex, CQLSSTableWriter> indexWriters = this.SSTableWriters.get(tableName).right;
+	/**
+	 * Writes Rhombus objects into the appropriate static and index SSTableWriters for their object definition. Requires that initializeSSTableWriters
+	 * be called first and completeSSTableWrites be called when you're done inserting things. Object values with key "shardid" will be ignored and removed.
+	 * @param objects Map keyed by object name with a list of Rhombus objects to insert for that table
+	 * @throws CQLGenerationException
+	 * @throws IOException
+	 * @throws InvalidRequestException
+	 */
+	public void insertIntoSSTable(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, IOException, InvalidRequestException {
+		Map<String, CDefinition> definitions = this.keyspaceDefinition.getDefinitions();
+		for (String tableName : objects.keySet()) {
+			CDefinition definition = definitions.get(tableName);
+			// Pull an existing CQLSSTableWriter for this object type if we already have one, if not make a new one
+			if (!this.SSTableWriters.containsKey(tableName)) {
+				throw new RuntimeException("Tried to write to uninitialized SSTableWriter for static table " + tableName);
+			}
+			CQLSSTableWriter staticWriter = this.SSTableWriters.get(tableName).left;
+			Map<CIndex, CQLSSTableWriter> indexWriters = this.SSTableWriters.get(tableName).right;
 
-            for (Map<String, Object> insert : objects.get(tableName)) {
-                staticWriter.addRow(insert);
-                for (CIndex index : indexWriters.keySet()) {
-                    if(definition.isAllowNullPrimaryKeyInserts()){
-                        //check if we have the necessary primary fields to insert on this index. If not just continue;
-                        if(!index.validateIndexKeys(index.getIndexKeyAndValues(insert))){
-                            continue;
-                        }
-                    }
-                    // Add the shard id to index writes
-                    long shardId = index.getShardingStrategy().getShardKey(insert.get("id"));
-                    insert.put("shardid", shardId);
-                    indexWriters.get(index).addRow(insert);
-                    // Pull the shardid back out to avoid the overhead of cloning the values and keep our abstraction from leaking
-                    insert.remove("shardid");
+			for (Map<String, Object> insert : objects.get(tableName)) {
+				staticWriter.addRow(insert);
+				for (CIndex index : indexWriters.keySet()) {
+					if(definition.isAllowNullPrimaryKeyInserts()){
+						//check if we have the necessary primary fields to insert on this index. If not just continue;
+						if(!index.validateIndexKeys(index.getIndexKeyAndValues(insert))){
+							continue;
+						}
+					}
+					// Add the shard id to index writes
+					long shardId = index.getShardingStrategy().getShardKey(insert.get("id"));
+					insert.put("shardid", shardId);
+					indexWriters.get(index).addRow(insert);
+					// Pull the shardid back out to avoid the overhead of cloning the values and keep our abstraction from leaking
+					insert.remove("shardid");
 
-                    // If this index uses shards, we need to record the write into the shard index table
-                    if((!(index.getShardingStrategy() instanceof ShardingStrategyNone))){
-                        String indexValuesString = CObjectCQLGenerator.makeIndexValuesString(index.getIndexValues(insert));
-                        Map<String, Object> shardIndexInsert = Maps.newHashMap();
-                        shardIndexInsert.put("tablename", CObjectCQLGenerator.makeTableName(definition, index));
-                        shardIndexInsert.put("indexvalues", indexValuesString);
-                        shardIndexInsert.put("shardid", shardId);
-                        shardIndexInsert.put("targetrowkey", shardId+":"+indexValuesString);
-                        this.SSTableWriters.get(CObjectShardList.SHARD_INDEX_TABLE_NAME).left.addRow(shardIndexInsert);
-                    }
-                }
-            }
-        }
-    }
+					// If this index uses shards, we need to record the write into the shard index table
+					if((!(index.getShardingStrategy() instanceof ShardingStrategyNone))){
+						String indexValuesString = CObjectCQLGenerator.makeIndexValuesString(index.getIndexValues(insert));
+						Map<String, Object> shardIndexInsert = Maps.newHashMap();
+						shardIndexInsert.put("tablename", CObjectCQLGenerator.makeTableName(definition, index));
+						shardIndexInsert.put("indexvalues", indexValuesString);
+						shardIndexInsert.put("shardid", shardId);
+						shardIndexInsert.put("targetrowkey", shardId+":"+indexValuesString);
+						this.SSTableWriters.get(CObjectShardList.SHARD_INDEX_TABLE_NAME).left.addRow(shardIndexInsert);
+					}
+				}
+			}
+		}
+	}
 
-    /**
-     * Builds an SSTableWriter for a static table
-     * @param sorted Defines if the SSTableWriters created by this should be set as sorted, which improves performance if
-     *               rows are inserted in SSTable sort order, but throws exceptions if they are inserted in the wrong order.
-     * @return A CQLSSTableWriter for this static table
-     * @throws CQLGenerationException
-     * @throws IOException
-     */
-    private CQLSSTableWriter buildSSTableWriterForShardIndexTable(boolean sorted) throws CQLGenerationException, IOException {
-        // Generate CQL create syntax
-        String createCQL = this.cqlGenerator.makeCQLforShardIndexTableCreate().getQuery();
+	/**
+	 * Builds an SSTableWriter for a static table
+	 * @param sorted Defines if the SSTableWriters created by this should be set as sorted, which improves performance if
+	 *               rows are inserted in SSTable sort order, but throws exceptions if they are inserted in the wrong order.
+	 * @return A CQLSSTableWriter for this static table
+	 * @throws CQLGenerationException
+	 * @throws IOException
+	 */
+	private CQLSSTableWriter buildSSTableWriterForShardIndexTable(boolean sorted) throws CQLGenerationException, IOException {
+		// Generate CQL create syntax
+		String createCQL = this.cqlGenerator.makeCQLforShardIndexTableCreate().getQuery();
 
-        // Generate CQL insert syntax
-        String tableName = CObjectShardList.SHARD_INDEX_TABLE_NAME;
-        String insertCQL = this.cqlGenerator.makeCQLforInsertNoValuesforShardIndex(tableName).getQuery();
+		// Generate CQL insert syntax
+		String tableName = CObjectShardList.SHARD_INDEX_TABLE_NAME;
+		String insertCQL = this.cqlGenerator.makeCQLforInsertNoValuesforShardIndex(tableName).getQuery();
 
-        String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + tableName;
-        if (!new File(SSTablePath).mkdir()) {
-            throw new IOException("Failed to create new directory for SSTable writing at path: " + SSTablePath);
-        }
+		String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + tableName;
+		if (!new File(SSTablePath).mkdir()) {
+			throw new IOException("Failed to create new directory for SSTable writing at path: " + SSTablePath);
+		}
 
-        CQLSSTableWriter.Builder builder =
-                CQLSSTableWriter.builder()
-                        .inDirectory(SSTablePath)
-                        .forTable(createCQL)
-                        .using(insertCQL);
-        if (sorted) { builder = builder.sorted(); }
-        return builder.build();
-    }
+		CQLSSTableWriter.Builder builder =
+				CQLSSTableWriter.builder()
+						.inDirectory(SSTablePath)
+						.forTable(createCQL)
+						.using(insertCQL);
+		if (sorted) { builder = builder.sorted(); }
+		return builder.build();
+	}
 
-    /**
-     * Builds an SSTableWriter for a static table
-     * @param definition Definition of object to build table for
-     * @param sorted Defines if the SSTableWriters created by this should be set as sorted, which improves performance if
-     *               rows are inserted in SSTable sort order, but throws exceptions if they are inserted in the wrong order.
-     * @return A CQLSSTableWriter for this static table
-     * @throws CQLGenerationException
-     * @throws IOException
-     */
-    private CQLSSTableWriter buildSSTableWriterForStaticTable(CDefinition definition, boolean sorted) throws CQLGenerationException, IOException {
-        // Generate CQL create syntax
-        String tableName = definition.getName();
-        String createCQL = this.cqlGenerator.makeStaticTableCreate(definition).getQuery();
+	/**
+	 * Builds an SSTableWriter for a static table
+	 * @param definition Definition of object to build table for
+	 * @param sorted Defines if the SSTableWriters created by this should be set as sorted, which improves performance if
+	 *               rows are inserted in SSTable sort order, but throws exceptions if they are inserted in the wrong order.
+	 * @return A CQLSSTableWriter for this static table
+	 * @throws CQLGenerationException
+	 * @throws IOException
+	 */
+	private CQLSSTableWriter buildSSTableWriterForStaticTable(CDefinition definition, boolean sorted) throws CQLGenerationException, IOException {
+		// Generate CQL create syntax
+		String tableName = definition.getName();
+		String createCQL = this.cqlGenerator.makeStaticTableCreate(definition).getQuery();
 
-        // Generate CQL insert syntax
-        String insertCQL = this.cqlGenerator.makeCQLforInsertNoValuesforStaticTable(tableName).getQuery();
+		// Generate CQL insert syntax
+		String insertCQL = this.cqlGenerator.makeCQLforInsertNoValuesforStaticTable(tableName).getQuery();
 
-        String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + tableName;
-        if (!new File(SSTablePath).mkdir()) {
-            throw new IOException("Failed to create new directory for SSTable writing at path: " + SSTablePath);
-        }
+		String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + tableName;
+		if (!new File(SSTablePath).mkdir()) {
+			throw new IOException("Failed to create new directory for SSTable writing at path: " + SSTablePath);
+		}
 
-        CQLSSTableWriter.Builder builder =
-            CQLSSTableWriter.builder()
-                .inDirectory(SSTablePath)
-                .forTable(createCQL)
-                .using(insertCQL);
-        if (sorted) { builder = builder.sorted(); }
-        return builder.build();
-    }
+		CQLSSTableWriter.Builder builder =
+			CQLSSTableWriter.builder()
+				.inDirectory(SSTablePath)
+				.forTable(createCQL)
+				.using(insertCQL);
+		if (sorted) { builder = builder.sorted(); }
+		return builder.build();
+	}
 
-    /**
-     * Builds an SSTableWriter for a wide/index table
-     * @param definition The definition this index/wide table is on
-     * @param index The index/wide table to create an CQLSSTableWriter for
-     * @param sorted Defines if the SSTableWriters created by this should be set as sorted, which improves performance if
-     *               rows are inserted in SSTable sort order, but throws exceptions if they are inserted in the wrong order.
-     * @return An CQLSSTableWriter for this wide table
-     * @throws CQLGenerationException
-     */
-    private CQLSSTableWriter buildSSTableWriterForWideTable(CDefinition definition, CIndex index, boolean sorted) throws CQLGenerationException, IOException {
-        String indexTableName = CObjectCQLGenerator.makeTableName(definition, index);
-        // Generate CQL create syntax
-        String createCQL = this.cqlGenerator.makeWideTableCreate(definition, index).getQuery();
+	/**
+	 * Builds an SSTableWriter for a wide/index table
+	 * @param definition The definition this index/wide table is on
+	 * @param index The index/wide table to create an CQLSSTableWriter for
+	 * @param sorted Defines if the SSTableWriters created by this should be set as sorted, which improves performance if
+	 *               rows are inserted in SSTable sort order, but throws exceptions if they are inserted in the wrong order.
+	 * @return An CQLSSTableWriter for this wide table
+	 * @throws CQLGenerationException
+	 */
+	private CQLSSTableWriter buildSSTableWriterForWideTable(CDefinition definition, CIndex index, boolean sorted) throws CQLGenerationException, IOException {
+		String indexTableName = CObjectCQLGenerator.makeTableName(definition, index);
+		// Generate CQL create syntax
+		String createCQL = this.cqlGenerator.makeWideTableCreate(definition, index).getQuery();
 
-        // Generate CQL insert syntax
-        // Just use 1 as the value for shardId, doesn't matter since we're not actually using values here
-        String insertCQL = this.cqlGenerator.makeCQLforInsertNoValuesforWideTable(definition, indexTableName, 1L).getQuery();
+		// Generate CQL insert syntax
+		// Just use 1 as the value for shardId, doesn't matter since we're not actually using values here
+		String insertCQL = this.cqlGenerator.makeCQLforInsertNoValuesforWideTable(definition, indexTableName, 1L).getQuery();
 
-        String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + indexTableName;
-        if (!new File(SSTablePath).mkdir()) {
-            throw new IOException("Failed to create new directory for SSTable writing at path: " + SSTablePath);
-        }
+		String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + indexTableName;
+		if (!new File(SSTablePath).mkdir()) {
+			throw new IOException("Failed to create new directory for SSTable writing at path: " + SSTablePath);
+		}
 
-        CQLSSTableWriter.Builder builder =
-                CQLSSTableWriter.builder()
-                        .inDirectory(SSTablePath)
-                        .forTable(createCQL)
-                        .using(insertCQL);
-        if (sorted) { builder = builder.sorted(); }
-        return builder.build();
-    }
+		CQLSSTableWriter.Builder builder =
+				CQLSSTableWriter.builder()
+						.inDirectory(SSTablePath)
+						.forTable(createCQL)
+						.using(insertCQL);
+		if (sorted) { builder = builder.sorted(); }
+		return builder.build();
+	}
 
-    /**
-     * Sets the path to write SSTables to, if not set it will default to the current user.dir
-     * @param path Path to write SSTables to
-     */
-    public void setSSTableOutputPath(String path) {
-        this.defaultSSTableOutputPath = path;
-    }
+	/**
+	 * Sets the path to write SSTables to, if not set it will default to the current user.dir
+	 * @param path Path to write SSTables to
+	 */
+	public void setSSTableOutputPath(String path) {
+		this.defaultSSTableOutputPath = path;
+	}
 
-    /**
-     * Completes writes to SSTables and cleans up empty table directories. Must be called after writing to SSTables if
-     * you actually want to use the SSTables for anything.
-     * @throws IOException
-     */
-    public void completeSSTableWrites() throws IOException {
-        Map<String, CDefinition> definitions = this.keyspaceDefinition.getDefinitions();
-        for (String tableName : this.SSTableWriters.keySet()) {
-            // Close all SSTableWriters
-            this.SSTableWriters.get(tableName).left.close();
-            this.clearSSTableDirectoryIfEmpty(tableName);
+	/**
+	 * Completes writes to SSTables and cleans up empty table directories. Must be called after writing to SSTables if
+	 * you actually want to use the SSTables for anything.
+	 * @throws IOException
+	 */
+	public void completeSSTableWrites() throws IOException {
+		Map<String, CDefinition> definitions = this.keyspaceDefinition.getDefinitions();
+		for (String tableName : this.SSTableWriters.keySet()) {
+			// Close all SSTableWriters
+			this.SSTableWriters.get(tableName).left.close();
+			this.clearSSTableDirectoryIfEmpty(tableName);
 
-            Map<CIndex, CQLSSTableWriter> indexWriters = this.SSTableWriters.get(tableName).right;
-            if (indexWriters != null) {
-                for (CQLSSTableWriter indexWriter : indexWriters.values()) {
-                    indexWriter.close();
-                }
-                // Clear out empty SSTable directories that haven't been written to
-                CDefinition def = definitions.get(tableName);
-                List<CIndex> indexes = def.getIndexesAsList();
-                for (CIndex index : indexes) {
-                    this.clearSSTableDirectoryIfEmpty(CObjectCQLGenerator.makeTableName(def, index));
-                }
-            }
-        }
-    }
+			Map<CIndex, CQLSSTableWriter> indexWriters = this.SSTableWriters.get(tableName).right;
+			if (indexWriters != null) {
+				for (CQLSSTableWriter indexWriter : indexWriters.values()) {
+					indexWriter.close();
+				}
+				// Clear out empty SSTable directories that haven't been written to
+				CDefinition def = definitions.get(tableName);
+				List<CIndex> indexes = def.getIndexesAsList();
+				for (CIndex index : indexes) {
+					this.clearSSTableDirectoryIfEmpty(CObjectCQLGenerator.makeTableName(def, index));
+				}
+			}
+		}
+	}
 
-    /**
-     * Removes an SSTable directory for a given table path if the directory is empty
-     * @param tablePath Path to remove if empty
-     */
-    private void clearSSTableDirectoryIfEmpty(String tablePath) {
-        String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + tablePath;
-        File SSTableDirectory = new File(SSTablePath);
+	/**
+	 * Removes an SSTable directory for a given table path if the directory is empty
+	 * @param tablePath Path to remove if empty
+	 */
+	private void clearSSTableDirectoryIfEmpty(String tablePath) {
+		String SSTablePath = this.defaultSSTableOutputPath + "/" + keyspaceDefinition.getName() + "/" + tablePath;
+		File SSTableDirectory = new File(SSTablePath);
 
-        if (SSTableDirectory.isDirectory() && SSTableDirectory.list().length == 0) {
-            FileUtils.deleteRecursive(SSTableDirectory);
-        }
-    }
+		if (SSTableDirectory.isDirectory() && SSTableDirectory.list().length == 0) {
+			FileUtils.deleteRecursive(SSTableDirectory);
+		}
+	}
 
 	public void setLogCql(boolean logCql) {
 		this.logCql = logCql;
@@ -1067,10 +1067,10 @@ public class ObjectMapper implements CObjectShardList {
 		this.cacheBoundedQueries = cacheBoundedQueries;
 	}
 
-    public void setCompaction(String strategy, Map<String,Object> options) throws CQLGenerationException, RhombusException {
-        CQLStatementIterator cql = cqlGenerator.makeCQLforCompaction(keyspaceDefinition, strategy, options);
-        executeStatements(cql);
-    }
+	public void setCompaction(String strategy, Map<String,Object> options) throws CQLGenerationException, RhombusException {
+		CQLStatementIterator cql = cqlGenerator.makeCQLforCompaction(keyspaceDefinition, strategy, options);
+		executeStatements(cql);
+	}
 
 	public CQLExecutor getCqlExecutor(){
 		return cqlExecutor;
