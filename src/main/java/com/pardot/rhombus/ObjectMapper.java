@@ -288,20 +288,21 @@ public class ObjectMapper implements CObjectShardList {
 
 
 	/**
-	 * Insert a new object with values and key
+	 * Insert a new object with values and key and TTL
 	 * @param objectType Type of object to insert
 	 * @param values Values to insert
 	 * @param key Time UUID to use as key
+     * @param ttl the time-to-live for cassandra
 	 * @return ID if newly inserted object
 	 * @throws CQLGenerationException
 	 */
-	public Object insert(String objectType, Map<String, Object> values, Object key) throws CQLGenerationException, RhombusException {
+	public Object insert(String objectType, Map<String, Object> values, Object key, Integer ttl) throws CQLGenerationException, RhombusException {
 		logger.debug("Insert {}", objectType);
 		if(key == null) {
 			key = UUIDs.timeBased();
 		}
 		long timestamp = System.currentTimeMillis();
-		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, key, timestamp);
+		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, key, timestamp, ttl);
 		executeStatements(statementIterator);
 		return key;
 	}
@@ -322,21 +323,53 @@ public class ObjectMapper implements CObjectShardList {
 		else{
 			key = UUIDs.timeBased();
 		}
-		return insert(objectType, values, key);
+		return insert(objectType, values, key, null);
 	}
 
-	/**
-	 * Used to insert an object with a UUID based on the provided timestamp
-	 * Best used for testing, as time resolution collisions are not accounted for
-	 * @param objectType Type of object to insert
-	 * @param values Values to insert
-	 * @param timestamp Timestamp to use to create the object UUID
-	 * @return the UUID of the newly inserted object
-	 */
-	public Object insert(String objectType, Map<String, Object> values, Long timestamp) throws CQLGenerationException, RhombusException {
-		UUID uuid = UUIDs.startOf(timestamp);
-		return insert(objectType, values, uuid);
-	}
+    /**
+     * Used to insert an object with an Integer TTL for auto-cleanup in Cassandra.
+     * @param objectType Type of object to insert
+     * @param values Values to insert
+     * @param ttl Integer for use of the Cassandra TTL
+     * @return the UUID of the newly inserted object
+     */
+    public Object insert(String objectType, Map<String, Object> values, Integer ttl) throws CQLGenerationException, RhombusException {
+        Object key = null;
+        if(values.containsKey("id")) {
+            key = values.get("id");
+            values.remove("id");
+        }
+        else{
+            key = UUIDs.timeBased();
+        }
+        return insert(objectType, values, key, ttl);
+    }
+
+    /**
+     * Used to insert an object with a UUID based on the provided timestamp
+     * Best used for testing, as time resolution collisions are not accounted for
+     * @param objectType Type of object to insert
+     * @param values Values to insert
+     * @param timestamp Timestamp to use to create the object UUID
+     * @return the UUID of the newly inserted object
+     */
+    public Object insert(String objectType, Map<String, Object> values, Long timestamp) throws CQLGenerationException, RhombusException {
+        UUID uuid = UUIDs.startOf(timestamp);
+        return insert(objectType, values, uuid, null);
+    }
+
+
+    /**
+     * Used for backwards-compatibility of many methods that already know the key
+     * @param objectType Type of object to insert
+     * @param values Values to insert
+     * @param key the UUID to use as key
+     * @return the UUID of the newly inserted object
+     */
+    public Object insert(String objectType, Map<String, Object> values, Object key) throws CQLGenerationException, RhombusException {
+        return insert(objectType, values, key, null);
+    }
+
 
 	/**
 	 * Delete Object of type with id key
@@ -383,7 +416,7 @@ public class ObjectMapper implements CObjectShardList {
 		if(oldversion == null) {
 			// If we couldn't find the old version, the best we can do is an insert
 			logger.debug("Update requested for non-existent object, inserting instead");
-			insert(objectType, values, key);
+			insert(objectType, values, key, null);
 			return key;
 		}
 

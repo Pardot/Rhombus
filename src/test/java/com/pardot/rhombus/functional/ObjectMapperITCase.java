@@ -100,11 +100,10 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//an imediate request should return null, because we didnt wait for consistency
 		assertEquals(null, om.getNextUpdateIndexRow(null));
 
-		//Do another update
+        //Do another update
 		Map<String, Object> testObject3 = Maps.newHashMap();
 		testObject3.put("type", Integer.valueOf(7));
 		UUID key4 = om.update("testtype", key2, testObject3, null, null);
-
 
 		//now wait for consistency
 		Thread.sleep(3000);
@@ -125,7 +124,29 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		assertEquals(null, om.getNextUpdateIndexRow(row.getRowKey()));
 
 
-		//Teardown connections
+        // Test that we can insert with TTL
+        //Get a test object to insert
+        Map<String, Object> testObject4 = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), definition.getDefinitions().get("testtype"));
+        // This one should only persist for 4 seconds
+        Integer ttl = 4;
+        UUID key5 = (UUID) om.insert("testtype", testObject, ttl);
+
+        Map<String, Object> testObject5 = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), definition.getDefinitions().get("testtype"));
+        // Whereas this one should persist for one day
+        ttl = 86400;
+        UUID key6 = (UUID) om.insert("testtype", testObject, ttl);
+
+        // Let's wait for five seconds
+        Thread.sleep(5000);
+
+        Map<String, Object> dbObject3 = om.getByKey("testtype", key5);
+        // So the object created with key5 should be gone
+        assertNull(dbObject3);
+        Map<String, Object> dbObject4 = om.getByKey("testtype", key6);
+        // Yet the object created with key6 should be extant
+        assertNotNull(dbObject4);
+
+        //Teardown connections
 		cm.teardown();
 	}
 
