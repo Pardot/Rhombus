@@ -231,6 +231,21 @@ public class CObjectCQLGenerator {
 	/**
 	 *
 	 * @param objType - The name of the Object type aka CDefinition.name
+	 * @param data - A map of fieldnames to values representing the data to insert
+	 * @param key - A UUID key
+	 * @param timestamp - The timestamp
+	 * @param ttl - An Integer (seconds) for the time to live in Cassandra
+	 * @return Iterator of CQL statements that need to be executed for this task.
+	 * @throws CQLGenerationException
+	 */
+	@NotNull
+	public CQLStatementIterator makeCQLforInsert(String objType, Map<String,Object> data, Object key, Long timestamp, Integer ttl) throws CQLGenerationException {
+		return makeCQLforInsert(this.keyspace, this.definitions.get(objType), data, key, timestamp, ttl);
+	}
+
+	/**
+	 *
+	 * @param objType - The name of the Object type aka CDefinition.name
 	 * @param key - The TimeUUID of the object to retrieve
 	 * @return Iterator of CQL statements that need to be executed for this task. (Should have a length of 1 for this particular method)
 	 */

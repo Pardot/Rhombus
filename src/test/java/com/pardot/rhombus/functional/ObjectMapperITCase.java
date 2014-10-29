@@ -105,7 +105,6 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		testObject3.put("type", Integer.valueOf(7));
 		UUID key4 = om.update("testtype", key2, testObject3, null, null);
 
-
 		//now wait for consistency
 		Thread.sleep(3000);
 
@@ -123,7 +122,6 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 
 		//verify that if we try to get the next row it returns null
 		assertEquals(null, om.getNextUpdateIndexRow(row.getRowKey()));
-
 
 		//Teardown connections
 		cm.teardown();
@@ -419,6 +417,9 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 
 		cm.teardown();
 	}
+
+
+
 
 	@Test
 	public void testLargeCountAllowFilteringWithNoFilters() throws Exception {
