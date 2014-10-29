@@ -77,7 +77,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		Map<String, Object> testObject2 = JsonUtil.rhombusMapFromJsonMap(
 				TestHelpers.getTestObject(2),
 				definition.getDefinitions().get("testtype"));
-		UUID key3 = om.update("testtype", key2, testObject2, null, null);
+		UUID key3 = om.update("testtype", key2, testObject2);
 
 		//Get the updated object back and make sure it matches
 		Map<String, Object> dbObject2 = om.getByKey("testtype", key3);
@@ -103,7 +103,7 @@ public class ObjectMapperITCase extends RhombusFunctionalTest {
 		//Do another update
 		Map<String, Object> testObject3 = Maps.newHashMap();
 		testObject3.put("type", Integer.valueOf(7));
-		UUID key4 = om.update("testtype", key2, testObject3, null, null);
+		UUID key4 = om.update("testtype", key2, testObject3);
 
 		//now wait for consistency
 		Thread.sleep(3000);

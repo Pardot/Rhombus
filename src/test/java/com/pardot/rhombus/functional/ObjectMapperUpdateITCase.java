@@ -2,7 +2,6 @@ package com.pardot.rhombus.functional;
 
 
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.Criteria;
