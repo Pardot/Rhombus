@@ -49,12 +49,14 @@ public class ObjectMapperITCaseWithTTL extends RhombusFunctionalTest {
 		Map<String, Object> testObject4 = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), definition.getDefinitions().get("testtype"));
 		// This one should only persist for 4 seconds
 		Integer ttl = 4;
-		UUID key5 = (UUID) om.insert("testtype", testObject, ttl);
+		testObject4.put("_ttl", ttl);
+		UUID key5 = (UUID) om.insert("testtype", testObject4);
 
 		Map<String, Object> testObject5 = JsonUtil.rhombusMapFromJsonMap(TestHelpers.getTestObject(0), definition.getDefinitions().get("testtype"));
 		// Whereas this one should persist for one day
 		ttl = 86400;
-		UUID key6 = (UUID) om.insert("testtype", testObject, ttl);
+		testObject5.put("_ttl", ttl);
+		UUID key6 = (UUID) om.insert("testtype", testObject5);
 
 		// Let's wait for five seconds
 		Thread.sleep(5000);
@@ -92,6 +94,7 @@ public class ObjectMapperITCaseWithTTL extends RhombusFunctionalTest {
 		int nDataItems = 200;
 
 		List<Map<String, Object>> values2 = Lists.newArrayList();
+		Integer ttl = 4;
 
 		// insert additional data, we are testing for counts > 50
 		for (int i = 0; i < nDataItems; i++) {
@@ -104,16 +107,17 @@ public class ObjectMapperITCaseWithTTL extends RhombusFunctionalTest {
 
 		List<Map<String, Object>> updatedValues2 = Lists.newArrayList();
 		for (Map<String, Object> baseValue : values2) {
-			updatedValues2.add(JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2")));
+			Map<String, Object> value = JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2"));
+			value.put("_ttl", ttl);
+			updatedValues2.add(value);
 		}
 
 		Map<String, List<Map<String, Object>>> multiInsertMap = Maps.newHashMap();
 		multiInsertMap.put("object2", updatedValues2);
 
-		Integer ttl = 4;
 
 		//Insert data with 4-second TTL
-		om.insertBatchMixed(multiInsertMap, ttl);
+		om.insertBatchMixed(multiInsertMap);
 
 		// Sleep for five seconds
 		Thread.sleep(5000);
@@ -133,27 +137,43 @@ public class ObjectMapperITCaseWithTTL extends RhombusFunctionalTest {
 		// Good.  Now let's make sure we aren't crazy.
 		values2 = Lists.newArrayList();
 
-		// insert additional data, we are testing for counts > 50
+
+
 		for (int i = 0; i < nDataItems; i++) {
 			Map<String, Object> value = Maps.newHashMap();
 			value.put("account_id", "00000003-0000-0030-0040-000000030000");
 			value.put("user_id", "00000003-0000-0030-0040-000000030000");
 			value.put("field2", "Value" + (i + 8));
+			value.put("_ttl", ttl);
 			values2.add(value);
 		}
 
+		Integer shortTimeToLive = 4;
+		Integer longTimeToLive = 6;
+		int numThatShouldBeExcluded = 15;
+		int numThatShouldRemain = nDataItems - numThatShouldBeExcluded;
+		int j = 0;
+
 		updatedValues2 = Lists.newArrayList();
 		for (Map<String, Object> baseValue : values2) {
-			updatedValues2.add(JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2")));
+			if (j < numThatShouldBeExcluded) {
+				ttl = shortTimeToLive;
+			}
+			else {
+				ttl = longTimeToLive;
+			}
+			j++;
+			Map<String, Object> value = JsonUtil.rhombusMapFromJsonMap(baseValue, definition.getDefinitions().get("object2"));
+			value.put("_ttl", ttl);
+			updatedValues2.add(value);
 		}
 
 		multiInsertMap = Maps.newHashMap();
 		multiInsertMap.put("object2", updatedValues2);
 
-		ttl = 6;
 
 		//Insert data with 4-second TTL
-		om.insertBatchMixed(multiInsertMap, ttl);
+		om.insertBatchMixed(multiInsertMap);
 
 		// Sleep for five seconds
 		Thread.sleep(5000);
@@ -165,9 +185,9 @@ public class ObjectMapperITCaseWithTTL extends RhombusFunctionalTest {
 		criteria = new Criteria();
 		criteria.setIndexKeys(indexValues);
 
-		// Should be zero.
+		// Should be 185
 		count = om.count("object2", criteria);
-		assertEquals(nDataItems, count);
+		assertEquals(numThatShouldRemain, count);
 
 		cm.teardown();
 	}

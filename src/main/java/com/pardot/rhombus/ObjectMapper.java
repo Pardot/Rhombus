@@ -250,14 +250,14 @@ public class ObjectMapper implements CObjectShardList {
 	/**
 	 * Insert a batch of mixed new object with values
 	 * @param objects Objects to insert
-	 * @param ttl the time-to-live for cassandra
 	 * @return Map of ids of inserted objects
 	 * @throws CQLGenerationException
 	 */
-	public Map<String, List<UUID>> insertBatchMixed(Map<String, List<Map<String, Object>>> objects, Integer ttl) throws CQLGenerationException, RhombusException {
+	public Map<String, List<UUID>> insertBatchMixed(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, RhombusException {
 		logger.debug("Insert batch mixed");
 		List<CQLStatementIterator> statementIterators = Lists.newArrayList();
 		Map<String, List<UUID>> insertedIds = Maps.newHashMap();
+		Integer ttl = null;
 		for(String objectType : objects.keySet()) {
 			List<UUID> ids = Lists.newArrayList();
 			for(Map<String, Object> values : objects.get(objectType)) {
@@ -274,6 +274,13 @@ public class ObjectMapper implements CObjectShardList {
 				else{
 					uuid = UUIDs.timeBased();
 				}
+
+				// The TTL value can be set on an object-by-object basis.
+				ttl = null;
+				if(values.containsKey("_ttl")) {
+					ttl = (Integer)values.get("_ttl");
+				}
+
 				long timestamp = System.currentTimeMillis();
 				CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, uuid, timestamp, ttl);
 				statementIterators.add(statementIterator);
@@ -288,30 +295,25 @@ public class ObjectMapper implements CObjectShardList {
 	}
 
 	/**
-	 * Insert a batch of mixed new object with values
-	 * @param objects Objects to insert
-	 * @return Map of ids of inserted objects
-	 * @throws CQLGenerationException
-	 */
-	public Map<String, List<UUID>> insertBatchMixed(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, RhombusException {
-		return insertBatchMixed(objects, null);
-	}
-
-	/**
 	 * Insert a new object with values and key and TTL
 	 * @param objectType Type of object to insert
 	 * @param values Values to insert
 	 * @param key Time UUID to use as key
-	 * @param ttl the time-to-live for cassandra
 	 * @return ID if newly inserted object
 	 * @throws CQLGenerationException
 	 */
-	public Object insert(String objectType, Map<String, Object> values, Object key, Integer ttl) throws CQLGenerationException, RhombusException {
+	public Object insert(String objectType, Map<String, Object> values, Object key) throws CQLGenerationException, RhombusException {
 		logger.debug("Insert {}", objectType);
 		if(key == null) {
 			key = UUIDs.timeBased();
 		}
 		long timestamp = System.currentTimeMillis();
+
+		Integer ttl = null;
+		if (values.containsKey("_ttl")) {
+			ttl = (Integer)values.get("_ttl");
+		}
+
 		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, key, timestamp, ttl);
 		executeStatements(statementIterator);
 		return key;
@@ -333,26 +335,7 @@ public class ObjectMapper implements CObjectShardList {
 		else{
 			key = UUIDs.timeBased();
 		}
-		return insert(objectType, values, key, null);
-	}
-
-	/**
-	 * Used to insert an object with an Integer TTL for auto-cleanup in Cassandra.
-	 * @param objectType Type of object to insert
-	 * @param values Values to insert
-	 * @param ttl Integer for use of the Cassandra TTL
-	 * @return the UUID of the newly inserted object
-	 */
-	public Object insert(String objectType, Map<String, Object> values, Integer ttl) throws CQLGenerationException, RhombusException {
-		Object key = null;
-		if(values.containsKey("id")) {
-			key = values.get("id");
-			values.remove("id");
-		}
-		else{
-			key = UUIDs.timeBased();
-		}
-		return insert(objectType, values, key, ttl);
+		return insert(objectType, values, key);
 	}
 
 	/**
@@ -365,19 +348,7 @@ public class ObjectMapper implements CObjectShardList {
 	 */
 	public Object insert(String objectType, Map<String, Object> values, Long timestamp) throws CQLGenerationException, RhombusException {
 		UUID uuid = UUIDs.startOf(timestamp);
-		return insert(objectType, values, uuid, null);
-	}
-
-
-	/**
-	 * Used for backwards-compatibility of many methods that already know the key
-	 * @param objectType Type of object to insert
-	 * @param values Values to insert
-	 * @param key the UUID to use as key
-	 * @return the UUID of the newly inserted object
-	 */
-	public Object insert(String objectType, Map<String, Object> values, Object key) throws CQLGenerationException, RhombusException {
-		return insert(objectType, values, key, null);
+		return insert(objectType, values, uuid);
 	}
 
 
@@ -415,18 +386,17 @@ public class ObjectMapper implements CObjectShardList {
 	 * @param key Key of object to update
 	 * @param values Values to update
 	 * @param timestamp Timestamp to execute update at
-	 * @param ttl Time to live for update
 	 * @return new UUID of the object
 	 * @throws CQLGenerationException
 	 */
-	public UUID update(String objectType, UUID key, Map<String, Object> values, Long timestamp, Integer ttl) throws CQLGenerationException, RhombusException {
+	public UUID update(String objectType, UUID key, Map<String, Object> values, Long timestamp) throws CQLGenerationException, RhombusException {
 		//New Version
 		//(1) Get the old version
 		Map<String, Object> oldversion = getByKey(objectType, key);
 		if(oldversion == null) {
 			// If we couldn't find the old version, the best we can do is an insert
 			logger.debug("Update requested for non-existent object, inserting instead");
-			insert(objectType, values, key, null);
+			insert(objectType, values, key);
 			return key;
 		}
 
@@ -437,17 +407,6 @@ public class ObjectMapper implements CObjectShardList {
 		return key;
 	}
 
-	/**
-	 * Update objectType with key using values
-	 * @param objectType Type of object to update
-	 * @param key Key of object to update
-	 * @param values Values to update
-	 * @return new UUID of the object
-	 * @throws CQLGenerationException
-	 */
-	public UUID update(String objectType, UUID key, Map<String, Object> values) throws CQLGenerationException, RhombusException {
-		return update(objectType, key, values, null, null);
-	}
 
 	/**
 	 *
