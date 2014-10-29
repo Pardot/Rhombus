@@ -207,6 +207,7 @@
                     <excludes>
                         <exclude>**/SSTableWriterITCase.java</exclude>
                         <exclude>**/MultiDatacenterPrepareITCase.java</exclude>
+                        <exclude>**/ObjectMapperITCaseWithTTL.java</exclude>
                     </excludes>
                     <skipTests>false</skipTests>
                 </configuration>
