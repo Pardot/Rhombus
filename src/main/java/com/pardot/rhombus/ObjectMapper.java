@@ -250,10 +250,11 @@ public class ObjectMapper implements CObjectShardList {
 	/**
 	 * Insert a batch of mixed new object with values
 	 * @param objects Objects to insert
+     * @param ttl the time-to-live for cassandra
 	 * @return Map of ids of inserted objects
 	 * @throws CQLGenerationException
 	 */
-	public Map<String, List<UUID>> insertBatchMixed(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, RhombusException {
+	public Map<String, List<UUID>> insertBatchMixed(Map<String, List<Map<String, Object>>> objects, Integer ttl) throws CQLGenerationException, RhombusException {
 		logger.debug("Insert batch mixed");
 		List<CQLStatementIterator> statementIterators = Lists.newArrayList();
 		Map<String, List<UUID>> insertedIds = Maps.newHashMap();
@@ -274,7 +275,7 @@ public class ObjectMapper implements CObjectShardList {
 					uuid = UUIDs.timeBased();
 				}
 				long timestamp = System.currentTimeMillis();
-				CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, uuid, timestamp);
+				CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, uuid, timestamp, ttl);
 				statementIterators.add(statementIterator);
 				ids.add(uuid);
 			}
@@ -286,6 +287,15 @@ public class ObjectMapper implements CObjectShardList {
 		return insertedIds;
 	}
 
+    /**
+     * Insert a batch of mixed new object with values
+     * @param objects Objects to insert
+     * @return Map of ids of inserted objects
+     * @throws CQLGenerationException
+     */
+    public Map<String, List<UUID>> insertBatchMixed(Map<String, List<Map<String, Object>>> objects) throws CQLGenerationException, RhombusException {
+        return insertBatchMixed(objects, null);
+    }
 
 	/**
 	 * Insert a new object with values and key and TTL
