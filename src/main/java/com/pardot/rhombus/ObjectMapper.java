@@ -278,7 +278,12 @@ public class ObjectMapper implements CObjectShardList {
 				// The TTL value can be set on an object-by-object basis.
 				ttl = null;
 				if(values.containsKey("_ttl")) {
-					ttl = (Integer)values.get("_ttl");
+					try {
+						ttl = (Integer)values.get("_ttl");
+					}
+					catch (ClassCastException cce) {
+						ttl = null;
+					}
 				}
 
 				long timestamp = System.currentTimeMillis();
@@ -311,7 +316,12 @@ public class ObjectMapper implements CObjectShardList {
 
 		Integer ttl = null;
 		if (values.containsKey("_ttl")) {
-			ttl = (Integer)values.get("_ttl");
+			try {
+				ttl = (Integer)values.get("_ttl");
+			}
+			catch (ClassCastException cce) {
+				ttl = null;
+			}
 		}
 
 		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforInsert(objectType, values, key, timestamp, ttl);
@@ -405,6 +415,11 @@ public class ObjectMapper implements CObjectShardList {
 		CQLStatementIterator statementIterator = cqlGenerator.makeCQLforUpdate(keyspaceDefinition.getName(), def, key, oldversion, values);
 		executeStatements(statementIterator);
 		return key;
+	}
+
+
+	public UUID update(String objectType, UUID key, Map<String, Object> values) throws CQLGenerationException, RhombusException {
+		return update(objectType, key, values, null);
 	}
 
 
