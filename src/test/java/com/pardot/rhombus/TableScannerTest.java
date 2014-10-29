@@ -20,8 +20,8 @@ public class TableScannerTest extends TestCase {
 		List<Map.Entry<Long, Long>> ranges = scanner.makeRanges();
 		assertEquals(2, ranges.size());
 		assertEquals(Long.valueOf(Long.MIN_VALUE), ranges.get(0).getKey());
-		assertEquals(Long.valueOf(-2l), ranges.get(0).getValue());
-		assertEquals(Long.valueOf(-1l), ranges.get(1).getKey());
+		assertEquals(Long.valueOf(-1l), ranges.get(0).getValue());
+		assertEquals(Long.valueOf(0), ranges.get(1).getKey());
 		assertEquals(Long.valueOf(Long.MAX_VALUE), ranges.get(1).getValue());
 	}
 
