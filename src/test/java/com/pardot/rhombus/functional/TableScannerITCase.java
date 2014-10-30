@@ -12,17 +12,22 @@ import com.pardot.rhombus.cobject.CObjectTokenVisitor;
 import com.pardot.rhombus.cobject.CObjectTokenVisitorFactory;
 import com.pardot.rhombus.cobject.CQLGenerationException;
 import com.pardot.rhombus.util.JsonUtil;
+import org.apache.cassandra.io.util.FileUtils;
+import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class TableScannerITCase extends RhombusFunctionalTest {
 
@@ -56,7 +61,7 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		}
 
 		VisitorFactoryTester visitorFactory = new VisitorFactoryTester();
-		TableScanner scanner = new TableScanner(om, objectType, 1, visitorFactory);
+		TableScanner scanner = new TableScanner(om, objectType, 1, visitorFactory, null);
 		scanner.scan();
 
 		long totalCount = 0;
@@ -73,6 +78,12 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		String objectType = "simple";
 		String index1Value = "value1";
 		String index2Value = "value2";
+		String savepointDirectoryName = "savepoint-test-dir";
+		File savepointDirectory = new File(savepointDirectoryName);
+		if (savepointDirectory.exists()) {
+			FileUtils.deleteRecursive(savepointDirectory);
+		}
+		Integer numPartitions = 4;
 
 		//Build the connection manager
 		ConnectionManager cm = getConnectionManager();
@@ -89,22 +100,153 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		om.setLogCql(true);
 
 		// Insert 83 values
-		List<Map<String, Object>> values = this.getNValues(83, index1Value, index2Value);
+		Long valueCount = 83L;
+		List<Map<String, Object>> values = this.getNValues(valueCount, index1Value, index2Value);
 		for(Map<String, Object> insertValue : values) {
 			om.insert(objectType, insertValue);
 		}
 
 		VisitorFactoryTester visitorFactory = new VisitorFactoryTester();
-		TableScanner scanner = new TableScanner(om, objectType, 4, visitorFactory);
+		TableScanner scanner = new TableScanner(om, objectType, numPartitions, visitorFactory, savepointDirectoryName);
+		List<Map.Entry<Long, Long>> ranges = scanner.makeRanges();
 		scanner.scan();
 
-		long totalCount = 0;
+		Long totalCount = 0L;
 		for(VisitorTester visitor : visitorFactory.getInstances()) {
 			totalCount += visitor.getObjectCount();
 		}
 
-		assertEquals(83l, totalCount);
+		assertEquals(valueCount, totalCount);
+
+		this.verifySavepoints(numPartitions, savepointDirectoryName, objectType, om, ranges);
+
 		cm.teardown();
+	}
+
+	@Test
+	public void testStartingFromSavepoint() throws Exception {
+		String objectType = "simple";
+		String index1Value = "value1";
+		String index2Value = "value2";
+		String savepointDirectoryName = "savepoint-test-dir";
+		File savepointDirectory = new File(savepointDirectoryName);
+		if (savepointDirectory.exists()) {
+			FileUtils.deleteRecursive(savepointDirectory);
+		}
+		Integer numPartitions = 2;
+
+		//Build the connection manager
+		ConnectionManager cm = getConnectionManager();
+		cm.setLogCql(true);
+
+		//Build our keyspace definition object
+		CKeyspaceDefinition definition = JsonUtil.objectFromJsonResource(CKeyspaceDefinition.class, this.getClass().getClassLoader(), "SimpleKeyspace.js");
+
+		//Rebuild the keyspace and get the object mapper
+		cm.buildKeyspace(definition, true);
+		logger.debug("Built keyspace: {}", definition.getName());
+		cm.setDefaultKeyspace(definition);
+		ObjectMapper om = cm.getObjectMapper();
+		om.setLogCql(true);
+
+		// Insert 83 values
+		Long valueCount = 83L;
+		List<Map<String, Object>> values = this.getNValues(valueCount, index1Value, index2Value);
+		for(Map<String, Object> insertValue : values) {
+			om.insert(objectType, insertValue);
+		}
+
+		// Calculate halfway through each range
+		UUID[] rangeHalfwayPoints = new UUID[numPartitions];
+		BigInteger fullRange = BigInteger.valueOf(TableScanner.maxToken).subtract(BigInteger.valueOf(TableScanner.minToken));
+		BigInteger rangeLength = fullRange.divide(BigInteger.valueOf(numPartitions));
+		BigInteger rangeStart = BigInteger.valueOf(TableScanner.minToken);
+		for(int i = 0 ; i < numPartitions - 1 ; i++) {
+			BigInteger rangeEnd = rangeStart.add(rangeLength).subtract(BigInteger.ONE);
+			Long halfwayToken = rangeLength.divide(BigInteger.valueOf(2)).add(rangeStart).longValue();
+			rangeHalfwayPoints[i] = (UUID)om.scanTableWithStartToken(objectType, halfwayToken, TableScanner.maxToken, 1L).get(0).get("id");
+
+			rangeStart = rangeEnd.add(BigInteger.ONE);
+		}
+		Long halfwayToken = rangeLength.divide(BigInteger.valueOf(2)).add(rangeStart).longValue();
+		rangeHalfwayPoints[numPartitions - 1] = (UUID)om.scanTableWithStartToken(objectType, halfwayToken, TableScanner.maxToken, 1L).get(0).get("id");
+
+		// Write halfway points to the savepoint directory
+		savepointDirectory = new File(savepointDirectoryName);
+		savepointDirectory.mkdir();
+
+		for (int i = 0; i < numPartitions; i++) {
+			String filename = TableScanner.getSavepointFilename(i);
+			PrintWriter writer = new PrintWriter(new FileOutputStream(savepointDirectory.getName() + "/" + filename, false));
+			writer.write(rangeHalfwayPoints[i].toString() + "\n");
+			writer.close();
+		}
+
+		// Create and run scanner
+		VisitorFactoryTester visitorFactory = new VisitorFactoryTester();
+		TableScanner scanner = new TableScanner(om, objectType, numPartitions, visitorFactory, savepointDirectoryName);
+		List<Map.Entry<Long, Long>> ranges = scanner.makeRanges();
+		scanner.scan();
+
+		Long actualCount = 0L;
+		for(VisitorTester visitor : visitorFactory.getInstances()) {
+			actualCount += visitor.getObjectCount();
+		}
+
+		// The total number of visits we have will fluctuate depending on where the ids land among the token ranges, but we should be close to half
+		assertTrue(Math.abs(actualCount - (valueCount/2)) < (valueCount/(numPartitions * 2)));
+
+		this.verifySavepoints(numPartitions, savepointDirectoryName, objectType, om, ranges);
+
+		cm.teardown();
+	}
+
+	private void verifySavepoints(Integer numPartitions, String savepointDirectoryName, String objectType, ObjectMapper om, List<Map.Entry<Long, Long>> ranges) throws Exception {
+		// Open up the savepoint directory
+		File savepointDirectory = new File(savepointDirectoryName);
+		assertTrue(savepointDirectory.exists());
+		assertTrue(savepointDirectory.isDirectory());
+
+		File[] fileArray = savepointDirectory.listFiles();
+		assertNotNull(fileArray);
+
+		// Make sure we have all the savepoint files we expect
+		Map<String, File> files = Maps.newHashMap();
+		for (File savepoint : fileArray) {
+			files.put(savepoint.getName(), savepoint);
+		}
+
+		boolean foundAtLeastOneLine = false;
+		UUID highestUuid = null;
+		for (int i = 0; i < numPartitions; i++) {
+			String filename = TableScanner.getSavepointFilename(i);
+			assertTrue(files.containsKey(filename));
+
+			File file = files.get(filename);
+			ReversedLinesFileReader reader = new ReversedLinesFileReader(file);
+			String line = reader.readLine();
+			// A null line is actually ok, that just means there were no results in that partition's token range this time around
+			if (line != null) {
+				foundAtLeastOneLine = true;
+				UUID savedUuid = UUID.fromString(line);
+				assertNotNull(savedUuid);
+				List<Map<String, Object>> values = om.scanTableWithStartId(objectType, savedUuid.toString(), TableScanner.maxToken, 1L);
+
+				// This means there is no next id from this uuid so our normal check doesn't work.
+				// This also means this is the highest uuid in the total range (might not be in the last partition if the last partition didn't end up with any objects)
+				if (values.size() == 0) {
+					// Make sure this only happens once
+					assertNull(highestUuid);
+					highestUuid = savedUuid;
+				} else {
+					// Otherwise there is a next uuid from the saved point, so compare that to the next uuid from the end of the partition's range and make sure they match
+					UUID nextSavedUuid = (UUID) values.get(0).get("id");
+					UUID nextExpectedUuid = (UUID) om.scanTableWithStartToken(objectType, ranges.get(i).getValue(), TableScanner.maxToken, 1L).get(0).get("id");
+					assertEquals(nextExpectedUuid, nextSavedUuid);
+				}
+			}
+		}
+		assertTrue(foundAtLeastOneLine);
 	}
 
 	@Test
@@ -129,7 +271,7 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		insertNObjects(om, insertNum, batchSize);
 
 		VisitorFactoryTester visitorFactory = new VisitorFactoryTester();
-		TableScanner scanner = new TableScanner(om, objectType, 1, visitorFactory);
+		TableScanner scanner = new TableScanner(om, objectType, 1, visitorFactory, null);
 		scanner.scan();
 
 		long totalCount = 0;

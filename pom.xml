@@ -19,7 +19,7 @@
         <joda.version>2.2</joda.version>
         <slf4j.version>1.7.4</slf4j.version>
         <logback.version>1.0.10</logback.version>
-        <commons-io.version>2.1</commons-io.version>
+        <commons-io.version>2.4</commons-io.version>
         <javax-validation.version>1.1.0.Final</javax-validation.version>
         <findbugs.version>2.0.1</findbugs.version>
         <java-driver.version>2.0.6</java-driver.version>

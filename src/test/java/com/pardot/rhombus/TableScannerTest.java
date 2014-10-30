@@ -16,18 +16,18 @@ import static org.mockito.Mockito.*;
 public class TableScannerTest extends TestCase {
 
 	public void testSimpleRange() {
-		TableScanner scanner = new TableScanner(mockObjectMapper(), "testtype", 2, mockVisitorFactory());
+		TableScanner scanner = new TableScanner(mockObjectMapper(), "testtype", 2, mockVisitorFactory(), null);
 		List<Map.Entry<Long, Long>> ranges = scanner.makeRanges();
 		assertEquals(2, ranges.size());
 		assertEquals(Long.valueOf(Long.MIN_VALUE), ranges.get(0).getKey());
-		assertEquals(Long.valueOf(-2l), ranges.get(0).getValue());
-		assertEquals(Long.valueOf(-1l), ranges.get(1).getKey());
+		assertEquals(Long.valueOf(-1l), ranges.get(0).getValue());
+		assertEquals(Long.valueOf(0), ranges.get(1).getKey());
 		assertEquals(Long.valueOf(Long.MAX_VALUE), ranges.get(1).getValue());
 	}
 
 	public void testRanges() {
 		for(int i = 1 ; i < 17 ; i++) {
-			TableScanner scanner = new TableScanner(mockObjectMapper(), "testtype", i, mockVisitorFactory());
+			TableScanner scanner = new TableScanner(mockObjectMapper(), "testtype", i, mockVisitorFactory(), null);
 			List<Map.Entry<Long, Long>> ranges = scanner.makeRanges();
 			assertEquals(i, ranges.size());
 			assertEquals(Long.valueOf(Long.MIN_VALUE), ranges.get(0).getKey());
