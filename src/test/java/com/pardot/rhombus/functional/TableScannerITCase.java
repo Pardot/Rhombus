@@ -3,7 +3,6 @@ package com.pardot.rhombus.functional;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.primitives.Longs;
 import com.pardot.rhombus.ConnectionManager;
 import com.pardot.rhombus.ObjectMapper;
 import com.pardot.rhombus.RhombusException;
@@ -26,6 +25,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -118,30 +118,8 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 
 		assertEquals(valueCount, totalCount);
 
-		// Open up the savepoint directory
-		savepointDirectory = new File(savepointDirectoryName);
-		assertTrue(savepointDirectory.exists());
-		assertTrue(savepointDirectory.isDirectory());
+		this.verifySavepoints(numPartitions, savepointDirectoryName, objectType, om, ranges);
 
-		File[] fileArray = savepointDirectory.listFiles();
-		assertNotNull(fileArray);
-
-		// Make sure we have all the savepoint files we expect
-		Map<String, File> files = Maps.newHashMap();
-		for (File savepoint : fileArray) {
-			files.put(savepoint.getName(), savepoint);
-		}
-
-		for (int i = 0; i < numPartitions; i++) {
-			String filename = TableScanner.getSavepointFilename(i);
-			assertTrue(files.containsKey(filename));
-
-			File file = files.get(filename);
-			ReversedLinesFileReader reader = new ReversedLinesFileReader(file);
-			Long savedToken = Longs.tryParse(reader.readLine());
-			assertNotNull(savedToken);
-			assertEquals(ranges.get(i).getValue(), savedToken);
-		}
 		cm.teardown();
 	}
 
@@ -179,16 +157,19 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		}
 
 		// Calculate halfway through each range
-		Long[] rangeHalfwayPoints = new Long[numPartitions];
+		UUID[] rangeHalfwayPoints = new UUID[numPartitions];
 		BigInteger fullRange = BigInteger.valueOf(TableScanner.maxToken).subtract(BigInteger.valueOf(TableScanner.minToken));
 		BigInteger rangeLength = fullRange.divide(BigInteger.valueOf(numPartitions));
 		BigInteger rangeStart = BigInteger.valueOf(TableScanner.minToken);
 		for(int i = 0 ; i < numPartitions - 1 ; i++) {
 			BigInteger rangeEnd = rangeStart.add(rangeLength).subtract(BigInteger.ONE);
-			rangeHalfwayPoints[i] = rangeLength.divide(BigInteger.valueOf(2)).add(rangeStart).longValue();
+			Long halfwayToken = rangeLength.divide(BigInteger.valueOf(2)).add(rangeStart).longValue();
+			rangeHalfwayPoints[i] = (UUID)om.scanTableWithStartToken(objectType, halfwayToken, TableScanner.maxToken, 1L).get(0).get("id");
+
 			rangeStart = rangeEnd.add(BigInteger.ONE);
 		}
-		rangeHalfwayPoints[numPartitions - 1] = rangeLength.divide(BigInteger.valueOf(2)).add(rangeStart).longValue();
+		Long halfwayToken = rangeLength.divide(BigInteger.valueOf(2)).add(rangeStart).longValue();
+		rangeHalfwayPoints[numPartitions - 1] = (UUID)om.scanTableWithStartToken(objectType, halfwayToken, TableScanner.maxToken, 1L).get(0).get("id");
 
 		// Write halfway points to the savepoint directory
 		savepointDirectory = new File(savepointDirectoryName);
@@ -215,8 +196,14 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 		// The total number of visits we have will fluctuate depending on where the ids land among the token ranges, but we should be close to half
 		assertTrue(Math.abs(actualCount - (valueCount/2)) < (valueCount/(numPartitions * 2)));
 
+		this.verifySavepoints(numPartitions, savepointDirectoryName, objectType, om, ranges);
+
+		cm.teardown();
+	}
+
+	private void verifySavepoints(Integer numPartitions, String savepointDirectoryName, String objectType, ObjectMapper om, List<Map.Entry<Long, Long>> ranges) throws Exception {
 		// Open up the savepoint directory
-		savepointDirectory = new File(savepointDirectoryName);
+		File savepointDirectory = new File(savepointDirectoryName);
 		assertTrue(savepointDirectory.exists());
 		assertTrue(savepointDirectory.isDirectory());
 
@@ -229,17 +216,37 @@ public class TableScannerITCase extends RhombusFunctionalTest {
 			files.put(savepoint.getName(), savepoint);
 		}
 
+		boolean foundAtLeastOneLine = false;
+		UUID highestUuid = null;
 		for (int i = 0; i < numPartitions; i++) {
 			String filename = TableScanner.getSavepointFilename(i);
 			assertTrue(files.containsKey(filename));
 
 			File file = files.get(filename);
 			ReversedLinesFileReader reader = new ReversedLinesFileReader(file);
-			Long savedToken = Longs.tryParse(reader.readLine());
-			assertNotNull(savedToken);
-			assertEquals(ranges.get(i).getValue(), savedToken);
+			String line = reader.readLine();
+			// A null line is actually ok, that just means there were no results in that partition's token range this time around
+			if (line != null) {
+				foundAtLeastOneLine = true;
+				UUID savedUuid = UUID.fromString(line);
+				assertNotNull(savedUuid);
+				List<Map<String, Object>> values = om.scanTableWithStartId(objectType, savedUuid.toString(), TableScanner.maxToken, 1L);
+
+				// This means there is no next id from this uuid so our normal check doesn't work.
+				// This also means this is the highest uuid in the total range (might not be in the last partition if the last partition didn't end up with any objects)
+				if (values.size() == 0) {
+					// Make sure this only happens once
+					assertNull(highestUuid);
+					highestUuid = savedUuid;
+				} else {
+					// Otherwise there is a next uuid from the saved point, so compare that to the next uuid from the end of the partition's range and make sure they match
+					UUID nextSavedUuid = (UUID) values.get(0).get("id");
+					UUID nextExpectedUuid = (UUID) om.scanTableWithStartToken(objectType, ranges.get(i).getValue(), TableScanner.maxToken, 1L).get(0).get("id");
+					assertEquals(nextExpectedUuid, nextSavedUuid);
+				}
+			}
 		}
-		cm.teardown();
+		assertTrue(foundAtLeastOneLine);
 	}
 
 	@Test

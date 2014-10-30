@@ -62,6 +62,7 @@ public class CObjectCQLGenerator {
 	protected static final String TEMPLATE_SET_COMPACTION_TIERED = "ALTER TABLE \"%s\".\"%s\" WITH compaction = { 'class' :  'SizeTieredCompactionStrategy',  'min_threshold' : %d }";
 	protected static final String TEMPLATE_SCAN_TABLE_MIN_TOKEN = "SELECT * FROM \"%s\".\"%s\" WHERE token(id) >= ? AND token(id) <= ? LIMIT %d;";
 	protected static final String TEMPLATE_SCAN_TABLE_MIN_ID = "SELECT * FROM \"%s\".\"%s\" WHERE token(id) > token(?) AND token(id) <= ? LIMIT %d;";
+	protected static final String TEMPLATE_SELECT_TOKEN = "SELECT token(id) FROM \"%s\".\"%s\" WHERE id = ? LIMIT 1;";
 	protected static final String TEMPLATE_TABLE_SCAN = "SELECT * FROM \"%s\".\"%s\";";
 	protected static final String TEMPLATE_ADD_FIELD = "ALTER TABLE \"%s\".\"%s\" add %s %s";
 
@@ -928,6 +929,12 @@ public class CObjectCQLGenerator {
 		List<CQLStatement> ret = Lists.newArrayList();
 		ret.add(statement);
 		return new BoundedCQLStatementIterator(ret);
+	}
+
+	public CQLStatement makeCQLForGetToken(UUID key, String cdefName){
+		String statement = String.format(TEMPLATE_SELECT_TOKEN, this.keyspace, cdefName);
+		Object[] values = {key};
+		return CQLStatement.make(statement, cdefName, values);
 	}
 
 	protected static CQLStatementIterator makeCQLforDelete(String keyspace, CDefinition def, UUID key, Map<String,Object> data, Long timestamp){

@@ -4,20 +4,19 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.primitives.Longs;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.input.ReversedLinesFileReader;
 import com.pardot.rhombus.cobject.CObjectTokenVisitor;
 import com.pardot.rhombus.cobject.CObjectTokenVisitorFactory;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigInteger;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -140,20 +139,21 @@ public class TableScanner {
 						return null;
 					}
 					File savepointFile = files.get(TableScanner.getSavepointFilename(i));
-					Long lastToken;
+					UUID lastUuid;
 					try {
 						ReversedLinesFileReader reader = new ReversedLinesFileReader(savepointFile);
-						lastToken = Longs.tryParse(reader.readLine());
+						try {
+							lastUuid = UUID.fromString(reader.readLine());
+						} catch (IllegalArgumentException e) {
+							logger.error("Error parsing UUID from savepoint file " + TableScanner.getSavepointFilename(i), e);
+							return null;
+						}
 						reader.close();
 					} catch (IOException e) {
 						logger.error("Error reading savepoint file", e);
 						return null;
 					}
-					if (lastToken == null) {
-						return null;
-					} else {
-						out[i] = lastToken;
-					}
+					out[i] = this.objectMapper.getTokenForId(this.objectType, lastUuid);
 				}
 			}
 		}
@@ -211,11 +211,11 @@ public class TableScanner {
 			visitResults(results, visitor);
 			String minUuid = String.valueOf(results.get(results.size() - 1).get("id"));
 			results = executeStatement(objectType, minUuid, maxToken, batchSize);
-		}
-		if (this.savepointWriters != null) {
-			// We've processed this range, so save our progress for later
-			this.savepointWriters[partitionId].append(maxToken.toString());
-			this.savepointWriters[partitionId].append("\n");
+			if (this.savepointWriters != null) {
+				// We've processed this range, so save our progress for later
+				this.savepointWriters[partitionId].append(minUuid);
+				this.savepointWriters[partitionId].append("\n");
+			}
 		}
 		visitor.cleanUp();
 		shutdownLatch.countDown();
