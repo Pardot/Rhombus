@@ -12,9 +12,8 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
-
 /**
- * Pardot, an ExactTarget company
+ * Pardot, a Salesforce company
  * User: Michael Frank
  * Date: 4/23/13
  */
@@ -50,6 +49,13 @@ public class JsonUtil {
 				rhombusMap.put(field.getName(), typedObjectFromValueAndField(jsonMap.get(field.getName()), field));
 			}
 		}
+
+		// TTL is a pass-through.  Though all cassandra objects support the setting of a TTL,
+		// not all business logic does.  Therefore, TTL is toggleable on an object-by-object basis.
+		if(jsonMap.containsKey("_ttl")) {
+			rhombusMap.put("_ttl", jsonMap.get("_ttl"));
+		}
+
 		if(jsonMap.containsKey("id") && (!definition.getFields().containsKey("id")) ){
 			//we have a user supplied ID but not a custom key type
 			rhombusMap.put("id", UUID.fromString(jsonMap.get("id").toString()));
