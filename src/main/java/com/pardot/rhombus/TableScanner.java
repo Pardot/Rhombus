@@ -123,9 +123,9 @@ public class TableScanner {
 			File[] existingSavepoints = this.savepointDirectory.listFiles();
 			// Ensure we have the right number of existing savepoint files
 			if (existingSavepoints == null) {
-				logger.debug("No savepoint files found in savepoint directory.");
+				logger.info("No savepoint files found in savepoint directory.");
 			} else if (existingSavepoints.length != numPartitions) {
-				logger.debug("Found " + existingSavepoints.length + " files in savepoint directory, expected " + numPartitions);
+				logger.info("Found " + existingSavepoints.length + " files in savepoint directory, expected " + numPartitions);
 			} else {
 				// We have the right number of files, let's parse them
 				Map<String, File> files = Maps.newHashMap();
@@ -157,6 +157,7 @@ public class TableScanner {
 				}
 			}
 		}
+		logger.info("Read savepoints successfully");
 		return out;
 	}
 
@@ -198,8 +199,10 @@ public class TableScanner {
 
 			// If they don't have the right filenames, clean the directory out
 			if (!files.keySet().equals(requiredFilenames)) {
+				logger.info("Existing savepoint files don't match what we're looking for, clearing them out and starting over.");
 				FileUtils.cleanDirectory(this.savepointDirectory);
 			}
+			logger.info("Appending savepoints to existing files.");
 			// Otherwise leave the files there, we can append to them
 		}
 	}
