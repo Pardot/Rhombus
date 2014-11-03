@@ -31,6 +31,7 @@ public class TableScanner {
 
 	public static final long minToken = Long.MIN_VALUE;
 	public static final long maxToken = Long.MAX_VALUE;
+	public final int maxSavepointLinesToCheck = 10;
 	private long batchSize = 200;
 	private int statementRetries = 5;
 
@@ -133,19 +134,26 @@ public class TableScanner {
 					files.put(savepoint.getName(), savepoint);
 				}
 				out = new Long[numPartitions];
-				for(int i = 0; i < numPartitions; i++) {
+				for(int partitionId = 0; partitionId < numPartitions; partitionId++) {
 					// If any of the savepoints are missing for our partitions, fail out from restoring from savepoints
-					if (!files.keySet().contains(TableScanner.getSavepointFilename(i))) {
+					if (!files.keySet().contains(TableScanner.getSavepointFilename(partitionId))) {
 						return null;
 					}
-					File savepointFile = files.get(TableScanner.getSavepointFilename(i));
-					UUID lastUuid;
+					File savepointFile = files.get(TableScanner.getSavepointFilename(partitionId));
+					UUID lastUuid = null;
 					try {
 						ReversedLinesFileReader reader = new ReversedLinesFileReader(savepointFile);
-						try {
-							lastUuid = UUID.fromString(reader.readLine());
-						} catch (IllegalArgumentException e) {
-							logger.error("Error parsing UUID from savepoint file " + TableScanner.getSavepointFilename(i), e);
+						int lineCounter = 0;
+						while (lastUuid == null && lineCounter < this.maxSavepointLinesToCheck) {
+							try {
+								lastUuid = UUID.fromString(reader.readLine());
+							} catch (IllegalArgumentException e) {
+								// Do nothing here, just let the line counter get incremented
+							}
+							lineCounter++;
+						}
+						if (lastUuid == null) {
+							logger.warn("Unable to parse UUID from the last " + this.maxSavepointLinesToCheck + " lines of savepoint file " + TableScanner.getSavepointFilename(partitionId));
 							return null;
 						}
 						reader.close();
@@ -153,11 +161,11 @@ public class TableScanner {
 						logger.error("Error reading savepoint file", e);
 						return null;
 					}
-					out[i] = this.objectMapper.getTokenForId(this.objectType, lastUuid);
+					out[partitionId] = this.objectMapper.getTokenForId(this.objectType, lastUuid);
 				}
 			}
 		}
-		logger.info("Read savepoints successfully");
+		logger.info("Read savepoints successfully: " + Arrays.toString(out));
 		return out;
 	}
 
@@ -218,6 +226,7 @@ public class TableScanner {
 				// We've processed this range, so save our progress for later
 				this.savepointWriters[partitionId].append(minUuid);
 				this.savepointWriters[partitionId].append("\n");
+				this.savepointWriters[partitionId].flush();
 			}
 		}
 		visitor.cleanUp();
